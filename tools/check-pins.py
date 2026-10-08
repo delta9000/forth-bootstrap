@@ -2,10 +2,10 @@
 """Check that every archive pin agrees with MANIFEST.sha256.
 
 The stages check their own inputs from the pin files they have always read:
-plumbing/SOURCES and plumbing/lexers.SOURCES (sha256sum --check in kaem),
-plumbing/chain.SOURCES (gcc-direct/chain.sh), plumbing/late.SOURCES
-(gcc-direct/late-tools.sh) and gcc64/SOURCES (gcc64/run-gcc64.sh, which also
-holds the download URLs); ladder/stage12.sh reads MANIFEST.sha256 itself.
+chain/plumbing/SOURCES and chain/plumbing/lexers.SOURCES (sha256sum --check in kaem),
+chain/plumbing/chain.SOURCES (chain/gcc-direct/chain.sh), chain/plumbing/late.SOURCES
+(chain/gcc-direct/late-tools.sh) and chain/gcc64/SOURCES (chain/gcc64/run-gcc64.sh, which also
+holds the download URLs); chain/ladder/stage12.sh reads MANIFEST.sha256 itself.
 This proves each of those pins is in MANIFEST.sha256 with the same sha256
 and that every MANIFEST entry is pinned by some stage.
 
@@ -28,13 +28,13 @@ def rows(rel):
 def main():
     manifest = {path: sha for sha, path in rows("MANIFEST.sha256")}
     pins = []                                   # (file, path, sha)
-    for f in ("plumbing/SOURCES", "plumbing/lexers.SOURCES"):
+    for f in ("chain/plumbing/SOURCES", "chain/plumbing/lexers.SOURCES"):
         pins += [(f, path, sha) for sha, path, *_ in rows(f) if path.startswith("build-out/")]
-    pins += [("plumbing/chain.SOURCES", CHAIN_DIRS[n] + n, sha) for n, sha, *_ in rows("plumbing/chain.SOURCES")]
-    for f in ("plumbing/late.SOURCES", "gcc64/SOURCES"):
+    pins += [("chain/plumbing/chain.SOURCES", CHAIN_DIRS[n] + n, sha) for n, sha, *_ in rows("chain/plumbing/chain.SOURCES")]
+    for f in ("chain/plumbing/late.SOURCES", "chain/gcc64/SOURCES"):
         pins += [(f, "build-out/distfiles/" + n, sha) for n, sha, *_ in rows(f)]
-    stage12 = (ROOT / "ladder/stage12.sh").read_text()
-    pins += [("ladder/stage12.sh", "build-out/distfiles/" + line.split()[2], None)
+    stage12 = (ROOT / "chain/ladder/stage12.sh").read_text()
+    pins += [("chain/ladder/stage12.sh", "build-out/distfiles/" + line.split()[2], None)
              for line in stage12.splitlines() if line.strip().startswith("unpack ")]
     bad = 0
     for f, path, sha in pins:

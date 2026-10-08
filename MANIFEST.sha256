@@ -8,7 +8,7 @@
 # binutils-2.30.tar.xz (xz -dc), since the chain's tools read no xz; the
 # others are the release archives as published (see each SOURCES file).
 
-# plumbing stages 1-2 and bash 2.05b (plumbing/SOURCES)
+# plumbing stages 1-2 and bash 2.05b (chain/plumbing/SOURCES)
 ba03d412998cc54bd0b0f2d6c32100967d3137098affdc2d32e6e7c11b163fe4  build-out/plumbing-inputs/bash-2.05b.tar.gz
 c25b36b8af6e0ad2a875daf4d6196bd0df28a62be7dd252e5f99a4d5d7288d95  build-out/plumbing-inputs/coreutils-5.0.tar.bz2
 d5f2489c4056a31528e3ada4adacc23d498532b0af1a980f2f76158162b139d6  build-out/plumbing-inputs/diffutils-2.7.tar.gz
@@ -20,17 +20,17 @@ ecb5c6469d732bcf01d6ec1afe9e64f1668caba5bfdb103c28d7f537ba3cdb8a  build-out/plum
 c365874794187f8444e5d22998cd5888ffa47f36def4b77517a808dec27c0600  build-out/plumbing-inputs/sed-4.0.9.tar.gz
 c6c37e888b136ccefab903c51149f4b7bd659d69d4aea21245f61053a57aa60a  build-out/plumbing-inputs/tar-1.12.tar.gz
 
-# oyacc, Heirloom lex, flex 2.5.11 (plumbing/lexers.SOURCES)
+# oyacc, Heirloom lex, flex 2.5.11 (chain/plumbing/lexers.SOURCES)
 68aa10c473b6010ffad680cada09fc4eec6b3cc6e415cc2339e5fc2385ccc142  build-out/lexer-inputs/archives/flex-d160f0247ba1611aa59d28f027d6292ba24abb50.tar.gz
 9f233d8b78e4351fe9dd2d50d83958a0e5af36f54e9818521458a08e058691ba  build-out/lexer-inputs/archives/heirloom-devtools-070527.tar.bz2
 eb0866e740b79bd3a23e0ca47885eb3148aab18d77a4bedba96e979d8b4ebfe1  build-out/lexer-inputs/archives/oyacc-6.6.tar.gz
 
-# the GCC chain: binutils 2.30, stage C, stage D (plumbing/chain.SOURCES)
+# the GCC chain: binutils 2.30, stage C, stage D (chain/plumbing/chain.SOURCES)
 091f7e50fb712289632fb14d93582a6a49d731c59b8c095cc75cff01c1f40a67  build-out/direct-gcc-inputs/gcc-4.0.4-git-944765863e.tar
 1cb3ceb55873f1c5b3b9a9477cd06ae471e2fd331321a2f03dcf46ce37c760ed  build-out/stage-b-inputs/binutils-2.30.tar
 1370c9a812b2cf2a7d92802510cca0058cc37e66a7bedd70051f0a34015022a3  build-out/stage-c-inputs/musl-1.1.24.tar.gz
 
-# late tools (plumbing/late.SOURCES), the gcc64 climb (gcc64/SOURCES), stage 12 (zlib, elfutils, Linux)
+# late tools (chain/plumbing/late.SOURCES), the gcc64 climb (chain/gcc64/SOURCES), stage 12 (zlib, elfutils, Linux)
 9599b22ecd1d5787ad7d3b7bf0c59f312b3396d1e281175dd1f8a4014da621ff  build-out/distfiles/bash-5.2.37.tar.gz
 62adfca89b0a1c0164c2cdca59ca210c1d44c3ffc46daf9931cf4942664cb02a  build-out/distfiles/bc-1.07.1.tar.gz
 6e46b8aeae2f727a36f0bd9505e405768a72218f1796f0d09757d45209871ae6  build-out/distfiles/binutils-2.30.tar.xz

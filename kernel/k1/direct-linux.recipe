@@ -1,0 +1,14 @@
+# Appended to kernel/k1/direct.recipe by kernel/k1/mkdisk.py --direct-linux: the rest of
+# the route under K1, from bash 2.05b to Linux.  kernel/k1/direct-full.sh runs
+# chain/gcc-direct/chain.sh (binutils 2.30, stage C, stage D) and
+# chain/gcc-direct/late-tools.sh; chain/ladder/stage10-direct.sh installs the late tools
+# as /usr; chain/ladder/stage11.sh runs gcc64's bridge and stages 6-10
+# (gcc-10.5.0, binutils-2.41); chain/ladder/stage12.sh builds Linux and
+# chain/ladder/finish.sh writes the output disk and kexecs into it.
+# mkdisk.py --jobs N replaces the job counts.
+run 0 - /dev/console /dev/console /build-out/plumbing/bin/bash kernel/k1/direct-full.sh JOBS=2
+say "k1: GCC 4.0.4 fixed point and late tools built under K1"
+run 0 - /dev/console /dev/console /build-out/late/usr/bin/bash /chain/ladder/stage10-direct.sh
+run 0 - /dev/console /dev/console /usr/bin/env JOBS=2 /usr/bin/bash /chain/ladder/stage11.sh
+run 0 - /dev/console /dev/console /usr/bin/env JOBS=2 /usr/bin/bash /chain/ladder/stage12.sh
+run 0 - /dev/console /dev/console /usr/bin/bash /chain/ladder/finish.sh

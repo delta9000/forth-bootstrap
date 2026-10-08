@@ -28,7 +28,7 @@ mkdir -p "$BUILDROOT"
 fail() { printf 'stage-a-check: FAIL: %s\n' "$1" >&2; exit 1; }
 
 # --- Build seed-forth if needed ---
-[ -x seed-forth ] || ./build.sh >/dev/null
+[ -x seed-forth ] || ./seed/build.sh >/dev/null
 [ -x seed-forth ] || fail "seed-forth build failed"
 
 [ -f "$M2_PLANET/cc.c" ] || fail "M2_PLANET=$M2_PLANET is not initialized (run git submodule update --init --recursive)"

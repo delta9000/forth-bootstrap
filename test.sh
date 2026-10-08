@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-./build.sh
+./seed/build.sh
 
 pass() { echo "  PASS: $*"; }
 fail() { echo "  FAIL: $*"; exit 1; }
@@ -84,10 +84,10 @@ out=$(echo "[lit] 17 [lit] 5 / [lit] 48 + emit" | timeout 3 ./seed-forth)
 out=$(printf ': t [lit] 65 [lit] 4268032 c! [lit] 1 [lit] 4268032 [lit] 1 [lit] 0 [lit] 0 [lit] 0 [lit] 1 syscall6 drop bye ;\nt\n' | timeout 3 ./seed-forth)
 [ "$out" = "A" ] && pass "syscall6: write 'A'" || fail "syscall6 got: '$out'"
 
-# ----- 010-lib.fth -----
+# ----- forth/010-lib.fth -----
 
 # T-classify: digit?/alpha?/space? return -1/0
-out=$(cat 010-lib.fth <(printf '[lit] 53 digit? [lit] 90 + [lit] 89 + emit\n[lit] 65 digit? [lit] 90 + [lit] 89 + emit\n[lit] 65 alpha? [lit] 90 + [lit] 89 + emit\n[lit] 32 space? [lit] 90 + [lit] 89 + emit\nbye\n') | timeout 5 ./seed-forth | od -An -tx1 | tr -d ' \n')
+out=$(cat forth/010-lib.fth <(printf '[lit] 53 digit? [lit] 90 + [lit] 89 + emit\n[lit] 65 digit? [lit] 90 + [lit] 89 + emit\n[lit] 65 alpha? [lit] 90 + [lit] 89 + emit\n[lit] 32 space? [lit] 90 + [lit] 89 + emit\nbye\n') | timeout 5 ./seed-forth | od -An -tx1 | tr -d ' \n')
 [ "$out" = "b2b3b2b2" ] && pass "lib: digit?/alpha?/space? classifiers" || fail "classify got: '$out'"
 
 # T-fileio: open+write+close round-trip
@@ -113,37 +113,37 @@ cat > /tmp/test-fileio.fth <<'TFEOF'
   close drop  bye ;
 go
 TFEOF
-cat 010-lib.fth /tmp/test-fileio.fth | timeout 5 ./seed-forth
+cat forth/010-lib.fth /tmp/test-fileio.fth | timeout 5 ./seed-forth
 [ "$(cat /tmp/forth-fwio-test 2>/dev/null)" = "OK" ] && pass "lib: open/write/close round-trip writes correct bytes" || fail "fileio got: '$(cat /tmp/forth-fwio-test 2>/dev/null)'"
 
-# T-lib: 010-lib.fth comparison, stack, arith, control-flow, defining words
-out=$(cat 010-lib.fth test-010-lib.fth | timeout 5 ./seed-forth)
+# T-lib: forth/010-lib.fth comparison, stack, arith, control-flow, defining words
+out=$(cat forth/010-lib.fth forth/test-010-lib.fth | timeout 5 ./seed-forth)
 ec=$?
-[ "$ec" = "0" ] && pass "010-lib.fth: all comparisons/arith/control/defining words" || fail "010-lib.fth got exit code $ec"
+[ "$ec" = "0" ] && pass "forth/010-lib.fth: all comparisons/arith/control/defining words" || fail "forth/010-lib.fth got exit code $ec"
 
 # ----- cc-*.fth layer -----
 
 # T-cc-arena: cc-alloc, bytes-eq
-out=$(cat 010-lib.fth 020-cc-arena.fth test-020-cc-arena.fth | timeout 5 ./seed-forth)
+out=$(cat forth/010-lib.fth cc/020-cc-arena.fth cc/test-020-cc-arena.fth | timeout 5 ./seed-forth)
 ec=$?
 [ "$ec" = "0" ] && pass "cc-arena: alloc/align/bytes-eq" || fail "cc-arena got exit code $ec"
 
 # T-cc-io: source-buffer reader, output-buffer emitter, patch, 8LE
-out=$(cat 010-lib.fth 020-cc-arena.fth 030-cc-io.fth test-030-cc-io.fth | timeout 5 ./seed-forth)
+out=$(cat forth/010-lib.fth cc/020-cc-arena.fth cc/030-cc-io.fth cc/test-030-cc-io.fth | timeout 5 ./seed-forth)
 ec=$?
 [ "$ec" = "0" ] && pass "cc-io: peek/next/eof, emit/patch" || fail "cc-io got exit code $ec"
 
 # T-cc-lex: tokenizer
-out=$(cat 010-lib.fth 020-cc-arena.fth 030-cc-io.fth 040-cc-prep.fth 050-cc-lex.fth test-050-cc-lex.fth | timeout 5 ./seed-forth)
+out=$(cat forth/010-lib.fth cc/020-cc-arena.fth cc/030-cc-io.fth cc/040-cc-prep.fth cc/050-cc-lex.fth cc/test-050-cc-lex.fth | timeout 5 ./seed-forth)
 ec=$?
 [ "$ec" = "0" ] && pass "cc-lex: tokens (kw/id/punct/num/str/chr/comment/escape)" || fail "cc-lex got exit code $ec"
 
 # T-cc-types: ty-make, ty-base, ty-ptr, ty-size
-out=$(cat 010-lib.fth 020-cc-arena.fth 030-cc-io.fth 040-cc-prep.fth 050-cc-lex.fth 060-cc-types.fth test-060-cc-types.fth | timeout 5 ./seed-forth)
+out=$(cat forth/010-lib.fth cc/020-cc-arena.fth cc/030-cc-io.fth cc/040-cc-prep.fth cc/050-cc-lex.fth cc/060-cc-types.fth cc/test-060-cc-types.fth | timeout 5 ./seed-forth)
 ec=$?
 [ "$ec" = "0" ] && pass "cc-types: make/base/ptr/size" || fail "cc-types got exit code $ec"
 
 # T-cc-sym: symbol table
-out=$(cat 010-lib.fth 020-cc-arena.fth 030-cc-io.fth 040-cc-prep.fth 050-cc-lex.fth 060-cc-types.fth 070-cc-sym.fth test-070-cc-sym.fth | timeout 5 ./seed-forth)
+out=$(cat forth/010-lib.fth cc/020-cc-arena.fth cc/030-cc-io.fth cc/040-cc-prep.fth cc/050-cc-lex.fth cc/060-cc-types.fth cc/070-cc-sym.fth cc/test-070-cc-sym.fth | timeout 5 ./seed-forth)
 ec=$?
 [ "$ec" = "0" ] && pass "cc-sym: add/find/kind/val/scope" || fail "cc-sym got exit code $ec"
