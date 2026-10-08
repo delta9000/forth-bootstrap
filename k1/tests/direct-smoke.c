@@ -17,6 +17,12 @@
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
+#ifdef __SEED_FORTH__
+#include <seed-syscall.h>
+#else
+#include <sys/syscall.h>
+#define __seed_syscall6 syscall
+#endif
 
 static int n;
 static volatile int got_signal;
@@ -30,6 +36,42 @@ static void check(int ok, const char *name)
     }
     printf("ok %d %s\n", n, name);
     fflush(stdout);             /* nothing buffered is inherited by fork */
+}
+
+/* std; movb $1, (%rdi); cld; ret -- seed-cc has no inline assembly, and
+ * the runtime's mmap() takes no PROT_EXEC, so the page for it comes from
+ * the mmap system call itself (prot 7 = read, write, exec). */
+static const unsigned char df_touch_code[] = { 0xfd, 0xc6, 0x07, 0x01, 0xfc, 0xc3 };
+
+/* A fresh page can fault in while DF is set (musl's backward memmove runs
+ * std; rep movsb).  The kernel must still zero it forwards and leave the
+ * page below it alone: dirty some pages for the free list, then touch the
+ * first byte of each page of a new mapping with DF set. */
+static int df_fault_ok(void)
+{
+    long len = 64 * 4096, i, bad = 0;
+    char *code, *p;
+    void (*touch)(char *);
+    code = (char *)__seed_syscall6(9, 0, 4096, 7, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if ((unsigned long)code >= (unsigned long)-4095)
+        return 0;
+    memcpy(code, df_touch_code, sizeof df_touch_code);
+    touch = (void (*)(char *))code;
+    p = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (p == MAP_FAILED)
+        return 0;
+    memset(p, 0x5a, len);
+    munmap(p, len);
+    p = mmap(NULL, len, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (p == MAP_FAILED)
+        return 0;
+    for (i = 0; i < len; i += 4096)
+        touch(p + i);
+    for (i = 0; i < len; i++)
+        bad += p[i] != (i % 4096 == 0);
+    munmap(p, len);
+    munmap(code, 4096);
+    return bad == 0;
 }
 
 static void on_usr1(int sig)
@@ -152,6 +194,8 @@ int main(int argc, char **argv)
     free(big);
     big = mmap(NULL, 1 << 20, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
     check(big != MAP_FAILED && big[12345] == 0 && munmap(big, 1 << 20) == 0, "mmap and munmap");
+
+    check(df_fault_ok(), "page fault with DF set zeroes the page forwards");
 
     check(clock_gettime(CLOCK_MONOTONIC, &t0) == 0, "clock_gettime");
     for (i = 0; i < 1000000; i++)

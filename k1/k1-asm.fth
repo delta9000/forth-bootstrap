@@ -232,7 +232,12 @@ linux_jump:
   31 ed                           \ xor %ebp,%ebp
   31 ff                           \ xor %edi,%edi
   ff e2                           \ jmp *%rdx
+\ An interrupt gate leaves RFLAGS.DF as the user had it, and user code may be
+\ inside musl's backward memmove (std; rep movsb) when the PIT ticks or a page
+\ faults: clear DF so the kernel's rep movsb/stosb run forwards.  iretq
+\ restores the user's own flags.
 isr_common:
+  fc                              \ cld
   50                              \ push %rax
   51                              \ push %rcx
   52                              \ push %rdx
