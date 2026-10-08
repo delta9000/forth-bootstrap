@@ -1,0 +1,20 @@
+# Build artifact — README "Generated binaries such as seed-forth ... are not source."
+seed-forth
+
+# mescc-tools intermediate tapes
+tape_01
+tape_02
+
+# mdBook build output (see book.toml; rendered HTML, regenerate with `mdbook build`).
+# Do NOT put hand-written notes in docs/ — mdBook wipes the dir on every build.
+docs/
+
+# Python bytecode cache
+tools/__pycache__/
+__pycache__/
+
+# Scratch dir (local mdBook binary, throwaway experiments)
+tmp/
+
+# bootstrap.sh / verify.sh output (BUILDROOT default)
+build-out/
