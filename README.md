@@ -113,7 +113,23 @@ to the output disk and kexecs into the new kernel, which prints
 
 ## Results
 
-RESULTS
+Measured on korriban (24 cores, 30 GiB, QEMU with KVM), 2026-10-08:
+
+| Run | Result |
+|---|---|
+| `seed/build.sh` | `seed-forth`, 1,772 bytes |
+| `./check-all.sh` | 5 OK: the seed, tests, 45 archive pins, Stage A (2,367,260 bytes of identical M1), K1's build check |
+| `chain/plumbing-root.sh` | 18 minutes; about 63,000 programs run (2,581 distinct paths) in a root that started with `hex0-seed` as its only executable; stage D at its fixed point: stage 2 = 3 = 4, 54 files each, 0 differ |
+| K1 | 221,672 bytes, sha256 `f90229b116c5a3b5...`, built by seed Forth with no other program running |
+| `kernel/k1/run-chain.sh --direct-linux` | 1 h 38 min (`JOBS=2 K1_MEM=24G`); stage D at its fixed point under K1, the late tools, gcc64's climb with all 31 `chain/gcc64/HASHES` pins as pinned, Linux 7.2.8 booted by kexec |
+| bzImage | 1,278,976 bytes, CRC-32 `0014e6cc`, sha256 `881e96ad05da8e186c78bf055641c81bd5fd47d1a0bb4cc548c07d876d607179` |
+
+The bzImage, the 31 gcc64 pins, the stage D report and the hashes of all
+159 late-tool programs are the same as those of seed-forth's run of this
+route (0dd2b88), whose bzImage in turn is byte-identical to the one
+seed-forth's TinyCC route builds.  K1 differs from seed-forth's
+(`7621950c...`) by the `cld` its exception entry now starts with; seed-cc
+and seed-ar differ because they name this repository's paths.
 
 ## Where it came from
 
