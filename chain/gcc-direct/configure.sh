@@ -26,7 +26,8 @@
 # ./nm and ./objdump links in the gcc build directory, where GCC 4.0.4's
 # configure and Makefile look first.  --with-sysroot DIR passes GCC's own
 # --with-sysroot.  binutils gets CXX=no (no C++ compiler exists) and
-# --disable-gold --disable-gprof --disable-plugins --disable-werror.
+# --disable-gold --disable-gprof --disable-plugins --disable-werror
+# --enable-deterministic-archives (so its ar and ranlib write zero mtimes, uids and gids, and the stage-C archives they build hash the same each run).
 #
 # The configure environment's recorded part goes to WORK/configure-env.sh,
 # which census.sh, binutils.sh and stage-c.sh source before running make.
@@ -135,7 +136,8 @@ set -- --build=$TRIPLE --host=$TRIPLE --target=$TRIPLE --prefix=$work/install \
   --disable-shared --disable-nls --disable-multilib --enable-languages=c \
   --cache-file=/dev/null --with-as=$target_as --with-ld=$target_ld --program-transform-name=
 if [ $package = binutils ]; then
-  set -- "$@" --disable-gold --disable-gprof --disable-plugins --disable-werror
+  set -- "$@" --disable-gold --disable-gprof --disable-plugins --disable-werror \
+    --enable-deterministic-archives
 fi
 if [ -n "$sysroot" ]; then set -- "$@" --with-sysroot=$sysroot; fi
 echo "$BASH $configure $*" > "$work/configure-command.txt"
