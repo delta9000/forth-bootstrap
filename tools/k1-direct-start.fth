@@ -1,10 +1,10 @@
-\ K1 without TinyCC: the direct-GCC route's launcher. Run from the repository root:
+\ K1 built by seed Forth: the launcher. Run from the repository root:
 \     ./seed-forth < tools/k1-direct-start.fth
 \ The seed is the only pre-existing executable. Linux or K0 supplies the
-\ syscall substrate. Like tools/tcc-ladder-start.fth, this builds the recipe
+\ syscall substrate. This builds the recipe
 \ runner with the Forth compiler, then runs it on tools/k1-direct.recipe,
 \ which builds K1 with the Forth compiler, tools/obj-asm.fth and the Forth
-\ linker (build-out/k1-direct/k1).  Under K0, k1/mkboot.py --direct appends
+\ linker (build-out/k1-direct/k1).  Under K0, k1/mkboot.py appends
 \ the line that starts K1.
 \ Minimal defining/control words below use the same primitives as 010-lib.fth.
 : here-addr latest [lit] 8 + ;

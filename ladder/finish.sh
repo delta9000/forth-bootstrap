@@ -4,10 +4,9 @@
 set -eu
 export PATH=/build-out/g64/g10/bin:/build-out/g64/bu2/bin:/usr/bin:/bin
 cd /
-# s10-logs on the TinyCC route; the late-tools logs and the GCC chain's
-# reports on the direct route.
+# The late-tools logs and the GCC chain's reports, where they exist.
 set -- build-out/linux build-out/s12-logs build-out/g64/logs
-for d in build-out/s10-logs build-out/late/logs build-out/late/report.txt \
+for d in build-out/late/logs build-out/late/report.txt \
          build-out/chain/binutils/stage-b/report.txt build-out/chain/stage-c/stage-c \
          build-out/chain/stage-d/report.txt; do
     [ -e "$d" ] && set -- "$@" "$d"

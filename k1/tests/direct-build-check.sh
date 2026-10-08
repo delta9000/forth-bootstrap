@@ -5,7 +5,7 @@
 #   2. ./seed-forth < tools/k1-direct-start.fth builds build-out/k1-direct/k1
 #      under strace: every execve is the seed or the runner it built.
 #   3. Each C object equals seed-cc -nostdinc -c's, and k1/k1-asm.fth's
-#      object equals GNU as's for k1/k1.S (k1/tests/asm-check.py).
+#      object equals GNU as on its own comments (k1/tests/asm-check.py).
 #   4. The kernel is a static ELF at 0x200000 whose image ends below 4 MiB
 #      (K1 maps only its low 4 MiB for itself).
 set -eu

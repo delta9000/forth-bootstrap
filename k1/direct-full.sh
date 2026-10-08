@@ -1,11 +1,11 @@
 # k1/direct-full.sh: the direct route under K1 after bash 2.05b, run by
-# k1/direct.recipe with the plumbing bash as
+# k1/direct-linux.recipe with the plumbing bash as
 #   bash k1/direct-full.sh JOBS=N
 # from /, K1's root.  /bin and /usr/bin become links to the plumbing tools,
 # as tools/plumbing-root.sh sets them up, so #!/bin/sh and config.guess's
 # /usr/bin/uname reach programs this chain built.  Then gcc-direct/chain.sh
 # (binutils 2.30, stage C, stage D to the GCC 4.0.4 fixed point) and
-# gcc-direct/late-tools.sh (the QEMU route's late tools, each configured by
+# gcc-direct/late-tools.sh (the late tools, each configured by
 # its own configure, built by that GCC).  ladder/stage10-direct.sh then turns
 # the late tools into /usr.
 set -e

@@ -1,8 +1,8 @@
-# K1 built from the seed with no TinyCC: the direct-GCC route's kernel.
+# K1 built from the seed with no TinyCC.
 # tools/k1-direct-start.fth builds the runner and runs this recipe, on Linux
 # or under K0.  Seed Forth compiles each K1 C file with the same layers,
 # arena and driver words as seed-cc -nostdinc -c; tools/obj-asm.fth writes
-# k1/k1-asm.fth (k1.S's bytes) as an object; the Forth linker links them at
+# k1/k1-asm.fth (K1's assembly, as bytes) as an object; the Forth linker links them at
 # 0x200000.  The seed is the only program that runs.  k1/boot/k0-syscalls.fth
 # follows 010-lib.fth in every input: it stands in for the four calls K0 lacks.  Every layer is listed
 # explicitly (sorted NNN-cc-*.fth without 120-cc-main.fth and

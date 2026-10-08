@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Check k1/k1-asm.fth against k1/k1.S: the object the seed writes from the
-Forth file must equal the one an assembler writes from k1.S.
+"""Check k1/k1-asm.fth against an assembler: every byte line of the Forth
+file carries its instruction as a comment, and the object the seed writes
+from the bytes must equal the one an assembler writes from the comments.
 
-  python3 k1/tests/asm-check.py [--as ASSEMBLER]   (from the repository root)
+  python3 k1/tests/asm-check.py [--as ASSEMBLER] [--keep FILE.S]
+                                                  (from the repository root)
 
-ASSEMBLER (default: as, GNU binutils) is run as ASSEMBLER k1/k1.S -o OUT.
-Compared: the .text and .data bytes, each global symbol's section and offset,
+The assembler source is k1-asm.fth with each byte line replaced by its
+comment, each *SYMBOL table entry by .quad SYMBOL, and the asm{ }asm frame
+and Forth comments dropped (--keep writes it out).  ASSEMBLER (default: as,
+GNU binutils) is run as ASSEMBLER FILE.S -o OUT.  Compared: the .text and .data bytes, each global symbol's section and offset,
 and every relocation as (section, offset, type, target, addend), where a
 target defined locally is spelled as its section plus offset (GNU as refers to
 local labels through the section symbol, the Forth file through the label).
@@ -58,14 +62,37 @@ def parse(path):
             "globals": globals_, "relocs": relocs}
 
 
+def assembler_source(fth):
+    """k1-asm.fth as GNU as source: instructions from the byte lines' comments."""
+    out = []
+    for line in fth.read_text().splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("\\") or stripped in ("cc-obj-init", "asm{", "}asm"):
+            continue
+        if stripped.startswith("*"):
+            out.append("    .quad " + ", ".join(w[1:] for w in stripped.split()))
+        elif line.startswith("  "):
+            if "\\ " not in line:
+                sys.exit(f"asm-check: byte line without an instruction comment: {line}")
+            out.append("    " + line.split("\\ ", 1)[1].strip())
+        else:                       # a directive (.text, .data, .globl) or a label
+            out.append(stripped)
+    return "\n".join(out) + "\n"
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--as", dest="assembler", default="as")
+    ap.add_argument("--keep", help="also write the generated assembler source here")
     args = ap.parse_args()
+    source = assembler_source(ROOT / "k1/k1-asm.fth")
+    if args.keep:
+        pathlib.Path(args.keep).write_text(source)
     with tempfile.TemporaryDirectory() as tmp:
         tmp = pathlib.Path(tmp)
+        (tmp / "k1.S").write_text(source)
         reference = tmp / "k1-S.o"
-        subprocess.run([args.assembler, str(ROOT / "k1/k1.S"), "-o", str(reference)], check=True)
+        subprocess.run([args.assembler, str(tmp / "k1.S"), "-o", str(reference)], check=True)
         out = tmp / "k1-asm.o"
         driver = (b"\ncreate check-output s, " + str(out).encode()
                   + b" [lit] 0 c,\ncheck-output cc-obj-write bye\n")
@@ -96,7 +123,7 @@ def main():
                     print(f"  sizes {len(a[key])} and {len(b[key])}")
     if failures:
         sys.exit(1)
-    print(f"asm-check: k1-asm.fth equals {args.assembler} k1.S: {len(a['text'])} text bytes, "
+    print(f"asm-check: k1-asm.fth's bytes equal {args.assembler} on its comments: {len(a['text'])} text bytes, "
           f"{len(a['data'])} data bytes, {len(a['globals'])} globals, {len(a['relocs'])} relocations")
 
 

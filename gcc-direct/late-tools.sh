@@ -1,15 +1,14 @@
 #!/bin/bash
-# late-tools.sh -- the QEMU route's late tools, built by the direct route's GCC.
+# late-tools.sh -- the late tools, built by the direct route's GCC.
 #
 # Usage (from the repository root, after gcc-direct/chain.sh):
 #   build-out/plumbing/bin/bash gcc-direct/late-tools.sh [-j JOBS]
 #       [--chain DIR] [--distfiles DIR] [OUT]
 #
-# The QEMU route gets make 4.4.1, bash 5.2, coreutils 9.5, sed, grep, gawk,
-# tar, gzip, xz, patch and the rest by replaying host-captured builds
-# (ladder stage 9, tools/capture-build.py) and then configuring the rest
-# under those (ladder/stage10.sh).  This script builds the same packages,
-# pinned in plumbing/late.SOURCES, with nothing captured: each one's own
+# make 4.4.1, bash 5.2, coreutils 9.5, sed, grep, gawk, tar, gzip, xz,
+# patch and the rest, pinned in plumbing/late.SOURCES, with nothing
+# captured from a host (seed-forth's TinyCC route replayed host-captured
+# configure runs for some of these; this route does not): each one's own
 # ./configure runs under the plumbing bash 2.05b, its Makefile under the
 # plumbing make 3.82, and its C code goes through the stage-D GCC 4.0.4
 # (CHAIN/stage-d/prefix) with the stage-C musl and binutils.
@@ -112,8 +111,8 @@ lrun() {
   exit 1
 }
 
-# configure_args NAME: the arguments ladder stage 9's capture or
-# ladder/stage10.sh gave NAME's configure.
+# configure_args NAME: NAME's configure arguments (the ones seed-forth's
+# TinyCC route used for the same packages).
 configure_args() {
   case $1 in
     make-4.4.1) echo --without-guile ;;
@@ -141,12 +140,12 @@ gnu() {
   note "$name"
   rm -f "$log"
   unpack "$name" "$archive"
-  for pt in "$ROOT"/patches/ladder/$name/*.diff; do
+  for pt in "$ROOT"/patches/late/$name/*.diff; do
     [ -e "$pt" ] || continue
     (cd "$out/src/$name" && lrun "$log" patch -p1 -i "$pt")
   done
-  # diffutils' and findutils' man/ run help2man on the built programs; like
-  # stage10.sh, install the man pages as shipped and skip the regeneration.
+  # diffutils' and findutils' man/ run help2man on the built programs;
+  # install the man pages as shipped and skip the regeneration.
   mk=
   case $name in diffutils-*) mk='SUBDIRS=lib src' ;; esac
   t0=$(date +%s)
@@ -172,7 +171,7 @@ gnu sed-4.9 sed-4.9.tar.gz
 gnu grep-3.11 grep-3.11.tar.gz
 gnu gzip-1.13 gzip-1.13.tar.gz
 gnu xz-5.6.3 xz-5.6.3.tar.gz
-# bzip2 has no configure: its own Makefile, as stage10.sh builds it.
+# bzip2 has no configure: its own Makefile.
 if [ ! -e "$out/logs/bzip2-1.0.8.done" ]; then
   note bzip2-1.0.8
   rm -f "$out/logs/bzip2-1.0.8.log"

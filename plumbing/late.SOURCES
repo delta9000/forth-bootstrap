@@ -1,7 +1,8 @@
 # Archives for the late tools (gcc-direct/late-tools.sh), as `NAME SHA256 SOURCE`,
-# in build order.  The pins are the ones ladder/PACKAGES and ladder/stage10.sh
-# already use for the QEMU route.  The two .tar.xz are unpacked with the
-# xz this list builds first.
+# in build order.  SOURCE names the file in seed-forth that pinned the same
+# archive for its TinyCC route (ladder/PACKAGES, ladder/stage10.sh; not part
+# of this repository).  The two .tar.xz are unpacked with the xz this list
+# builds first.  MANIFEST.sha256 lists them too (tools/check-pins.py).
 make-4.4.1.tar.gz dd16fb1d67bfab79a72f5e8390735c49e3e8e70b4945a15ab1f81ddb78658fb3 ladder/stage10.sh
 sed-4.9.tar.gz d1478a18f033a73ac16822901f6533d30b6be561bcbce46ffd7abce93602282e ladder/PACKAGES
 grep-3.11.tar.gz 1f31014953e71c3cddcedb97692ad7620cb9d6d04fbdc19e0d8dd836f87622bb ladder/PACKAGES

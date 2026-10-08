@@ -22,14 +22,19 @@ fail() {
         echo "=== tail of $log" >&2; tail -n 30 "$log" >&2; }
     exit 1
 }
+# unpack NAME ARCHIVE: check ARCHIVE against /MANIFEST.sha256, then unpack
+# its single top directory as $S/NAME and apply /patches/late/NAME/*.diff.
 unpack() {
-    echo "$3  $D/$2" | sha256sum -c --quiet || fail "sha256 $2"
+    local want
+    want=$(sed -n "s|^\([0-9a-f]\{64\}\)  build-out/distfiles/$2\$|\1|p" /MANIFEST.sha256)
+    [ -n "$want" ] || fail "no pin for $2 in /MANIFEST.sha256"
+    echo "$want  $D/$2" | sha256sum -c --quiet || fail "sha256 $2"
     rm -rf "$S/$1" "$S/$1.tmp"
     mkdir -p "$S/$1.tmp"
     tar -xf "$D/$2" -C "$S/$1.tmp"
     mv "$S/$1.tmp"/* "$S/$1"
     rmdir "$S/$1.tmp"
-    for pt in /patches/ladder/$1/*.diff; do
+    for pt in /patches/late/$1/*.diff; do
         [ -e "$pt" ] || continue
         patch -d "$S/$1" -p1 -F0 < "$pt" > /dev/null || fail "patch $pt"
     done
@@ -38,7 +43,7 @@ gcc --version | head -1
 ld --version | head -1
 
 if [ ! -e "$LOG/zlib.done" ]; then
-    unpack zlib-1.3.1 zlib-1.3.1.tar.gz 9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23
+    unpack zlib-1.3.1 zlib-1.3.1.tar.gz
     ( cd "$S/zlib-1.3.1" && CC=gcc ./configure --prefix=$P --static && make -j"${JOBS:-16}" && make install ) \
         > "$LOG/zlib.log" 2>&1 || fail "zlib (see $LOG/zlib.log)"
     touch "$LOG/zlib.done"; say zlib-1.3.1
@@ -48,7 +53,7 @@ fi
 # lib/ and tools need argp, fts and obstack, which musl lacks; libelf does not,
 # so configure is told they need no library.
 if [ ! -e "$LOG/elfutils.done" ]; then
-    unpack elfutils-0.192 elfutils-0.192.tar.bz2 616099beae24aba11f9b63d86ca6cc8d566d968b802391334c91df54eab416b4
+    unpack elfutils-0.192 elfutils-0.192.tar.bz2
     ( cd "$S/elfutils-0.192" &&
       ac_cv_tls=yes ac_cv_search_argp_parse="none required" ac_cv_search_fts_close="none required" \
       ac_cv_search__obstack_free="none required" ac_cv_search_fts_open="none required" CC=gcc CFLAGS="-O2 -I$P/include" LDFLAGS="-L$P/lib" ./configure --prefix=$P \
@@ -74,7 +79,7 @@ printf 'dir /dev 755 0 0\nnod /dev/console 600 0 0 c 5 1\ndir /proc 755 0 0\nfil
     $O/init > $O/initramfs.list
 
 if [ ! -e "$LOG/linux.done" ]; then
-    unpack linux-7.2.8 linux-7.2.8.tar.xz 12e8d5a973d1ad7c5a5c69882e4022b131ed715db7003fdcd760ddf8c3e51941
+    unpack linux-7.2.8 linux-7.2.8.tar.xz
     cd "$S/linux-7.2.8"
     # Host programs (objtool, vdso2c ...) find libelf/zlib and the UAPI headers
     # here; -idirafter keeps the kernel's own tools/include first, and -lz must

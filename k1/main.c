@@ -8,7 +8,7 @@
 #include "k1.h"
 
 /* ---- memory primitives (the compilers emit calls to these) ---- */
-/* memset and the forward copy are rep stosb/movsb in k1.S. */
+/* memset and the forward copy are rep stosb/movsb in k1-asm.fth. */
 void *memmove(void *d, const void *s, unsigned long n)
 {
     u8 *a = d;
@@ -87,7 +87,7 @@ typedef struct __seed_va_list_tag {
 #define va_arg(ap, type) __builtin_va_arg((ap), type)
 #endif
 
-/* Ports, MSRs, the TSC and the console (rep outsb to COM1) are in k1.S. */
+/* Ports, MSRs, the TSC and the console (rep outsb to COM1) are in k1-asm.fth. */
 
 static void kput(char *buf, u64 *n, char c)
 {

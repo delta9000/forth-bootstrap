@@ -1,55 +1,36 @@
 #!/bin/sh
-# The ladder under K0 -> K1: QEMU runs K0 (from k0/k0.hex0); K0 runs the seed
-# route and builds K1 with tcc-boot2; K1 imports the input disk and runs
-# /k1.recipe (hex0-seed -> ... -> Linux), writes results to the output disk,
-# and kexecs into the Linux it built. Host Python copies raw pinned inputs
-# into disk images; after boot unpacking, patching and compilation are seed-derived.
-#   k1/run-chain.sh            (disks in $K1_DISKS, default /annex/scratch/seed-forth-k1)
-#   k1/run-chain.sh --seed-smoke  (K0 -> K1 -> direct TinyCC fixed point, 3 GiB)
-# The direct-GCC route, with no TinyCC: K0 builds K1 with seed Forth
-# (tools/k1-direct.recipe), then K1 runs
-#   k1/run-chain.sh --direct-smoke   (seed -> seed-cc, seed-ar, kaem; 3 GiB)
-#   k1/run-chain.sh --direct         (seed -> bash 2.05b; needs the plumbing
-#                                     and lexer tarballs in build-out/)
-#   k1/run-chain.sh --direct-linux   (seed -> GCC 4.0.4 fixed point -> late
-#                                     tools -> gcc-10.5.0 -> Linux, kexec; also
-#                                     build-out/distfiles and stage-b-inputs)
-# Optional: JOBS=1 passes into guest make; K1_RAM_FILE names a new build-out
-# file for shared, non-preallocated RAM backing (K1_RAM_RESERVE defaults8G).
+# The route under K0 -> K1: QEMU runs K0 (from k0/k0.hex0); K0 runs seed
+# Forth, which builds K1 with its own compiler (tools/k1-direct.recipe); K1
+# imports the input disk and runs /k1.recipe (hex0-seed -> ... -> Linux),
+# writes results to the output disk, and kexecs into the Linux it built.
+# Host Python only copies raw pinned inputs into disk images; unpacking,
+# patching and compilation all happen in the guest.
+#   k1/run-chain.sh --direct-smoke   seed -> seed-cc, seed-ar, kaem (3 GiB)
+#   k1/run-chain.sh --direct         seed -> bash 2.05b; needs the plumbing
+#                                    and lexer archives in build-out/
+#   k1/run-chain.sh [--direct-linux] seed -> GCC 4.0.4 fixed point -> late
+#                                    tools -> gcc-10.5.0 -> Linux, kexec; also
+#                                    build-out/distfiles and stage-b-inputs
+# Optional: JOBS=N passes into guest make; K1_DISKS names the disk directory;
+# K1_MEM the guest RAM; K1_RAM_FILE names a new build-out file for shared,
+# non-preallocated RAM backing (K1_RAM_RESERVE defaults to 8G).
 set -eu
 cd "$(dirname "$0")/.."
-usage="usage: $0 [--seed-smoke | --direct-smoke | --direct | --direct-linux]"
+usage="usage: $0 [--direct-smoke | --direct | --direct-linux]"
 [ "$#" -le 1 ] || { echo "$usage" >&2; exit 2; }
-mode=${1:-}
-boot=
-if [ "$mode" = --seed-smoke ]; then
-    D=${K1_DISKS:-build-out/k1-smoke}
-    memory=${K1_MEM:-3G}
-    expected=1
-elif [ "$mode" = --direct-smoke ] || [ "$mode" = --direct ]; then
-    D=${K1_DISKS:-build-out/k1$mode}
-    memory=${K1_MEM:-8G}
-    [ "$mode" = --direct ] || memory=${K1_MEM:-3G}
-    expected=1
-    boot=--direct
-elif [ "$mode" = --direct-linux ]; then
-    D=${K1_DISKS:-build-out/k1-direct-linux}
-    memory=${K1_MEM:-24G}
-    expected=85
-    boot=--direct
-else
-    [ -z "$mode" ] || { echo "$usage" >&2; exit 2; }
-    D=${K1_DISKS:-/annex/scratch/seed-forth-k1}
-    memory=${K1_MEM:-24G}
-    expected=85
-fi
+mode=${1:---direct-linux}
+case $mode in
+    --direct-smoke) D=${K1_DISKS:-build-out/k1-direct-smoke}; memory=${K1_MEM:-3G}; expected=1 ;;
+    --direct)       D=${K1_DISKS:-build-out/k1-direct}; memory=${K1_MEM:-8G}; expected=1 ;;
+    --direct-linux) D=${K1_DISKS:-build-out/k1-direct-linux}; memory=${K1_MEM:-24G}; expected=85 ;;
+    *) echo "$usage" >&2; exit 2 ;;
+esac
 HEX0=vendor/stage0-posix/bootstrap-seeds/POSIX/AMD64/hex0-seed
 mkdir -p build-out/k1 "$D"
 "$HEX0" k0/k0.hex0 build-out/k1/k0.bin
-python3 k1/mkboot.py build-out/k1/boot.img $boot
-set -- "$D/in.img"
-[ -z "$mode" ] || set -- "$@" "$mode"
-[ -z "${JOBS:-}" ] || set -- "$@" --jobs "$JOBS"
+python3 k1/mkboot.py build-out/k1/boot.img
+set -- "$D/in.img" "$mode"
+[ "$mode" != --direct-linux ] || [ -z "${JOBS:-}" ] || set -- "$@" --jobs "$JOBS"
 python3 k1/mkdisk.py "$@"
 rm -f "$D/out.img"
 truncate -s 4G "$D/out.img"
@@ -74,33 +55,17 @@ rc=$?
 set -e
 echo "run-chain: qemu exit $rc (expected $expected)"
 [ "$rc" -eq "$expected" ]
-if [ "$mode" = --direct-smoke ] || [ "$mode" = --direct ]; then
-    marker="k1: PASS (seed-cc, seed-ar and kaem work under the K1 that seed Forth built)"
-    [ "$mode" = --direct-smoke ] || marker="k1: PASS (direct route under K1: seed to bash 2.05b"
-    for m in "k0: K1 built by seed Forth (no TinyCC); handing over" "$marker"; do
-        grep -Fq "$m" "$D/serial.log" || {
-            echo "run-chain: missing guest marker: $m" >&2; exit 1;
-        }
-    done
-elif [ "$mode" = --seed-smoke ]; then
-    grep -q "^k1: PASS (K0-built K1 rebuilt the direct TinyCC fixed point from sources)" "$D/serial.log" || {
-        echo "run-chain: missing K1 guest success marker" >&2; exit 1;
-    }
-else
-    if [ "$mode" = --direct-linux ]; then
-        for m in "k0: K1 built by seed Forth (no TinyCC); handing over" \
-                 "k1: PASS (direct route under K1: seed to bash 2.05b" \
-                 "k1: GCC 4.0.4 fixed point and late tools built under K1"; do
-            grep -Fq "$m" "$D/serial.log" || {
-                echo "run-chain: missing guest marker: $m" >&2; exit 1;
-            }
-        done
-    fi
-    for marker in 'finish: K1 hands the machine to the Linux kernel it built' \
-                  'init: hello from a Linux kernel built from hex0 and seed-forth' \
-                  'init: Linux version 7.2.8'; do
-        grep -Fq "$marker" "$D/serial.log" || {
-            echo "run-chain: missing full Linux guest marker: $marker" >&2; exit 1;
-        }
-    done
-fi
+set -- "k0: K1 built by seed Forth (no TinyCC); handing over"
+case $mode in
+    --direct-smoke) set -- "$@" "k1: PASS (seed-cc, seed-ar and kaem work under the K1 that seed Forth built)" ;;
+    --direct) set -- "$@" "k1: PASS (direct route under K1: seed to bash 2.05b" ;;
+    --direct-linux) set -- "$@" "k1: PASS (direct route under K1: seed to bash 2.05b" \
+        "k1: GCC 4.0.4 fixed point and late tools built under K1" \
+        'finish: K1 hands the machine to the Linux kernel it built' \
+        'init: hello from a Linux kernel built from hex0 and seed-forth' \
+        'init: Linux version 7.2.8' ;;
+esac
+for m in "$@"; do
+    grep -Fq "$m" "$D/serial.log" || { echo "run-chain: missing guest marker: $m" >&2; exit 1; }
+done
+echo "run-chain: PASS ($mode)"

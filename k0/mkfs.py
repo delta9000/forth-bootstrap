@@ -9,18 +9,14 @@ The image is K0's initial state, not an archive K0 parses:
   +0x4000  file table, 24-byte entries: name, nlen, data, size, cap, type
   +TABLE   names and file contents; the file heap starts after them
 
-init runs with stdin open on tools/tcc-ladder-start.fth, stdout and stderr on
+init runs with stdin open on tools/k1-direct-start.fth, stdout and stderr on
 the console, and the root as its working directory.
 
-Usage: mkfs.py OUT   (run from the repository root)
-Input: the direct-route source inventory and pinned raw archives/libc/tools
-from tools/tcc_inputs.py, the built seed-forth, and an empty /tmp.
-Source unpacking/exact patching runs in the guest with Forth-built helpers.
+Used by k1/mkboot.py: the files are k1/direct_inputs.py's k0_tree() (what seed
+Forth needs to build K1), plus the built seed-forth and an empty /tmp.
 """
-import os, struct, sys
+import os, struct
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from tcc_inputs import source_tree
 
 FSIMG = 0x50000000
 BASE = FSIMG + 0x80
@@ -28,14 +24,13 @@ ENTS = FSIMG + 0x4000
 MAXENT = 16384
 HEAP0 = ENTS + MAXENT * 24
 MMAPB = 0x80000000
-INIT, STDIN = "seed-forth", "tools/tcc-ladder-start.fth"
+INIT, STDIN = "seed-forth", "tools/k1-direct-start.fth"
 
-def write(out, extra=None, repo=None, stdin=STDIN):
-    """extra maps image paths to bytes: files added, or contents replaced.
-    repo (default: source_tree()) maps image paths to host files; stdin is
-    init's standard input, an image path."""
+def write(out, repo, extra=None, stdin=STDIN):
+    """repo maps image paths to host files; extra maps image paths to bytes:
+    files added, or contents replaced.  stdin is init's standard input, an
+    image path."""
     extra = extra or {}
-    repo = source_tree() if repo is None else repo
     files = sorted(set(repo) | {INIT} | set(extra))
     dirs = {"tmp"}
     for f in files:
@@ -80,5 +75,3 @@ def write(out, extra=None, repo=None, stdin=STDIN):
     print(f"{out}: {len(files)} files, {len(dirs)} dirs, "
           f"{len(img) + len(heap)} bytes")
 
-if __name__ == "__main__":
-    write(sys.argv[1])

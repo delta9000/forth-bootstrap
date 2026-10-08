@@ -1,33 +1,21 @@
 #!/usr/bin/env bash
-# gcc64/run-gcc64.sh -- seed-forth's pure-amd64 chain, continued past
-# tcc-0.9.27 to GCC 15.2.0 by way of musl (see gcc64/README.md):
+# gcc64/run-gcc64.sh -- the climb from the direct route's GCC 4.0.4 to GCC 10.5.0,
+# by way of musl:
 #
-#   stage 0   seed-forth -> ... -> tcc-boot2 (portable_libc):
-#                        tests/tcc/kernel-route-check.sh (raw source inputs)
-#   stage 1   tcc-p0   : tcc-boot2 builds tcc (+live-bootstrap tcc patches) against a
-#                        "bridge" copy of libc64 (real ldexp/strtod, 1 GiB heap)
-#   stage 2   musl-1   : tcc-p0 builds musl-1.1.24 (x86_64, patched for tcc)
-#             tcc-1    : tcc-p0 builds tcc against musl-1
-#             musl-k / tcc-k, k=2,3 : each tcc rebuilds musl then itself, into the
-#                        final prefix tc/; fixed point musl-2 = musl-3, tcc-2 = tcc-3
-#   stage 3   tests2   : tcc's own tests/tests2 under tcc-boot2 and the musl tcc
-#   stage 4   binutils-2.30 by tcc
-#   stage 5   flex-2.6.4 and gcc-4.0.4 ("gcc-A") by tcc
-#   bridge    instead of stages 0-5 (GCC64_DIRECT): the direct route's GCC 4.0.4, built
-#             from the Forth compiler without TinyCC, builds binutils-2.30 and gcc-A in
-#             the layout stage 6 expects (see bridge() and gcc64/README.md)
+#   bridge    the direct route's GCC 4.0.4 (gcc-direct/stage-d.sh, built from the Forth
+#             compiler) builds binutils-2.30 and gcc-4.0.4 "gcc-A"
 #   stage 6   gcc-A builds gcc-B, gcc-B builds gcc-C; B = C
 #   stage 7   gcc-B rebuilds musl (the sysroot), gmp, mpfr, mpc (+ make check)
 #   stage 8   gcc-4.7.4 (C, C++) by gcc-B
 #   stage 9   binutils-2.41 by gcc-4.7.4
 #   stage 10  gcc-10.5.0 (C, C++) by gcc-4.7.4
-#   stage 11  gcc-15.2.0 (C, C++), full 3-stage bootstrap seeded by gcc-10.5.0
-#             (make compare: stage2 = stage3)
-#   stage 12  verify   : every gcc compiles and runs hello/64-bit/float/C++; the final
-#                        gcc's -v, sysroot, as and ld all point into the chain
 #   then      pins     : every artifact in gcc64/HASHES is compared (see below)
 #
-# Layout: this script and its helpers (build-gcc*.sh, mktcc.sh, simple-patch.py)
+# The stage numbers are seed-forth's: there, stages 0-5 reached gcc-A through
+# TinyCC, and stages 11-12 went on to GCC 15.2.0.  This repository keeps only the
+# bridge and stages 6-10, which is what the route to Linux needs.
+#
+# Layout: this script and its helpers (build-gcc4.sh, build-gcc47.sh, build-gcc10.sh)
 # live in gcc64/; patches in patches/gcc64/; test programs in tests/gcc64/;
 # sources are listed with their sha256 in gcc64/SOURCES and fetched into a cache.
 # Everything built goes into BUILDROOT; nothing is written into the tree outside it.
@@ -37,16 +25,15 @@
 # stage's own chain-built bin dirs), so /usr/bin is not searched at all.  $W/guard
 # shadows gcc/cc/ld/as/ar/... with scripts that fail loudly and log to
 # $W/guard/hits.log (cwd in where.log).  Absolute host paths still reachable: /bin/sh
-# (#! lines, system()), /usr/bin/env, and the host m4, which flex execs at run time
-# (via hostbin/m4).
+# (#! lines, system()) and /usr/bin/env.  Under K1 (ladder/stage11.sh) every one of
+# these tools is one the chain built.
 #
-# As root (real, or mapped root in a user namespace such as verify.sh's), the script
-# re-execs itself in a private mount namespace in which /dev/null is bind-mounted
-# onto itself, so no tool can unlink or replace the host's /dev/null (unlink gets
-# EBUSY), and a refusing script is bind-mounted over every host compiler, assembler
-# and linker reachable by absolute path (/lib/cpp, /usr/bin/gcc*, ...).
-# GCC64_TRACE=FILE additionally runs everything under strace -f (execve and unlink
-# only) to list every program executed.
+# As root (real, or mapped root in a user namespace), the script re-execs itself in
+# a private mount namespace in which /dev/null is bind-mounted onto itself, so no
+# tool can unlink or replace the host's /dev/null (unlink gets EBUSY), and a refusing
+# script is bind-mounted over every host compiler, assembler and linker reachable by
+# absolute path (/lib/cpp, /usr/bin/gcc*, ...).  GCC64_TRACE=FILE additionally runs
+# everything under strace -f (execve and unlink only) to list every program executed.
 #
 # Usage: gcc64/run-gcc64.sh [stage ...]           all stages, or the ones named, in
 #                                                 BUILDROOT (each stage wipes and
@@ -61,20 +48,13 @@
 #        GCC64_CACHE   source cache (default build-out/gcc64-cache).  Every file is
 #                      checked against gcc64/SOURCES before use; with all of them
 #                      cached, no network is needed.
-#        GCC64_STAGE0  a finished direct TinyCC or named pnut-control work root (e.g.
-#                      build-out/pnut-amd64): stage 0 checks its tcc-boot2 and boot2
-#                      libraries against tools/tcc.recipe and copies its kit
-#                      instead of re-running the direct route. Reuse verifies
-#                      artifacts, not the supplied root's compiler provenance.
-#        GCC64_DIRECT, GCC64_OYACC, GCC64_FLEX  for the bridge stage: a finished
+#        GCC64_DIRECT, GCC64_OYACC, GCC64_FLEX  required by the bridge: a finished
 #                      gcc-direct/stage-d.sh WORK and the Forth-built oyacc and flex
-#                      2.5.11.  With GCC64_DIRECT set, the default stages are
-#                      bridge stage6 ... stage12.
+#                      2.5.11.
 #        GCC64_REPIN=1 print the pins step's hashes instead of failing on them.
 #        JOBS          make -j (default 4).
 #
-# Exit:  0 pass, 1 fail, 77 skip (a source is neither cached nor fetchable, or
-#        required vendored TinyCC/libc sources are missing for stage 0).
+# Exit:  0 pass, 1 fail, 77 skip (a source is neither cached nor fetchable).
 set -euo pipefail
 GCC64=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(cd "$GCC64/.." && pwd)
@@ -226,281 +206,27 @@ if [ "${1:-}" = --fetch ]; then
     say "all $(echo "${!SRC_SHA[@]}" | wc -w) sources in $D, sha256 as pinned"; exit 0
 fi
 
-# --- stage 0: seed-forth -> direct TinyCC -> pinned tcc-boot2 --------------------
-K=$W/tccboot/kit
-TCC0=$ROOT/tests/tcc/kernel-route-check.sh
-TCC0_PINS=$ROOT/tools/tcc.recipe
-stage0_copy() {
-    local s0=$1 f v
-    for f in build/tcc-boot2 build/boot2-lib/crt1.o build/boot2-lib/libc.a \
-             build/boot2-lib/tcc/libtcc1.a; do
-        v=$(awk -v f="$f" '$1 == "artifact" && $2 == f { print $3 }' "$TCC0_PINS")
-        [[ $v =~ ^[0-9a-f]{64}$ ]] || fail "no unique artifact pin for $f in $TCC0_PINS"
-        [ -f "$s0/kit/$f" ] || fail "stage 0: $s0/kit/$f missing (run $TCC0 first)"
-        [ "$(sha "$s0/kit/$f")" = "$v" ] || fail "stage 0: kit/$f differs from $TCC0_PINS"
-    done
-    # GCC64_STAGE0 may already name this build's tccboot; do not erase it.
-    [ "$s0/kit" = "$K" ] || {
-        rm -rf "$W/tccboot"; mkdir -p "$W/tccboot"; cp -a "$s0/kit" "$K"
-    }
-}
-stage0() {
-    t_start stage0
-    if [ -n "${GCC64_STAGE0:-}" ]; then
-        local s0
-        s0=$(cd "$GCC64_STAGE0" && pwd) || fail "GCC64_STAGE0=$GCC64_STAGE0 does not exist"
-        stage0_copy "$s0"
-        echo "$me: stage 0 reused from $s0: artifacts as pinned by $TCC0_PINS (supplied provenance)" > "$LOG/stage0.log"
-    else
-        local rc=0
-        (cd "$ROOT" && ./build.sh && "$TCC0") > "$LOG/stage0.log" 2>&1 || rc=$?
-        [ "$rc" = 77 ] && skip "stage 0: $(grep -m1 SKIP "$LOG/stage0.log")"
-        [ "$rc" = 0 ] || fail "direct TinyCC route (see $LOG/stage0.log)"
-        stage0_copy "$ROOT/build-out/pnut-amd64"
-    fi
-    tail -1 "$LOG/stage0.log"
-    say "tcc-boot2: $(sha "$K/build/tcc-boot2")"
-    t_end stage0
-}
 
-# --- tcc source tree for this chain -------------------------------------------------
-# kit's tcc-0.9.27 (pnut kit patches + patches/amd64/tcc) + live-bootstrap's tcc
-# patches + our patches/gcc64/tcc/1*.diff
-tcc_src() {
-    local s=$W/src/tcc
-    rm -rf "$s"; mkdir -p "$W/src"; cp -r "$K/tcc-0.9.27" "$s"
-    for p in "$PATCHES"/tcc/*; do patch -s -p1 -F0 -d "$s" < "$p" || fail "tcc patch $p"; done
-    for sp in tcctools.c:remove-fileopen tcctools.c:addback-fileopen tccelf.c:check-reloc-null; do
-        python3 "$GCC64/simple-patch.py" "$s/${sp%%:*}" "$PATCHES/tcc-simple/${sp#*:}.before" \
-            "$PATCHES/tcc-simple/${sp#*:}.after" || fail "simple-patch $sp"
-    done
-}
-
-# --- stage 1: tcc-p0 (portable_libc + bridge) ---------------------------------------
-stage1() {
-    t_start stage1
-    tcc_src
-    local P=$W/p0 B=$W/src/libc64-bridge
-    rm -rf "$P" "$B"; mkdir -p "$P/bin" "$P/lib/tcc"
-    cp -r "$K/libc64" "$B"
-    patch -s -p1 -F0 -d "$B" < "$PATCHES/libc64/01-bridge.diff" || fail "bridge patch"
-    cp -r "$B/include" "$P/include"
-    cp "$K"/build/boot2-lib/{crt1.o,crti.o,crtn.o} "$P/lib/"
-    cp "$K/build/boot2-lib/tcc/libtcc1.a" "$P/lib/tcc/"
-    (
-        cd "$K"
-        build/tcc-boot2 -c -D ADD_LIBC_STUB -I "$B/include" -o "$P/lib/libc.o" "$B/libc.c"
-        build/tcc-boot2 -ar cr "$P/lib/libc.a" "$P/lib/libc.o"; rm "$P/lib/libc.o"
-        build/tcc-boot2 -static -o "$P/bin/tcc" -D BOOTSTRAP=1 -D __SIZEOF_LONG_LONG__=8 -D HAVE_FLOAT=1 \
-            -D HAVE_BITFIELD=1 -D HAVE_LONG_LONG=1 -D HAVE_SETJMP=1 -I libc64/include -D TCC_TARGET_X86_64=1 \
-            -D "CONFIG_TCCDIR=\"$P/lib/tcc\"" -D "CONFIG_TCC_CRTPREFIX=\"$P/lib\"" \
-            -D "CONFIG_TCC_LIBPATHS=\"$P/lib:$P/lib/tcc\"" -D "CONFIG_TCC_SYSINCLUDEPATHS=\"$P/include\"" \
-            -D "TCC_LIBGCC=\"$P/lib/libc.a\"" -D 'TCC_LIBTCC1="libtcc1.a"' -D 'CONFIG_TCC_ELFINTERP="/mes/loader"' \
-            -D CONFIG_TCCBOOT=1 -D CONFIG_TCC_STATIC=1 -D CONFIG_USE_LIBGCC=1 -D 'TCC_VERSION="0.9.27"' \
-            -D ONE_SOURCE=1 -L "$P/lib" "$W/src/tcc/tcc.c"
-    ) > "$LOG/stage1.log" 2>&1 || fail "tcc-p0 (see $LOG/stage1.log)"
-    say "tcc-p0: $(sha "$P/bin/tcc")"
-    checkguard_probes; t_end stage1
-}
-
-# --- stage 2: musl <-> tcc to a fixed point ---------------------------------------------
-musl_src() {  # musl_src DIR
-    local s=$1
-    need musl-1.1.24.tar.gz
-    rm -rf "$s" "$s.tmp"; mkdir -p "$s.tmp"
-    tar -xzf "$D/musl-1.1.24.tar.gz" -C "$s.tmp"; mv "$s.tmp/musl-1.1.24" "$s"; rmdir "$s.tmp"
-    for p in "$PATCHES"/musl-1.1.24/*; do patch -s -p1 -F0 -d "$s" < "$p" || fail "musl patch $p"; done
-    rm -rf "$s/src/complex"                                   # tcc has no _Complex (as live-bootstrap)
-    rm "$s"/src/math/x86_64/{fabs,fabsf,lrintf,sqrtf,llrint,lrint,llrintf,sqrt}.s  # SSE insns tcc cannot assemble; C versions used
-}
-build_musl() {  # build_musl CC PREFIX NAME
-    local cc=$1 pre=$2 name=$3 s=$W/src/musl-$3
-    musl_src "$s"
-    (
-        cd "$s"
-        CC=$cc ./configure --target=x86_64 --host=x86_64 --disable-shared --prefix="$pre"
-        make -j"$JOBS" CROSS_COMPILE= AR="$cc -ar" RANLIB=true
-        make install CROSS_COMPILE= AR="$cc -ar" RANLIB=true
-    ) > "$LOG/$name.log" 2>&1 || fail "$name (see $LOG/$name.log)"
-    rm -rf "$s"
-}
-stage2() {
-    t_start stage2
-    local TC=$W/tc
-    rm -rf "$W/m1" "$W/t1" "$TC" "$W/save"; mkdir -p "$W/save"
-    build_musl "$W/p0/bin/tcc" "$W/m1" musl-1
-    say "musl-1 libc.a: $(sha "$W/m1/lib/libc.a")"
-    mkdir -p "$W/t1"; cp -r "$W/m1/include" "$W/m1/lib" "$W/t1/"
-    "$GCC64/mktcc.sh" "$W/p0/bin/tcc" "$W/m1" "$W/t1" "$W/src/tcc" > "$LOG/tcc-1.log" 2>&1 || fail "tcc-1"
-    say "tcc-1: $(sha "$W/t1/bin/tcc")"
-    local cc=$W/t1/bin/tcc k
-    for k in 2 3 4; do
-        rm -rf "$TC"; mkdir -p "$TC"
-        build_musl "$cc" "$TC" "musl-$k"
-        cp "$TC/lib/libc.a" "$W/save/libc-$k.a"
-        "$GCC64/mktcc.sh" "$cc" "$TC" "$TC" "$W/src/tcc" > "$LOG/tcc-$k.log" 2>&1 || fail "tcc-$k"
-        cp "$TC/bin/tcc" "$W/save/tcc-$k"; cp "$TC/lib/tcc/libtcc1.a" "$W/save/libtcc1-$k.a"
-        say "musl-$k libc.a: $(sha "$W/save/libc-$k.a")  tcc-$k: $(sha "$W/save/tcc-$k")"
-        cc=$W/save/tcc-$k
-        if [ "$k" -ge 3 ] && cmp -s "$W/save/libc-$k.a" "$W/save/libc-$((k-1)).a" \
-           && cmp -s "$W/save/tcc-$k" "$W/save/tcc-$((k-1))"; then
-            say "fixed point: musl-$k = musl-$((k-1)), tcc-$k = tcc-$((k-1))"; break
-        fi
-    done
-    cmp -s "$W/save/libc-$k.a" "$W/save/libc-$((k-1)).a" || fail "musl did not reach a fixed point"
-    cmp -s "$W/save/tcc-$k" "$W/save/tcc-$((k-1))" || fail "tcc did not reach a fixed point"
-    say "tcc-musl: $TC/bin/tcc"
-    (cd /tmp && "$TC/bin/tcc" "$TESTS/libc-test.c" -o "$W/save/libc-test" -lm) > "$LOG/libc-test.log" 2>&1 \
-        && "$W/save/libc-test" >> "$LOG/libc-test.log" 2>&1 || fail "libc-test (see $LOG/libc-test.log)"
-    say "libc-test: $(tail -1 "$LOG/libc-test.log")"
-    checkguard_probes; t_end stage2
-}
-
-# --- stage 3: tcc's tests2 -------------------------------------------------------------
-# tests2 TCC RUNDIR NAME EXPECTED-FAILS: the tests/tests2 Makefile's rules (SKIP list
-# for x86_64, ARGS, FLAGS, diff -b against .expect), except that every test is
-# compiled to an executable and run, because -run needs dlsym, which a static libc
-# lacks.  The list of failures must be exactly EXPECTED-FAILS.
-tests2() {
-    local tcc=$1 rundir=$2 name=$3 want=$4
-    local d=$W/src/tcc/tests/tests2 pass=0 fail=0 f b o fl
-    local res=$LOG/tests2-$name.txt out=$W/tmp-tests2; : > "$res"; rm -rf "$out"; mkdir -p "$out"
-    for f in "$d"/[0-9]*.c; do
-        b=$(basename "$f" .c)
-        case $b in 34_array_assignment|73_arm64|98_al_ax_extend|99_fastcall) continue ;; esac
-        fl=""; case $b in 76_dollars_in_identifiers) fl=-fdollars-in-identifiers ;;
-                          60_errors_and_warnings|96_nodata_wanted) fl=-dt ;; esac
-        o=$out/$b.output
-        (
-            cd "$rundir"
-            if [ "$fl" = -dt ]; then
-                timeout 60 "$tcc" $fl -run "$f"
-            elif timeout 60 "$tcc" -static $fl "$f" -o "$out/$b.exe"; then
-                cd "$d"
-                case $b in
-                    31_args) timeout 20 "$out/$b.exe" arg1 arg2 arg3 arg4 arg5 ;;
-                    46_grep) timeout 20 "$out/$b.exe" '[^* ]*[:a:d: ]+\:\*-/: $' "$d/46_grep.c" ;;
-                    *) timeout 20 "$out/$b.exe" ;;
-                esac
-            fi
-        ) 2>&1 | sed "s,$d/,,g" > "$o" || true
-        if diff -Nbu "$d/$b.expect" "$o" > "$out/$b.diff" 2>&1; then
-            pass=$((pass+1)); echo "PASS $b" >> "$res"
-        else
-            fail=$((fail+1)); echo "FAIL $b" >> "$res"
-        fi
-    done
-    rm -rf "$out"
-    say "tests2 ($name): $pass passed, $fail failed of $((pass+fail)) (list: $res)"
-    [ "$(sed -n 's/^FAIL //p' "$res" | tr '\n' ' ')" = "$want " ] \
-        || fail "tests2 ($name): the failures are not exactly: $want"
-}
-stage3() {
-    t_start stage3
-    tests2 "$K/build/tcc-boot2" "$K" portable_libc "22_floating_point 23_type_coercion 24_math_library 28_strings 40_stdio 46_grep 49_bracket_evaluation 60_errors_and_warnings 70_floating_point_literals 81_types 82_attribs_position 83_utf8_in_identifiers 95_bitfields 95_bitfields_ms 96_nodata_wanted 97_utf8_string_literal"
-    tests2 "$W/tc/bin/tcc" /tmp musl 96_nodata_wanted
-    t_end stage3
-}
-
-# --- stage 4: binutils-2.30 built by tcc-musl -----------------------------------------
-# Top-level configure with the tarball's pregenerated files (configure scripts,
-# bison/flex outputs, opcodes tables); live-bootstrap regenerates all of these.
-TCC_ENV() {  # sets TCCENV: the variables every autoconf run gets while tcc is the compiler
-    local t=$W/tc/bin/tcc
-    TCCENV=(CC="$t" CPP="$t -E" CXX=false CXXCPP="$t -E -xc" CC_FOR_BUILD="$t" CPP_FOR_BUILD="$t -E"
-            CXX_FOR_BUILD=false AR="$t -ar" AR_FOR_BUILD="$t -ar" RANLIB=true RANLIB_FOR_BUILD=true)
-}
-# binutils-2.30's configuration, shared by stage 4 and the bridge
+# binutils-2.30's configuration for the bridge: the top-level configure with the
+# tarball's pregenerated files (configure scripts, bison/flex outputs, opcodes tables)
 BU230_CONF=(--build=x86_64-unknown-linux-gnu --host=x86_64-unknown-linux-gnu
     --target=x86_64-unknown-linux-gnu --prefix="$W/bu" --with-sysroot= --disable-nls
     --disable-shared --enable-static --disable-gold --disable-plugins --disable-werror
     --enable-deterministic-archives --enable-64-bit-bfd --disable-gdb --disable-sim
     --disable-readline --disable-libdecnumber)
-stage4() {
-    t_start stage4
-    need binutils-2.30.tar.xz
-    local s=$W/src/binutils-2.30 b=$W/src/bu-build t=$W/tc/bin/tcc; TCC_ENV
-    rm -rf "$s" "$b" "$W/bu"; tar -xJf "$D/binutils-2.30.tar.xz" -C "$W/src"; mkdir -p "$b"
-    (
-        cd "$b"
-        # sub-configures run under make and would fall back to /lib/cpp for C++ (libtool)
-        export CXXCPP="$t -E -xc"
-        ../binutils-2.30/configure "${BU230_CONF[@]}" "${TCCENV[@]}" CFLAGS=-g0 lt_cv_sys_max_cmd_len=32768
-        make -j"$JOBS" MAKEINFO=true
-        make install MAKEINFO=true
-    ) > "$LOG/binutils.log" 2>&1 || fail "binutils (see $LOG/binutils.log)"
-    rm -rf "$s" "$b"
-    local f; for f in as ld ar nm objcopy objdump; do say "binutils $f: $(sha "$W/bu/bin/$f")"; done
-    # smoke tests: GNU ld links a tcc object against musl; GNU as agrees with tcc's
-    # assembler on musl's fenv.s (original vs our .byte-encoded mxcsr instructions)
-    local w=$W/tmp-bu; rm -rf "$w"; mkdir -p "$w"
-    printf '#include <stdio.h>\nint main(){printf("ld ok %%lld\\n",1LL<<40);return 0;}\n' > "$w/h.c"
-    "$t" -c "$w/h.c" -o "$w/h.o"
-    "$W/bu/bin/ld" -static -o "$w/h" "$W/tc/lib/crt1.o" "$W/tc/lib/crti.o" "$w/h.o" "$W/tc/lib/libc.a" \
-        "$W/tc/lib/tcc/libtcc1.a" "$W/tc/lib/libc.a" "$W/tc/lib/crtn.o"
-    [ "$("$w/h")" = "ld ok 1099511627776" ] || fail "GNU ld smoke test"
-    musl_src "$w/m"
-    tar -xzf "$D/musl-1.1.24.tar.gz" -C "$w" musl-1.1.24/src/fenv/x86_64/fenv.s
-    "$W/bu/bin/as" -o "$w/g.o" "$w/musl-1.1.24/src/fenv/x86_64/fenv.s"
-    "$t" -c -o "$w/t.o" "$w/m/src/fenv/x86_64/fenv.s"
-    for f in g t; do "$W/bu/bin/objdump" -d "$w/$f.o" | awk -F'\t' 'NF>=3{print $3}' \
-        | sed 's/ *<.*//; s/[0-9a-f]* *$//; s/^\(j[a-z]*\|call[q]*\) .*/\1/' > "$w/$f.ins"; done
-    cmp -s "$w/g.ins" "$w/t.ins" || fail "GNU as and tcc disagree on fenv.s"
-    say "binutils smoke tests pass (ld links musl; as == tcc on fenv.s, $(wc -l < "$w/g.ins") insns)"
-    rm -rf "$w"
-    checkguard_probes; t_end stage4
-}
 
-# --- stage 5: flex (for gengtype-lex.l), sysroot, gcc-4.0.4 built by tcc ---------------
-stage5() {
-    t_start stage5
-    need flex-2.6.4.tar.gz; TCC_ENV
-    local s=$W/src/flex-2.6.4
-    rm -rf "$s" "$W/tools"; tar -xzf "$D/flex-2.6.4.tar.gz" -C "$W/src"
-    (
-        cd "$s"
-        ./configure --prefix="$W/tools" --disable-shared --disable-nls "${TCCENV[@]}"
-        make -j"$JOBS"; make install
-    ) > "$LOG/flex.log" 2>&1 || fail "flex (see $LOG/flex.log)"
-    rm -rf "$s"
-    grep -q -a -F "$W/hostbin/m4" "$W/tools/bin/flex" || fail "flex does not name $W/hostbin/m4"
-    say "flex: $(sha "$W/tools/bin/flex") (execs $W/hostbin/m4, the host m4, at run time)"
-    # sysroot = musl (built by tcc-musl) + the two libtcc1 objects its code calls
-    # (__va_start/__va_arg, __floatundidf); tcc -ar cannot write empty archives, so the
-    # empty libm.a etc. become valid empty archives
-    local S=$W/sysroot
-    rm -rf "$S"; mkdir -p "$S/usr/lib"; cp -r "$W/tc/include" "$S/usr/include"
-    cp "$W/tc/lib/"*.a "$W/tc/lib/"*.o "$S/usr/lib/"
-    for f in "$S/usr/lib/"*.a; do [ -s "$f" ] || printf '!<arch>\n' > "$f"; done
-    cp "$W/tc/obj/libtcc1.o" "$W/src/tcc_libtcc1.o"; cp "$W/tc/obj/va_list.o" "$W/src/tcc_va_list.o"
-    "$W/bu/bin/ar" rD "$S/usr/lib/libc.a" "$W/src/tcc_libtcc1.o" "$W/src/tcc_va_list.o"
-    rm -rf "$W/g4" "$W/bridge"; need gcc-4.0.4-git-944765863e.tar
-    PATH=$W/bu/bin:$PATH "$GCC64/build-gcc4.sh" "$W/tc/bin/tcc" "$W/g4" A > "$LOG/gcc4-A.log" 2>&1 \
-        || fail "gcc-4.0.4 by tcc (see $LOG/gcc4-A.log)"
-    local T=x86_64-unknown-linux-gnu
-    say "gcc-A (tcc-built gcc-4.0.4) cc1: $(sha "$W/g4/libexec/gcc/$T/4.0.4/cc1")"
-    PATH=$W/bu/bin:$PATH "$W/g4/bin/gcc" -O2 "$TESTS/libc-test.c" -o "$W/src/lt-A" -lm
-    "$W/src/lt-A" > "$LOG/libc-test-gccA.log" || fail "libc-test under gcc-A"
-    say "gcc-A -O2 libc-test: $(tail -1 "$LOG/libc-test-gccA.log")"
-    checkguard_probes; t_end stage5
-}
-
-# --- bridge: the direct route's GCC 4.0.4 in place of stages 0-5 --------------------------
-# GCC64_DIRECT names a finished gcc-direct/stage-d.sh (or stage-d.py) WORK: GCC 4.0.4 whose first
+# --- bridge: the direct route's GCC 4.0.4 builds binutils-2.30 and gcc-A ----------------
+# GCC64_DIRECT names a finished gcc-direct/stage-d.sh WORK: GCC 4.0.4 whose first
 # generation was compiled by the Forth compiler, at its stage 2 = 3 = 4 fixed point,
 # with the stage-C musl sysroot and Forth-built binutils-2.30 it was configured with.
-# GCC64_OYACC and GCC64_FLEX name the Forth-built oyacc and flex 2.5.11 (lexers.py).
-# The bridge leaves stage 6 onward exactly the layout stages 4 and 5 leave:
-#   bu/       binutils-2.30, BU230_CONF as in stage 4, built by the direct GCC
-#   tools/    oyacc and flex 2.5.11, copied (they replace host bison and flex-2.6.4)
+# GCC64_OYACC and GCC64_FLEX name the Forth-built oyacc and flex 2.5.11
+# (plumbing/lexers.kaem).  The bridge leaves stage 6 this layout:
+#   bu/       binutils-2.30, configured with BU230_CONF, built by the direct GCC
+#   tools/    oyacc and flex 2.5.11, copied (no host bison or flex anywhere)
 #   sysroot/  the direct route's musl (stage C), copied; stage 7 rebuilds it anyway
 #   g4/       gcc-4.0.4 "gcc-A" by build-gcc4.sh, built by the direct GCC
-# No tcc and no host parser generator.  bridge/inputs.txt records the inputs and their
-# sha256.  bridge/direct.env marks a bridged BUILDROOT: while it exists stage 6 uses
-# oyacc and flex 2.5.11 too, and the pins step skips what route D builds differently.
-BRIDGE_ENV=$W/bridge/direct.env
-bridge_env() {  # stage 6 after the bridge: the same parser generators as the bridge
-    [ -f "$BRIDGE_ENV" ] || return 0
+# bridge/inputs.txt records the inputs and their sha256.
+bridge_env() {  # gcc-4.0.4 builds (bridge, stage 6): the Forth-built parser generators
     export GCC4_YACC=$W/tools/bin/oyacc GCC4_LEX=$W/tools/bin/flex GCC4_BYACC=1
 }
 bridge() {
@@ -511,7 +237,7 @@ bridge() {
     local DT0=x86_64-pc-linux-gnu f h got
     DW=$(cd "$DW" && pwd)
     local G=$DW/prefix/bin/gcc
-    # stage-d.py writes report.json, stage-d.sh report.txt; either must record the fixed point
+    # stage-d.sh writes report.txt, which must record the fixed point
     local R=$DW/report.json
     if [ -f "$R" ]; then grep -q '"fixed_point": true' "$R" || fail "$R: no stage-D fixed point"
     else R=$DW/report.txt; [ "$(head -n 1 "$R" 2>/dev/null)" = "# Stage D: fixed point reached" ] \
@@ -539,7 +265,7 @@ bridge() {
     cp "$Y" "$W/tools/bin/oyacc"; cp "$X" "$W/tools/bin/flex"
     say "direct gcc-4.0.4 (stage-D fixed point) cc1: $(sha "$DW/prefix/libexec/gcc/$DT0/4.0.4/cc1")"
     say "oyacc: $(sha "$W/tools/bin/oyacc")  flex-2.5.11: $(sha "$W/tools/bin/flex")"
-    # binutils-2.30 into bu/, configured as stage 4, compiled by the direct GCC (which
+    # binutils-2.30 into bu/, compiled by the direct GCC (which
     # assembles and links with the Forth-built binutils it was configured with)
     need binutils-2.30.tar.xz
     local s=$W/src/binutils-2.30 b=$W/src/bu-build
@@ -561,8 +287,8 @@ bridge() {
     # sysroot: the direct route's musl-1.1.24, as stage C installed it
     cp -a "$SC/sysroot" "$W/sysroot"
     say "sysroot: direct musl libc.a $(sha "$W/sysroot/usr/lib/libc.a")"
-    # gcc-A: the same build-gcc4.sh as stage 5, with the direct GCC as CC
-    : > "$BRIDGE_ENV"; bridge_env
+    # gcc-A: build-gcc4.sh with the direct GCC as CC
+    bridge_env
     need gcc-4.0.4-git-944765863e.tar
     PATH=$W/bu/bin:$PATH "$GCC64/build-gcc4.sh" "$G" "$W/g4" A > "$LOG/gcc4-A.log" 2>&1 \
         || fail "gcc-4.0.4 by the direct gcc (see $LOG/gcc4-A.log)"
@@ -693,92 +419,21 @@ stage10() {
     checkguard_probes; t_end stage10
 }
 
-# --- stage 11: gcc-15.2.0 (C, C++), full 3-stage bootstrap seeded by gcc-10.5.0 -------------------
-stage11() {
-    t_start stage11
-    local T=x86_64-linux-musl
-    need gcc-15.2.0.tar.xz
-    rm -rf "$W/g15"
-    PATH=$W/bu2/bin:$PATH "$GCC64/build-gcc15.sh" "$W/g10/bin/gcc" "$W/g10/bin/g++" "$W/g15" > "$LOG/gcc15.log" 2>&1 \
-        || fail "gcc-15.2.0 (see $LOG/gcc15.log)"
-    grep -q "Comparison successful" "$LOG/gcc15.log" || fail "gcc-15 bootstrap: no 'Comparison successful'"
-    say "gcc-15.2.0 bootstrap: stage2 = stage3 ($(grep -c '^Comparing stages' "$LOG/gcc15.log") comparison)"
-    say "gcc-15.2.0 cc1: $(sha "$W/g15/libexec/gcc/$T/15.2.0/cc1")  cc1plus: $(sha "$W/g15/libexec/gcc/$T/15.2.0/cc1plus")"
-    PATH=$W/bu2/bin:$PATH "$W/g15/bin/gcc" -O2 "$TESTS/libc-test.c" -o "$W/src/lt-15" -lm
-    PATH=$W/bu2/bin:$PATH "$W/g15/bin/g++" -O2 -Wno-deprecated-declarations "$TESTS/cxx-test.cc" -o "$W/src/cxx-15"
-    "$W/src/lt-15" > "$LOG/libc-test-gcc15.log" && "$W/src/cxx-15" > "$LOG/cxx-test-gcc15.log" || fail "gcc-15 tests"
-    say "gcc-15.2.0: $(tail -1 "$LOG/libc-test-gcc15.log"); $(tail -1 "$LOG/cxx-test-gcc15.log")"
-    rm -rf "$W/src/gcc-15.2.0" "$W/src/g15-build"
-    checkguard_probes; t_end stage11
-}
-
-# --- stage 12: verify every compiler in the chain ----------------------------------------
-# hello (static), 64-bit arithmetic, floating point (double, long double, libm),
-# C++ (exceptions, iostream, templates) where the gcc has it; the final gcc also
-# at -O2 with -v, and its sysroot/as/ld must be the chain's.
-stage12() {
-    t_start stage12
-    local w=$W/src/verify n cc bin out
-    rm -rf "$w"; mkdir -p "$w"
-    for n in g4 g4s g47 g10 g15; do
-        cc=$W/$n/bin/gcc; bin=$GB; case $n in g10|g15) bin=$W/bu2/bin ;; esac
-        for t in hello t64 flt; do
-            PATH=$bin:$PATH "$cc" -O2 -static "$TESTS/$t.c" -o "$w/$n-$t" -lm || fail "$n: $t.c does not compile"
-            out=$("$w/$n-$t") || fail "$n: $t runs but fails: $out"
-            say "verify $n $t: $out"
-        done
-        case $n in g47|g10|g15)
-            PATH=$bin:$PATH "$W/$n/bin/g++" -O2 -static -Wno-deprecated-declarations -Wno-unused-result "$TESTS/cxx-test.cc" -o "$w/$n-cxx" \
-                || fail "$n: C++ test does not compile"
-            out=$("$w/$n-cxx") || fail "$n: C++ test runs but fails: $out"
-            say "verify $n c++: $out" ;;
-        esac
-    done
-    # final gcc: -O2 -v; everything it runs must come from the chain
-    cc=$W/g15/bin/gcc
-    PATH=$W/bu2/bin:$PATH "$cc" -v -O2 -static "$TESTS/hello.c" -o "$w/final-hello" > "$w/final-v.txt" 2>&1 \
-        || fail "gcc-15 -v -O2 hello"
-    "$w/final-hello" > /dev/null || fail "gcc-15 -O2 hello does not run"
-    say "gcc-15 version: $("$cc" -dumpfullversion) target $("$cc" -dumpmachine)"
-    say "gcc-15 sysroot: $("$cc" -print-sysroot)"
-    say "gcc-15 as: $("$cc" -print-prog-name=as)  ld: $("$cc" -print-prog-name=ld)"
-    [ "$("$cc" -print-sysroot)" = "$W/sysroot" ] || fail "gcc-15 sysroot is not the chain's"
-    [ "$("$cc" -print-prog-name=as)" = "$W/bu2/bin/as" ] || fail "gcc-15 as is not binutils-2.41 from the chain"
-    [ "$("$cc" -print-prog-name=ld)" = "$W/bu2/bin/ld" ] || fail "gcc-15 ld is not binutils-2.41 from the chain"
-    # every absolute program path in the -v trace lies under $W, or is a test source
-    grep -oE '^ ?/[^ ]+' "$w/final-v.txt" | sed 's/^ //' | grep -v "^$TESTS/" | sort -u > "$w/final-progs.txt"
-    if grep -v "^$W/" "$w/final-progs.txt"; then fail "gcc-15 -v ran something outside the chain"; fi
-    say "gcc-15 -v ran only: $(tr '\n' ' ' < "$w/final-progs.txt" | sed "s,$W/,,g")"
-    checkguard_probes; t_end stage12
-}
 
 # --- pins: sha256 of every stage's key outputs vs gcc64/HASHES ----------------------------
 # HASHES lists "SHA256  FILE  SCOPE".  SCOPE "any": the file must have that hash
 # whatever BUILDROOT is.  SCOPE "root": the file embeds absolute paths under
 # BUILDROOT, so the hash holds only when BUILDROOT is the one on HASHES's "root" line
-# (the canonical run's); elsewhere it is reported, not enforced.  Files a partial
-# run did not build are skipped.
+# (/build-out/g64, ladder/stage11.sh's under K1); elsewhere it is reported, not
+# enforced.  Files a partial run did not build are skipped.
 hashes() {
-    local line h f scope root got n_ok=0 n_skip=0 n_bad=0 n_d=0
+    local h f scope root got n_ok=0 n_skip=0 n_bad=0
     : > "$LOG/hashes.txt"
     root=$(sed -n 's/^root //p' "$GCC64/HASHES")
-    local bridged=0; [ -f "$BRIDGE_ENV" ] && bridged=1
     while read -r h f scope; do
         case $h in ''|'#'*|root) continue ;; esac
         [ -f "$W/$f" ] || continue
-        # SCOPE "direct": the file's value after the bridge, at the canonical BUILDROOT; it
-        # replaces the file's "root" line there (see gcc64/README.md, "Bridge")
-        if [ "$scope" = direct ]; then [ "$bridged" = 1 ] || continue; scope=root
-        elif [ "$bridged" = 1 ] && grep -q "  $f  direct\$" "$GCC64/HASHES"; then continue; fi
         got=$(sha "$W/$f"); echo "$got  $f" >> "$LOG/hashes.txt"
-        # after the bridge, the TinyCC route's own outputs, and executables that link in
-        # route D's musl or are built by different compilers or parser generators, differ by
-        # design; everything compiled by gcc-B (libgcc, crt*, sysroot) and later must not
-        if [ "$bridged" = 1 ]; then
-            case $f in tccboot/*|p0/*|tc/*|m1/*|t1/*|bu/*|tools/*|g4/*|g4s/bin/*|g4s/libexec/*)
-                n_d=$((n_d+1)); echo "  (route D: $f not comparable)" >> "$LOG/hashes.txt"; continue ;;
-            esac
-        fi
         if [ "$scope" = root ] && [ "$W" != "$root" ]; then
             n_skip=$((n_skip+1))
         elif [ "$got" = "$h" ]; then
@@ -788,7 +443,6 @@ hashes() {
         fi
     done < "$GCC64/HASHES"
     local why=""; [ "$n_skip" = 0 ] || why=" (BUILDROOT is not $root)"
-    [ "$n_d" = 0 ] || why="$why; $n_d built differently by route D (bridge)"
     say "pins: $n_ok as pinned, $n_bad differ, $n_skip path-dependent and not comparable here$why; all in $LOG/hashes.txt"
     if [ "$n_bad" != 0 ]; then
         [ "${GCC64_REPIN:-0}" = 1 ] && { say "GCC64_REPIN=1: not failing; new values in $LOG/hashes.txt"; return 0; }
@@ -797,27 +451,19 @@ hashes() {
 }
 
 stages=("$@")
-if [ ${#stages[@]} = 0 ]; then
-    if [ -n "${GCC64_DIRECT:-}" ]; then stages=(bridge stage6 stage7 stage8 stage9 stage10 stage11 stage12)
-    else stages=(stage0 stage1 stage2 stage3 stage4 stage5 stage6 stage7 stage8 stage9 stage10 stage11 stage12); fi
-fi
+[ ${#stages[@]} != 0 ] || stages=(bridge stage6 stage7 stage8 stage9 stage10)
 for s in "${stages[@]}"; do
-    case $s in stage[0-9]|stage1[0-2]|bridge) ;; *) echo "$me: unknown stage '$s' (stage0 ... stage12, bridge)" >&2; exit 1 ;; esac
+    case $s in stage[6-9]|stage10|bridge) ;; *) echo "$me: unknown stage '$s' (bridge, stage6 ... stage10)" >&2; exit 1 ;; esac
 done
-# Check selected stages' pinned sources up front. A stage4-10 Linux
-# continuation must not require an unused GCC15 archive (or refetch stage0).
+# Check the selected stages' pinned sources up front.
 stage_sources() {
     case $1 in
-        stage2) echo musl-1.1.24.tar.gz ;;
-        stage4) echo binutils-2.30.tar.xz musl-1.1.24.tar.gz ;;
-        stage5) echo flex-2.6.4.tar.gz gcc-4.0.4-git-944765863e.tar ;;
-        stage6) echo gcc-4.0.4-git-944765863e.tar ;;
         bridge) echo binutils-2.30.tar.xz gcc-4.0.4-git-944765863e.tar ;;
+        stage6) echo gcc-4.0.4-git-944765863e.tar ;;
         stage7) echo musl-1.1.24.tar.gz gmp-6.2.1+dfsg.tar.xz mpfr-4.1.0.tar.xz mpc-1.2.1.tar.gz ;;
         stage8) echo gcc-4.7.4.tar.xz binutils-2.41.tar.xz ;;
         stage9) echo binutils-2.41.tar.xz ;;
         stage10) echo gcc-10.5.0.tar.xz ;;
-        stage11) echo gcc-15.2.0.tar.xz ;;
     esac
 }
 for s in "${stages[@]}"; do

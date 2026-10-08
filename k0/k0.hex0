@@ -2,10 +2,11 @@
 ;;
 ;; License: MIT (see /LICENSE)
 ;;
-;; K0 boots under QEMU as a multiboot kernel and runs the seed-only
-;; amd64 route (seed -> pnut -> TinyCC 0.9.27) by providing the 17 Linux
-;; syscalls it uses, over a RAM file system.  k0/README.md describes the
-;; design, the boot image and every assumption about the chain.
+;; K0 boots under QEMU as a multiboot kernel and provides 17 Linux
+;; syscalls over a RAM file system: enough for seed-forth and the recipe
+;; runner it builds to compile K1 (tools/k1-direct-start.fth), which K0
+;; then hands the machine to.  k0/k0.asm is the same program as NASM
+;; source, with the design notes.
 ;;
 ;; How to read this file: every line is one instruction or one data
 ;; field; the text after ';' is a comment (hex0 ignores it).  Each

@@ -1,13 +1,14 @@
-\ k1/k1-asm.fth -- K1's assembly (k1/k1.S) as a relocatable object, for the
-\ route that builds K1 without TinyCC.  Loaded on 010, 020, 030, 081 and
-\ tools/obj-asm.fth, followed by a line that writes the object
-\ (k1/boot/asm.fth).
+\ k1/k1-asm.fth -- K1's assembly: entry from K0, syscall and trap entry,
+\ context switch, and the privileged instructions C cannot express, as a
+\ relocatable object.  Loaded on 010, 020, 030, 081 and tools/obj-asm.fth,
+\ followed by a line that writes the object (k1/boot/asm.fth).
 \
-\ The bytes are k1.S's instructions, one per line with the instruction as
-\ its comment.  They were transcribed from GNU as's listing of k1.S, and
-\ python3 k1/tests/asm-check.py proves the object this file writes equal to
-\ that assembler's: the same section bytes, global symbols and relocations.
-\ Change k1.S and this file together.
+\ The bytes are the instructions, one per line with the instruction as its
+\ comment (originally transcribed from GNU as's listing of seed-forth's
+\ k1/k1.S).  python3 k1/tests/asm-check.py assembles the comments with GNU
+\ as and proves that object equal to the one this file writes: the same
+\ section bytes, global symbols and relocations.  Change a byte line and its
+\ comment together.
 
 cc-obj-init
 asm{

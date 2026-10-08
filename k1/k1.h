@@ -291,7 +291,7 @@ void deliver_signals(struct tframe *tf);
  * (a timer tick or a fault), where rcx and r11 are live: the frame keeps them. */
 extern u64 async_rcx, async_r11;
 extern int async_full;
-void iret_frame(void *frame);   /* k1.S: never returns */
+void iret_frame(void *frame);   /* k1-asm.fth: never returns */
 i64 sys_rt_sigaction(int sig, struct sigact *act, struct sigact *old, u64 sz);
 i64 sys_rt_sigprocmask(int how, u64 *set, u64 *old, u64 sz);
 i64 sys_rt_sigreturn(struct tframe *tf);
@@ -313,7 +313,7 @@ void fd_close_all(struct proc *p, int only_cloexec);
 /* linux.c */
 i64 boot_linux(const char *kernel, const char *initrd, const char *cmdline);
 
-/* asm (k1.S): everything that needs an instruction C cannot express, so
+/* asm (k1-asm.fth): everything that needs an instruction C cannot express, so
  * the C files have no inline assembly and any C compiler can build them */
 void swtch(u64 *old_ksp, u64 new_ksp);
 void ret_user(void);

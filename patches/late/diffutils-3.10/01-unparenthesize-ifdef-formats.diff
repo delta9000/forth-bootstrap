@@ -1,5 +1,7 @@
-# tcc-0.9.27 rejects a parenthesized string-literal initializer,
-# = ("..." "...");  drop the parentheses (same string).
+# Drop the parentheses around a string-literal initializer, = ("..." "...");
+# the string is the same.  seed-forth's TinyCC route needed this (tcc-0.9.27
+# rejects the parenthesized form); GCC does not, but the late tools keep it so
+# diffutils is built from the same source on both routes.
 --- a/src/diff.c
 +++ b/src/diff.c
 @@ -390,7 +390,7 @@

@@ -1,6 +1,6 @@
 #!/bin/sh
-# which NAME...: the first executable NAME on PATH.  GNU which-2.21 does not
-# build with tcc; gcc64's scripts only need this much of it.
+# which NAME...: the first executable NAME on PATH.  gcc64's scripts only
+# need this much of GNU which.
 rc=0
 for n in "$@"; do
     found=

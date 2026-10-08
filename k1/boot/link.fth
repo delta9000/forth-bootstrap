@@ -1,5 +1,5 @@
 \ Link K1 at 0x200000 (loaded on 010, 020, 030 and 140): the assembly object
-\ first, as k1/build.sh orders k1.S, then the C objects; entry _start.
+\ first (k1/k1-asm.fth), then the C objects in recipe order; entry _start.
 [lit] 2097152 lnk-base-address !
 lnk-init
 create k1-obj-0 s, build-out/k1-direct/k1-asm.o [lit] 0 c,
