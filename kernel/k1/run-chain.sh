@@ -12,7 +12,8 @@
 #                                    tools -> gcc-10.5.0 -> Linux, kexec; also
 #                                    build-out/distfiles and stage-b-inputs
 # Optional: JOBS=N passes into guest make; K1_DISKS names the disk directory;
-# K1_MEM the guest RAM; K1_RAM_FILE names a new build-out file for shared,
+# K1_MEM the guest RAM; K1_RAM_FILE (avoid on an SSD: terabytes of writes
+# over a full run) names a new build-out file for shared,
 # non-preallocated RAM backing (K1_RAM_RESERVE defaults to 8G).
 set -eu
 cd "$(dirname "$0")/../.."

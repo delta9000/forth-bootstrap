@@ -268,7 +268,7 @@ requires the same fresh package directories as a normal stage run. It is a
 verification harness, not a dependency of `lexers.kaem`. Wide/EUC lex
 variants and a complete GCC bootstrap are outside this stage's evidence.
 
-Final requested checks ran once: `tools/check-links.py` passed (zero problems).
+Final requested checks ran once, in seed-forth: its `tools/check-links.py` passed (zero problems).
 `./check-all.sh` reported 15 PASS, 1 FAIL, 0 SKIP. Its sole failure was the
 unrelated i386 pnut reference helper `build-out/pnut/m2-pnut`, terminated with
 "Bad system call" during `06a-pnut` in this restricted execution environment.

@@ -46,7 +46,7 @@ Run `python3 tests/gcc/runtime-check.py` for the Forth-only production build
 and execution test. Its report records retained objects, executable and hashes.
 Run `python3 tests/gcc/runtime-oracle-check.py` for the optional comparison
 between Forth-built functions and host libc at host GCC `-O0` and `-O2`.
-See [chapter 39](../../book/39-direct-gcc-libc.md) for the design and proof boundary.
+See chapter 39 of the book (forth-bootstrap-book) for the design and proof boundary.
 
 `perror` prints `strerror(errno)`, which has the glibc text for every Linux
 error number ([ERRNO.md](ERRNO.md)); original GCC 4 `makedepend` reaches

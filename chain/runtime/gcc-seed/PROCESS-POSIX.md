@@ -58,7 +58,7 @@ handlers or flushing; `abort`'s last-resort fallback now uses it too.
 `process.c` still references nothing but the syscall bridge.
 
 Returning from `main` is `exit` of its result: the runtime-aware `_start`
-([chapter 38](../../book/38-direct-gcc-runtime.md)) now calls the C `exit`
+(chapter 38 of the book, forth-bootstrap-book) now calls the C `exit`
 instead of making the system call itself. The raw entry used for minimal
 syscall proofs is unchanged.
 
