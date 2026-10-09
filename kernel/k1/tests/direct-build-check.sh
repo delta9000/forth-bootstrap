@@ -24,6 +24,7 @@ listed=$(sed -n 's|^cat ${K}/compiler.fth ${ROOT}/forth/010-lib.fth ${ROOT}/kern
 echo "direct-build-check: recipe lists all $(echo "$expected" | wc -w) compiler layers"
 
 rm -rf "$K"
+mkdir -p build-out
 if command -v strace >/dev/null; then
     strace -f -qq -e trace=execve -o build-out/k1-direct.trace ./seed-forth < kernel/tools/k1-direct-start.fth
     bad=$(grep 'execve("' build-out/k1-direct.trace | grep -v -e 'execve("./seed-forth"' \
