@@ -1,220 +1,129 @@
-# K1 — the second rung
+# K1
 
-K1 is a small kernel in C, built by the chain's own tcc-0.9.27 or, on the
-direct-GCC route, by seed Forth alone (below), that runs
-ordinary static Linux x86-64 programs as real processes and finally hands
-the machine to a Linux bzImage.  K0 (1,313 bytes of hex0) runs the seed
-route to TinyCC; K1 is what that TinyCC builds to host the rest of the
-ladder (musl, make, bash, configure scripts, binutils, gcc, the Linux
-build), and then boots the Linux kernel the ladder produces.
-
-```sh
-kernel/k1/run.sh                                   # K0 -> prebuilt K1 -> direct TinyCC route
-kernel/k1/run-chain.sh --seed-smoke                 # K0 builds K1, then K1 rebuilds direct TinyCC (3 GiB)
-kernel/k1/run-chain.sh --direct-smoke               # no TinyCC: seed Forth builds K1; seed-cc and kaem under it (3 GiB)
-kernel/k1/run.sh --no-repo --add DIR=t -- k1 /t/prog args   # any static program
-```
-
-`kernel/k1/run.sh` builds K0 from `kernel/k0/k0.hex0` (stage0's hex0-seed) and K1 with
-the direct route's `build-out/pnut-amd64/kit/build/tcc-boot2`, writes a boot image
-with `kernel/k1/mkimg.py`, and runs QEMU/KVM. Run `./seed-forth <
-tools/tcc-ladder-start.fth` first to build that compiler. Exit status comes
-back through `isa-debug-exit`, as in `kernel/k0/run.sh`.
-
-The default K0/K1/host ladder now uses `tools/tcc-ladder-start.fth` and
-`tools/tcc.recipe`: seed Forth builds the recipe runner, the extended Forth
-compiler directly builds TinyCC, TinyCC reaches the pinned boot2/boot3
-fixed point, and that TinyCC builds both ladder helpers and K1. The old
-`tools/amd64-start.fth` / `tools/amd64.recipe` path is the named pnut
-control. The historical `build-out/pnut-amd64` output directory remains
-because downstream pins can embed it; it does not imply pnut execution.
-
-Before the executable boundary, `tools/tcc_inputs.py` verifies and copies
-only raw pinned archives, libc/tool sources and patch fixtures. Seed Forth
-builds an exact-patch helper and bintools; those unpack the TinyCC archive
-and apply the pinned patches. All 440 prepared source hashes are checked
-before Forth compiles TinyCC. Host Python does no extraction, C preprocessing
-or source patching in this default route. `tests/tcc/prep-stage-sources.py`
-remains a separate host-side source oracle for focused tests.
-K1's input disk contains only `hex0-seed` as its initial executable.
-
-`kernel/k1/run-chain.sh --seed-smoke` exercises the actual K0-built K1 handoff,
-then has K1 rebuild seed Forth and the direct TinyCC fixed point from a
-source-only input disk. It needs no GNU/Linux ladder distfiles and defaults
-to 3 GiB RAM (`K1_MEM` overrides). Both its exit status and guest PASS marker
-are checked. The full `kernel/k1/run-chain.sh` continues through the GNU tools and
-Linux and retains its larger default memory requirement. `QEMU` may name
-a local QEMU executable or wrapper.
-
-For a deliberately low-concurrency full run, `JOBS=1 kernel/k1/run-chain.sh`
-passes `JOBS` through the chain-built `env` into guest stages 10–12. Merely
-inheriting a host environment would not work: the recipe runner starts
-children with an empty environment. Unset `JOBS` preserves the existing
-stage defaults; accepted values are integers 1–256. Stage 12 now honors
-this value instead of forcing 16 jobs. The seed smoke is unchanged.
-
-Optional file-backed RAM uses a fresh workspace file, for example:
+K1 is a small kernel in C that runs ordinary static Linux x86-64 programs
+as real processes, imports the route's sources and archives from a disk,
+runs the whole chain from `hex0-seed` to GCC 10.5.0 and Linux 7.2.8, and
+finally hands the machine to the Linux kernel the chain built.  Nothing
+but seed Forth compiles it: K0 (1,313 bytes of hex0, `kernel/k0/`) runs
+seed Forth, which builds K1 with its own C compiler, assembler writer and
+linker, and K0 then starts it.
 
 ```sh
-JOBS=1 K1_MEM=16G K1_RAM_FILE=build-out/k1-full/ram.bin \
-    K1_DISKS=build-out/k1-full kernel/k1/run-chain.sh
+./seed-forth < kernel/tools/k1-direct-start.fth   # build K1 on the host: build-out/k1-direct/k1
+sh kernel/k1/tests/direct-build-check.sh           # the same, audited (see Tests)
+kernel/k1/run-chain.sh --direct-smoke              # K0 -> K1 -> seed-cc, seed-ar, kaem under K1 (3 GiB, a minute)
+kernel/k1/run-chain.sh --direct                    # ... then the plumbing stages to bash 2.05b (8 GiB)
+kernel/k1/run-chain.sh --direct-linux              # ... then on to Linux and kexec (24 GiB, about 80 minutes)
 ```
 
-With file backing, `K1_MEM` must include an explicit `K`, `M`, `G` or `T`
-suffix; unitless memory values are rejected because QEMU interprets them
-differently in its two memory options.
+seed-forth's other route built K1 with TinyCC from an assembler source,
+`k1.S`, and tested it with a tcc-musl `ktest`; those files (`k1.S`,
+`tcc-musl.sh`, `run.sh`, `mkimg.py`, `tests/ktest.c`) are in seed-forth at
+0dd2b88, not here.
 
-`K1_RAM_FILE` must name a nonexistent file below this checkout's
-`build-out`, with existing real directory parents. Symlink components,
-existing files/directories, `..`, commas and control characters are rejected.
-The helper creates a mode-0600 sparse file exclusively; QEMU uses shared
-file backing with `prealloc=off`. No swap, mount or system settings change.
-`K1_RAM_RESERVE` defaults to `8G`: the full potential backing size plus
-that headroom must fit the filesystem's current free space. The file is
-left for inspection after exit; choose a new pathname for another run.
-This setup check is not a runtime resource monitor. File-backed RAM can
-be much slower under pressure, and the full ladder's required peak RAM
-has not been measured. Anonymous RAM remains the default.
+## How seed Forth builds K1
 
-`python3 kernel/k1/tests/options-check.py` verifies default recipe identity,
-explicit `JOBS` injection, sparse creation, and path/overwrite/disk guards.
-A small real K0→K1 probe also passed with 3 GiB shared file-backed RAM:
-an empty-environment runner launched an environment-setting test wrapper,
-its child received `JOBS=1`, checked 32 MiB of guest memory writes, and
-exited with the expected status. Only 50 MiB of backing blocks were used.
-The full-run wrapper additionally requires the final Linux handoff,
-init greeting and Linux 7.2.8 version markers; QEMU status 85 alone is
-insufficient. These checks do not establish full-ladder resource sufficiency.
-
-## The direct-GCC route: K1 without TinyCC
-
-The direct-GCC route never builds TinyCC, so K0 builds K1 with seed Forth.
-`./seed-forth < kernel/tools/k1-direct-start.fth` builds the recipe runner (as
-`tools/tcc-ladder-start.fth` does) and runs `kernel/tools/k1-direct.recipe`:
+`./seed-forth < kernel/tools/k1-direct-start.fth` builds the recipe runner
+(`kernel/tools/amd64-runner.c`, compiled by the Forth compiler) and runs
+`kernel/tools/k1-direct.recipe` with it.  The seed is the only program
+that runs besides that runner:
 
 - each C file is compiled by the Forth compiler with the layers, arena and
-  driver words of `seed-cc -nostdinc -c` (`kernel/k1/boot/unit.fth`); the objects
-  are byte-identical to seed-cc's;
-- `k1.S` is `kernel/k1/k1-asm.fth`: the same instructions as hex bytes with labels
-  and relocations, written as an object by `kernel/tools/obj-asm.fth` on the
-  compiler's object writer (`cc/081-cc-object.fth`).  The C files have no
-  inline assembly (the privileged instructions are small functions in
-  `k1.S`), so any C compiler can build them;
-- the Forth linker (`cc/140-cc-link.fth`, Ch 37) links them at 0x200000
-  (`kernel/k1/boot/link.fth`).
+  driver words of `seed-cc -nostdinc -c` (`kernel/k1/boot/unit.fth`); the
+  objects are byte-identical to seed-cc's;
+- `k1-asm.fth` holds K1's assembly (entry from K0, SYSCALL entry and exit,
+  the context switch, exception stubs, port I/O, MSRs, descriptor tables)
+  as hex bytes, one instruction per line with the instruction as a
+  comment, plus labels and relocations; `kernel/tools/obj-asm.fth` writes
+  it as an object on the compiler's object writer (`cc/081-cc-object.fth`).
+  The C files have no inline assembly (each privileged instruction is a
+  small function in `k1-asm.fth`);
+- the Forth linker (`cc/140-cc-link.fth`, book chapter 37) links them at
+  0x200000 (`kernel/k1/boot/link.fth`).
 
-K0 lacks `stat`, `fstat`, `munmap` and `getpid`, which the object writer and
-the linker use to check files and name temporaries; `kernel/k1/boot/k0-syscalls.fth`
-retries those calls with what K0 has when they return ENOSYS, and changes
-nothing on Linux.  On the host the whole build takes about 7 seconds.
+K0 lacks `stat`, `fstat`, `munmap` and `getpid`, which the object writer
+and the linker use; `kernel/k1/boot/k0-syscalls.fth` retries those calls
+with what K0 has when they return ENOSYS, and changes nothing on Linux.
+On the host the whole build takes about 7 seconds.  K1 is 221,672 bytes,
+sha256 `f90229b116c5a3b5...`.
 
-```sh
-./seed-forth < kernel/tools/k1-direct-start.fth     # build-out/k1-direct/k1
-sh kernel/k1/tests/direct-build-check.sh             # recipe layers, execve audit, objects vs seed-cc, asm vs GNU as
-python3 kernel/k1/tests/asm-check.py                 # k1-asm.fth's object equals `as kernel/k1/k1.S`'s
-kernel/k1/run-chain.sh --direct-smoke                # K0 -> K1 (seed-built) -> seed-cc, seed-ar, kaem
-kernel/k1/run-chain.sh --direct                      # ... then plumbing stages 1, 2, lexers and bash 2.05b
-kernel/k1/run-chain.sh --direct-linux                # ... then on to Linux and kexec (below)
-```
+## The runs
 
-`kernel/k1/mkboot.py --direct` writes K0's image with only what that build needs
-(`kernel/k1/direct_inputs.py`) and appends `kernel/tools/k1-direct-boot.recipe`, which
-starts K1.  `kernel/k1/mkdisk.py --direct-smoke` gives K1 the seed, the compiler
-layers, the gcc-seed runtime, seed-cc's sources and kaem's;
-`kernel/k1/direct-smoke.recipe` then has hex0-seed build seed-forth, seed Forth
-build seed-cc and seed-ar (`cc/driver/seed-cc-start.fth`), seed-cc build kaem,
-and kaem run `kernel/k1/direct-smoke.kaem`: a program built from a seed-ar archive
-checks the runtime's system calls (`kernel/k1/tests/direct-smoke.c`: files,
-directories, `/proc/self/exe`, fork/exec/wait, pipes, large malloc and mmap,
-clocks, signals), and two stage0-posix tools run.  `--direct` adds the
-plumbing and lexer tarballs from `build-out/` and continues with
-`chain/plumbing/stage1.kaem`, `stage2.kaem`, `lexers.kaem` and `bash.kaem`; the GCC
-stages still run through Python (`chain/gcc-direct/*.py`) and are not in it yet.
+`kernel/k1/run-chain.sh` assembles K0 from `kernel/k0/k0.hex0` with
+`hex0-seed`, writes two images and starts QEMU (KVM if `/dev/kvm` is
+writable):
 
-### The whole direct route under K1: `--direct-linux`
+- `kernel/k1/mkboot.py` writes K0's memory image: the files of
+  `direct_inputs.py`'s `k0_tree()`, `seed-forth`, and
+  `kernel/tools/k1-direct.recipe` followed by
+  `kernel/tools/k1-direct-boot.recipe`, which starts the K1 just built;
+- `kernel/k1/mkdisk.py` writes K1's input disk: the files of
+  `direct_inputs.py`'s `k1_tree()` (an explicit list of the repository
+  files and `MANIFEST.sha256` archives the guest reads), `hex0-seed` as the
+  only executable, `/k1.args` and `/k1.recipe`.
 
-`kernel/k1/run-chain.sh --direct-linux` appends `kernel/k1/direct-linux.recipe` to
-`kernel/k1/direct.recipe`: after bash 2.05b, `kernel/k1/direct-full.sh` runs
-`chain/gcc-direct/chain.sh` (binutils 2.30, stage C, stage D to the GCC 4.0.4
-fixed point) and `chain/gcc-direct/late-tools.sh` (the late tools, each with its
-own configure, built by that GCC: `chain/plumbing/LATE.md`);
-`chain/ladder/stage10-direct.sh` installs them as `/usr`; `chain/ladder/stage11.sh
---direct` runs gcc64's bridge and stages 6-10; stage 12 and `finish.sh` are
-the TinyCC route's.  No TinyCC and no host-captured configure output take
-part.  The disk adds `build-out/distfiles` (the archives of
-`chain-inputs.sha256`) and `build-out/stage-b-inputs/binutils-2.30.tar`
-(`chain/plumbing/chain.SOURCES`).
+`/k1.recipe` is one of three:
 
-Result (2026-10-07, korriban, `JOBS=2 K1_MEM=24G`): 78 minutes from hex0 to
-the Linux greeting.  The chain took 1,815 s, the late tools 487 s, the
-bridge and gcc64 stages 6-10 1,715 s, then Linux.  Stage D reached its fixed
-point under K1 (54 files, 0 differ), and gmp, mpfr and mpc passed `make
-check`.  The bzImage (1,278,976 bytes, CRC-32 `0014e6cc`, sha256
-`881e96ad05da8e18...`) is byte-identical to the TinyCC route's.
+- `direct-smoke.recipe` (`--direct-smoke`): hex0-seed builds seed-forth,
+  seed Forth builds seed-cc and seed-ar (`cc/driver/seed-cc-start.fth`),
+  seed-cc builds kaem, and kaem runs `direct-smoke.kaem`: a program built
+  from a seed-ar archive checks the runtime's system calls
+  (`tests/direct-smoke.c`: files, directories, `/proc/self/exe`,
+  fork/exec/wait, pipes, large malloc and mmap, a page fault with DF set,
+  clocks, signals), and two stage0-posix tools run;
+- `direct.recipe` (`--direct`): the same, then `chain/plumbing/stage1.kaem`,
+  `stage2.kaem`, `lexers.kaem` and `bash.kaem`;
+- `direct.recipe` plus `direct-linux.recipe` (`--direct-linux`, the
+  default): after bash 2.05b, `direct-full.sh` runs
+  `chain/gcc-direct/chain.sh` (binutils 2.30, stage C, stage D to the GCC
+  4.0.4 fixed point) and `chain/gcc-direct/late-tools.sh`;
+  `chain/ladder/stage10-direct.sh` installs the late tools as `/usr`;
+  `chain/ladder/stage11.sh` runs gcc64's bridge and stages 6-10;
+  `chain/ladder/stage12.sh` builds Linux 7.2.8 with an initramfs holding
+  `chain/ladder/init.c`; and `chain/ladder/finish.sh` tars the results to
+  the output disk and kexecs into the new kernel.
 
-## Full Linux validation with KVM
+The wrapper checks QEMU's exit status (1 for the first two, 85 after
+Linux) and the guest's markers in `serial.log`; for `--direct-linux` they
+end with `init: hello from a Linux kernel built from hex0 and seed-forth`
+and `init: Linux version 7.2.8`.  The output disk (`out.img`) is a tar of
+`build-out/linux` (the bzImage, its config and init), the stage logs and
+reports, and `build-out/g64/logs/hashes.txt`.
 
-From a checkout with the pinned submodules initialized, place the 30 raw
-archives named in `kernel/k1/chain-inputs.sha256` in `build-out/distfiles`. These
-are the existing pins from `chain/ladder/PACKAGES`, `chain/gcc64/SOURCES` and the
-stage-10/stage-12 scripts; no generated C or prebuilt compiler is needed.
-The archives total 616 MiB. GCC15 is not required for this route.
+`JOBS=N` is passed into the guest's make runs (the recipe runner starts
+programs with an empty environment, so `mkdisk.py --jobs` writes it into
+the recipe); `K1_MEM` sets the guest RAM and `K1_DISKS` the image
+directory.  K1 keeps the whole build file system in guest RAM; 24 GiB is
+what the full run has used, not a measured minimum.  `K1_RAM_FILE` backs
+guest RAM with a sparse file instead; on an SSD a full run writes
+terabytes through it, so leave it unset.
 
-On a host with QEMU installed and writable KVM access:
-
-```sh
-(cd build-out/distfiles && sha256sum -c ../../kernel/k1/chain-inputs.sha256)
-test -w /dev/kvm                    # fail rather than accidentally choose TCG
-command -v qemu-system-x86_64
-unset K1_RAM_FILE K1_RAM_RESERVE     # use ordinary guest RAM on this host
-JOBS=1 K1_MEM=24G K1_DISKS="$PWD/build-out/k1-full" \
-    QEMU=qemu-system-x86_64 kernel/k1/run-chain.sh
-```
-
-Use a fresh `K1_DISKS` directory; its input/output images are rebuilt.
-The host needs room for the selected guest RAM plus its own workload.
-The 24 GiB default is a conservative choice, not a measured minimum.
-Allow additional disk room for the 625 MiB input image, 4 GiB output
-image and extracted results. K1 keeps the build filesystem in guest RAM,
-so archive size alone is not a RAM estimate. The full working-set peak
-has not been measured. `JOBS=1` limits compiler process concurrency.
-
-Success means wrapper status 0, QEMU status 85, and all these guest lines
-in `build-out/k1-full/serial.log` (checked by the wrapper):
-
-- `finish: K1 hands the machine to the Linux kernel it built`
-- `init: hello from a Linux kernel built from hex0 and seed-forth`
-- `init: Linux version 7.2.8` followed by the build/version details
-
-`build-out/k1-full/out.img` contains the result tar written by the
-chain-built tools, including the kernel and stage logs. Retain that image
-and the serial log for comparison. A missing marker or nonzero wrapper
-status is not a completed Linux validation.
-
-The direct raw-input K0/K1 smoke has passed. A subsequent full attempt
-was interrupted after K1's direct TinyCC proof and did not record a
-complete musl/GNU/Linux result. Full Linux validation is still pending.
+Result (2026-10-08, `JOBS=2 K1_MEM=24G`, QEMU with KVM): 1 h 38 min from
+hex0 to the Linux greeting; stage D at its fixed point under K1 (54 files,
+0 differ); all 31 `chain/gcc64/HASHES` pins as pinned; the bzImage
+1,278,976 bytes, CRC-32 `0014e6cc`, sha256 `881e96ad05da8e18...`.
 
 ## Boot
 
-K0 knows nothing about K1: `mkimg.py` writes K0's usual image format with
-init = `k1`, and K1's own arguments in the file `/k1.args`
-(`[-v] [-i stdin] prog args...`, one per line).  K0 execs k1 like any
-program — ring 0, K0's identity map, rsp at an argv block — and k1 then:
+K0 knows nothing about K1: the boot recipe has K0's runner exec `k1`
+like any program (ring 0, K0's identity map, rsp at an argv block), and
+K1 then:
 
 1. reads the e820 map from QEMU's fw_cfg (`etc/e820`);
 2. builds its own page tables: the low 4 MiB identity-mapped,
    supervisor-only, for K1's image (linked at 0x200000), and all physical
    memory at `KBASE` = 0xFFFF800000000000 with 1 GiB pages;
-3. loads its GDT (kernel 0x10/0x18, user 0x2B/0x33, TSS 0x38), IDT
-   (exceptions only), TSS, and the SYSCALL MSRs (STAR's sysret base is
-   0x23 so SS gets RPL 3), and masks both PICs: there are no interrupts;
+3. loads its GDT (kernel 0x10/0x18, user 0x2B/0x33, TSS 0x38), IDT, TSS
+   and the SYSCALL MSRs (STAR's sysret base is 0x23 so SS gets RPL 3),
+   and programs the 8259 PICs so that only the PIT (IRQ 0) is unmasked;
 4. calibrates the TSC against PIT channel 2 and reads the CMOS clock;
-5. copies K0's file table into its RAM file system, then gives K0's image
-   memory to its page allocator;
-6. starts init (pid 1) with stdin from `-i` (or /dev/null), stdout and
-   stderr on the serial console.  When init exits, QEMU exits with its
-   status (signals as 128+n).
+5. imports the input disk (hda) into its RAM file system, and K0's file
+   table under `/k0/`, then gives K0's image memory to its page
+   allocator;
+6. starts init (pid 1) from `/k1.args` (`[-v] [-i stdin] prog args...`,
+   one per line): here `/k0/build-out/amd64-runner --recipe /k1.recipe`,
+   with stdout and stderr on the serial console.  When init exits, QEMU
+   exits with its status (signals as 128+n).
 
 ## Design
 
@@ -234,12 +143,14 @@ program — ring 0, K0's identity map, rsp at an argv block — and k1 then:
   malloc falls back to mmap.  fork copies every present page — no
   copy-on-write.
 - **Processes.** Ring 3, entered and left through SYSCALL/SYSRET;
-  exceptions use the IDT and IRETQ.  Each process has a 32 KiB kernel
-  stack with its user registers (`struct tframe`) on top.  A process runs
-  until it blocks (wait4, a pipe, poll, a vfork child, pause), exits, or
-  is preempted by the PIT tick (100 Hz, PIC vectors 32-47) while in user
-  mode; `make -j` and alarm-driven configure probes need both.  SSE state is
-  saved with FXSAVE on every switch; FS base per process (musl's TLS).
+  exceptions use the IDT and IRETQ, and exception entry clears DF first
+  (user code may be inside musl's backward `memmove`).  Each process has a
+  32 KiB kernel stack with its user registers (`struct tframe`) on top.  A
+  process runs until it blocks (wait4, a pipe, poll, a vfork child,
+  pause), exits, or is preempted by the PIT tick (100 Hz, PIC vectors
+  32-47) while in user mode; `make -j` and alarm-driven configure probes
+  need both.  SSE state is saved with FXSAVE on every switch; FS base per
+  process (musl's TLS).
 - **Files.** A RAM file system: regular files in a 3-level radix tree of
   pages (sparse holes read zero), directories as a creation-ordered list
   plus a hash table past 16 entries, symlinks, hard links, modes,
@@ -266,8 +177,7 @@ program — ring 0, K0's identity map, rsp at an argv block — and k1 then:
   0x555555554000); PT_INTERP is ENOEXEC.  `#!` scripts with one optional
   argument, nested up to 4.  The auxv carries AT_PHDR, AT_ENTRY,
   AT_RANDOM, AT_EXECFN and friends.  A segment whose p_filesz runs past
-  the end of the file is zero-filled, as Linux's mmap would (pnut writes
-  such ELFs).
+  the end of the file is zero-filled, as Linux's mmap would.
 - **Linux hand-off.** `reboot(2)` with `LINUX_REBOOT_CMD_KEXEC` loads
   `/boot/bzImage` (64-bit boot protocol ≥ 2.12, XLF_KERNEL_64) at an
   address aligned to its `kernel_alignment` and at least its
@@ -287,68 +197,48 @@ each is a place K1 differs from Linux.
 - No permission checks (everything runs as root, uid 0); `access(X_OK)`
   checks only that some x bit is set.
 - File-backed `mmap` is a private copy; `MAP_SHARED` writes are not
-  written back.
+  written back.  `PROT_EXEC` is accepted and not enforced (no NX bit).
 - `clone` supports fork, vfork and `CLONE_VM|CLONE_VFORK` (musl's
   posix_spawn); `CLONE_THREAD` is EINVAL, `clone3` ENOSYS; `futex` returns
   0 (one thread per process).
 - A bad user pointer faults in the kernel and kills the process with
   SIGSEGV instead of returning EFAULT.
 - `/proc` is only `self/fd`, `self/maps` and `self/exe` (the image's
-  canonical path, which seed-cc locates its tree by); no sockets (EAFNOSUPPORT), no ttys (`ioctl` is ENOTTY, so
-  every program sees a non-interactive stdin).  `getdents64` lists `.`,
-  `..`, then names in creation order.
+  canonical path, which seed-cc locates its tree by); no sockets
+  (EAFNOSUPPORT), no ttys (`ioctl` is ENOTTY, so every program sees a
+  non-interactive stdin).  `getdents64` lists `.`, `..`, then names in
+  creation order.
 - `statx`, `copy_file_range`, `sendfile`, `fallocate`, `rseq`, `waitid`
   are ENOSYS (musl and coreutils fall back).  Any syscall not listed in
   `sys.c` is ENOSYS and is reported once on the console.
 
 ## Files
 
-5,019 lines of C and assembly.  Built by tcc the kernel was 101,192 bytes
-(208,144 with the `-g` symbols `seed/build.sh` adds by default; `K1_CFLAGS=" "`
-drops them), measured before the inline assembly moved into `k1.S`; built by
-seed Forth it is 221,672 bytes, without symbols.
-
 | File | Lines | What |
 |---|---:|---|
-| `k1.S` | 519 | entry from K0, SYSCALL entry/exit, swtch, exception stubs, port I/O, MSRs, descriptor tables and the other privileged instructions |
+| `k1-asm.fth` | 470 | the assembly, as bytes with the instructions as comments |
+| `k1.h` | 341 | shared declarations |
 | `main.c` | 531 | boot: memory primitives, kprintf, TSC/RTC, fw_cfg e820, GDT/IDT/TSS/MSRs, kernel page tables, traps |
 | `mm.c` | 599 | physical pages, kmalloc, page tables, VMAs, fork copy, mmap/munmap/mremap/brk |
-| `fs.c` | 718 | inodes, radix data, directories, path walk, pipes, FIFOs, devices, `/proc/self`, K0 import |
+| `fs.c` | 719 | inodes, radix data, directories, path walk, pipes, FIFOs, devices, `/proc/self`, K0 import |
 | `ata.c` | 207 | IDE PIO disks, the hda archive import |
 | `proc.c` | 778 | processes, scheduler, fork/clone, exec (ELF, `#!`), exit/wait, signals, init |
-| `sys.c` | 1,216 | the syscall table |
+| `sys.c` | 1,208 | the syscall table |
 | `linux.c` | 112 | the bzImage hand-off |
-| `k1-asm.fth` | | `k1.S` as hex bytes for `kernel/tools/obj-asm.fth` (direct route) |
-| `boot/`, `direct*.recipe`, `direct-smoke.kaem`, `direct_inputs.py` | | the direct route's build drivers, guest recipes and image inventories |
-| `mkimg.py`, `run.sh`, `seed/build.sh` | | boot image, QEMU run, build |
-| `tcc-musl.sh`, `mkcpio.py`, `tests/` | | host-side test helpers (not part of the chain) |
+| `boot/` | | the Forth drivers that compile and link K1 |
+| `direct*.recipe`, `direct-smoke.kaem`, `direct-full.sh` | | the guest's recipes |
+| `run-chain.sh`, `mkboot.py`, `mkdisk.py`, `direct_inputs.py`, `mkram.py` | | the host side of a run |
+| `tests/` | | the checks below |
 
 ## Tests
 
-- **Direct seed route (M1):** `kernel/k0/run.sh` and `kernel/k1/run.sh` require the
-  direct TinyCC recipe's PASS result. `kernel/k1/run-chain.sh --seed-smoke` additionally
-  proves K0 built K1 and K1 reran the source-only route, with real
-  fork/exec/wait. The recipe has 49 explicit child runs plus pinned exact-patch
-  applications, independently
-  pinned TinyCC executable/object fixed points, 136 libc checks, rebuilt
-  float/bitfield/VLA checks, and TinyCC-built bintools/simple-patch.
-  `tests/tcc/kernel-route-check.sh` exercises the actual fresh host entry
-  and functional helpers; `python3 tests/tcc/kernel-route-check.py` checks
-  image/source inventories and route wiring without an emulator. These
-  host checks do not prove guest execution.
-  The raw-route guest smoke was also verified with QEMU 10.0.13 TCG,
-  3 GiB RAM and no KVM: K0 built K1, K1 rebuilt from the raw input disk,
-  both direct TinyCC fixed points passed, and K1 init exited with status 0.
-  This smoke stops before the GNU/Linux ladder; it does not claim a fresh
-  complete Linux rebuild.
-- **`tests/ktest.c` (M2):** built with the chain's tcc-musl
-  (`kernel/k1/tcc-musl.sh`), 48 checks: `yes | head` with SIGPIPE, fork without
-  exec, handlers, masking, SIGCHLD, SIGTERM and SIGSEGV wait statuses,
-  files, symlinks, hard links, `utimensat`/mtime order, rename, chmod,
-  readdir, getcwd, dup2/fcntl, 10 MiB malloc + realloc (mremap), mmap,
-  posix_spawn (CLONE_VM|CLONE_VFORK), poll, clock_gettime, uname, vfork.
-  The same binary passes on Linux and under K1.
-- **Linux hand-off (M3):** `tests/kexec.c` under K1 boots a stock
-  x86-64 bzImage (Alpine 6.18.52 `vmlinuz-virt`, for testing only) with an
-  initramfs (`mkcpio.py`) whose `/init` is `tests/linit.c`; Linux prints
-  its log on ttyS0, runs `/init`, which exits QEMU with status 42.
+- `sh kernel/k1/tests/direct-build-check.sh` (about a minute; needs strace
+  and GNU as): `kernel/tools/k1-direct.recipe` lists exactly the compiler
+  layers seed-cc uses; the K1 build under strace runs only the seed and
+  the runner; each C object equals `seed-cc -nostdinc -c`'s; `k1-asm.fth`'s
+  object equals GNU as on its own comments (`tests/asm-check.py`); and K1
+  is a static ELF at 0x200000 whose image ends below 4 MiB.
+- `kernel/k1/run-chain.sh --direct-smoke`: K0 builds K1, K1 runs the
+  smoke recipe and `tests/direct-smoke.c`'s 26 checks, among them a demand
+  page fault taken with DF set, which fails on a K1 without the `cld`.
+- `kernel/k1/run-chain.sh --direct-linux`: the full run, above.
