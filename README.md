@@ -35,7 +35,7 @@ hex0-seed (229 bytes)
 | QEMU, KVM and the CPU | run K0, which starts everything else | the K1 run |
 | the host's Linux kernel, `bwrap`, `strace` | the host run's system calls, and a root whose only executable is `hex0-seed` | the host run (`chain/plumbing-root.sh`) |
 | host `python3`, `sh`, `tar` | copy files into disk images and into the host run's root; check results.  They never compile, unpack, patch or configure anything | both |
-| host `gcc`, GNU `as`, `nasm` | build references to compare against: Stage A's M2-Planet, `asm-check.py`'s object, `k0/check.sh`'s K0.  None of their output is used | checks only |
+| host `gcc`, GNU `as`, `nasm` | build references to compare against: Stage A's M2-Planet, `asm-check.py`'s object, `kernel/k0/check.sh`'s K0.  None of their output is used | checks only |
 
 ## The parts
 
@@ -53,10 +53,27 @@ hex0-seed (229 bytes)
 The literate book that teaches `seed/`, `forth/` and `cc/` is a separate
 project, forth-bootstrap-book, being rewritten in four parts.
 
+## Prerequisites
+
+An x86-64 Linux host.  By step below:
+
+| Step | Needs | Time | Disk |
+|---|---|---|---|
+| clone | `git` (the three submodules come from GitHub) | a minute | 60 MB |
+| 1-2 | `bash`, coreutils, `python3`; `gcc` for Stage A's reference only | seconds | a few MB |
+| archives | `curl`, `git`, `xz` (`tools/fetch-archives.py`) | depends on the network | 1.1 GB |
+| 3 | `bwrap` (bubblewrap) and `strace`, unprivileged user namespaces | 20-40 minutes | 1.6 GB |
+| 4 | `strace` and GNU `as` (binutils) for the build check; `qemu-system-x86_64` | a minute | small |
+| 5 | QEMU with KVM (`/dev/kvm` writable) and 24 GiB of free RAM for the guest | about 80 minutes | 0.9 GB of disk images |
+
+`./check-all.sh` skips the steps whose tools are missing and says so.
+
 ## Running it
 
 ```sh
+git clone <this repository> forth-bootstrap && cd forth-bootstrap
 git submodule update --init --recursive
+./check-all.sh                     # steps 1, 2 and 4's build check, about a minute
 ```
 
 **1. The seed and the Forth** (seconds):
@@ -72,12 +89,15 @@ seed/build.sh                      # seed-forth, 1,772 bytes
 tests/cc/stage-a-check.sh          # the Forth compiler's M1 for M2-Planet equals a GCC-built M2-Planet's
 ```
 
-**3. The chain, on the host, to the GCC 4.0.4 fixed point** (about 40
-minutes; needs `bwrap` and `strace`).  Put the archives of
-`MANIFEST.sha256` under `build-out/` at the paths it names
-(`chain/gcc64/SOURCES` has download URLs for the GCC climb's), then:
+**3. The chain, on the host, to the GCC 4.0.4 fixed point** (20 to 40
+minutes; needs `bwrap` and `strace`).  First the 45 pinned archives:
+`tools/fetch-archives.py` downloads each from its upstream release (the
+URLs are in the script, and in `chain/gcc64/SOURCES` for the GCC climb's)
+into the `build-out/` path `MANIFEST.sha256` names, and keeps it only if
+its sha256 is the pinned one.
 
 ```sh
+python3 tools/fetch-archives.py    # or place them yourself; then:
 sha256sum -c MANIFEST.sha256
 sh chain/plumbing-root.sh          # hex0-seed -> ... -> stage D: "fixed point reached"
 ```
@@ -110,6 +130,26 @@ to the output disk and kexecs into the new kernel, which prints
 
 `./check-all.sh` runs the quick checks; `CHECK_CHAIN=1` and
 `CHECK_K1=smoke|linux` add the long ones.
+
+## Reading order
+
+- **seed/, forth/, cc/:** `seed/000-seed.hex0` (the seed's 32 primitives,
+  one instruction per annotated line), then `forth/010-lib.fth`, then the
+  compiler in load order: `cc/020-cc-arena.fth` to `cc/120-cc-main.fth`
+  (preprocessor, lexer, types, code generation, expressions, declarations,
+  statements, functions, main), `forth/130-asm.fth` (the assembler), and
+  `cc/115` to `cc/141` with `cc/driver/` (what the compiler grew to build
+  GCC: objects, the System V ABI, the linker, archives).  The book, a
+  separate project, walks through the same files in that order.
+- **kernel/:** `kernel/k0/k0.asm` (K0, about 600 lines of commented NASM;
+  `k0.hex0` is the same bytes), then `kernel/k1/README.md` and `k1.h`,
+  then `kernel/tools/k1-direct-start.fth` and `k1-direct.recipe` for how
+  seed Forth builds K1, and `kernel/k1/run-chain.sh` for the run.
+- **chain/:** `chain/plumbing/README.md` (the first tools), then
+  `chain/plumbing/CHAIN.md` (binutils, stage C, stage D) and `LATE.md`
+  (the late tools), then the headers of `chain/gcc64/run-gcc64.sh` and
+  `chain/ladder/stage12.sh`.  `chain/plumbing-root.sh` and
+  `kernel/k1/direct-linux.recipe` show the order everything runs in.
 
 ## Results
 
