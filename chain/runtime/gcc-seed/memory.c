@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; distributed under ../../LICENSE. */
+/* Original seed-forth implementation; distributed under ../../../LICENSE. */
 #include <string.h>
 
 void *memcpy(void *destination, const void *source, size_t count)

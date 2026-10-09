@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; distributed under ../../LICENSE.
+/* Original seed-forth implementation; distributed under ../../../LICENSE.
    Buffered Linux AMD64 streams (see ../STDIO-BUFFERING.md) and the printf
    family, including exact floating conversions (../PRINTF-FLOAT.md). */
 #include <stdio.h>

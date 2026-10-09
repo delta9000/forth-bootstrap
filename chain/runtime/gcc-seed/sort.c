@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; distributed under ../../LICENSE. */
+/* Original seed-forth implementation; distributed under ../../../LICENSE. */
 #include <stdlib.h>
 
 /* Binary search over an ascending array.  The interval [low, high) always

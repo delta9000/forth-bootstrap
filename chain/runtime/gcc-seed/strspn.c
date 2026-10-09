@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; distributed under ../../LICENSE. */
+/* Original seed-forth implementation; distributed under ../../../LICENSE. */
 #include <string.h>
 
 size_t strspn(const char *string, const char *accept)

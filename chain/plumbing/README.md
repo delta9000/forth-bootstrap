@@ -3,9 +3,9 @@
 Stages A to D build GCC with no host compiler, but configure scripts and
 Makefiles still need a shell, make, sed, awk, grep and the file utilities.
 This directory builds those tools from their pinned upstream tarballs with
-the project's own C compiler, driven by [kaem](../vendor/mescc-tools/Kaem)
+the project's own C compiler, driven by [kaem](../../vendor/mescc-tools/Kaem)
 scripts. No host program runs: not a shell, not a host compiler. Status and
-history are in [chain/gcc-direct/PLUMBING.md](../chain/gcc-direct/PLUMBING.md). The GCC
+history are in [chain/gcc-direct/PLUMBING.md](https://github.com/delta9000/seed-forth/blob/0dd2b88/gcc-direct/PLUMBING.md). The GCC
 chain that runs on these tools (binutils, stage C, stage D) is described in
 [CHAIN.md](CHAIN.md).
 
@@ -122,13 +122,13 @@ GCC during discovery, and host GNU tools where versions agree.
 | patch | 20-case transcript identical to patch 2.5.9 built by GCC |
 | diffutils | 50-case transcript (`diff` formats and options, `cmp`, `diff3`, `sdiff`) identical to diffutils 2.7 built by GCC |
 
-[tests/plumbing/stage2-check.sh](../tests/plumbing/stage2-check.sh) is the
+[tests/plumbing/stage2-check.sh](https://github.com/delta9000/seed-forth/blob/0dd2b88/tests/plumbing/stage2-check.sh) is the
 repeatable part: an opt-in check (about ten minutes; not in `check-all.sh`)
 that builds stages 1 and 2 from a clean `build-out/plumbing`, traces every
 `execve` with strace and requires each to be kaem, `seed-cc`/`seed-ar`, the
 seed they run, or a program the stages built (in particular, no shell), then
 runs the fixed cases in
-[tests/plumbing/stage2-cases.sh](../tests/plumbing/stage2-cases.sh) with
+[tests/plumbing/stage2-cases.sh](https://github.com/delta9000/seed-forth/blob/0dd2b88/tests/plumbing/stage2-cases.sh) with
 `PATH` holding only `build-out/plumbing/bin`, and checks that our `gzip` and
 `tar` read every input tarball as the stage0 tools do.
 
@@ -152,11 +152,11 @@ build-out/plumbing/bin/kaem --verbose --strict --file chain/plumbing/lexers.kaem
 
 The initial `mkdir` above prepares the kaem output directory; after stage 1,
 all stage commands use built tools. First cache stage-1 archives as described
-in [the plumbing status](../chain/gcc-direct/PLUMBING.md), and the three lexer
+in [the plumbing status](https://github.com/delta9000/seed-forth/blob/0dd2b88/gcc-direct/PLUMBING.md), and the three lexer
 archives in `build-out/lexer-inputs/archives/` as described in the
-[recorded recipe](../chain/gcc-direct/README.md#recorded-parser-generator-recipe).
+[recorded recipe](https://github.com/delta9000/seed-forth/blob/0dd2b88/gcc-direct/README.md#recorded-parser-generator-recipe).
 [lexers.SOURCES](lexers.SOURCES) pins the exact archives and repository
-reference files from [sources.json](../chain/gcc-direct/lexer-inputs/sources.json).
+reference files from [sources.json](../gcc-direct/lexer-inputs/sources.json).
 The native stage uses the repository's pinned reference files directly;
 the Python reference needs a copy of `recipe-reference/` in its inputs tree.
 
@@ -173,14 +173,14 @@ and installed tools are independent.
 
 ### Source preparation and configuration
 
-The preparation reproduces [lexers.py](../chain/gcc-direct/lexers.py) and
-[prepare-lexer-sources.py](../chain/gcc-direct/prepare-lexer-sources.py): unpack
+The preparation reproduces [lexers.py](https://github.com/delta9000/seed-forth/blob/0dd2b88/gcc-direct/lexers.py) and
+[prepare-lexer-sources.py](https://github.com/delta9000/seed-forth/blob/0dd2b88/gcc-direct/prepare-lexer-sources.py): unpack
 pinned originals, apply unchanged `scan_l.patch` then `yyin.patch`, copy
 unchanged `scan.lex.l`, remove shipped `parse.c`, `parse.h`, `scan.c` and
 `skel.c`, then regenerate the skeleton from original `flex.skl`. No shipped
 parser/scanner C becomes a build input. Provenance and licenses for the
 patches and restricted temporary scanner remain in
-[PROVENANCE.md](../chain/gcc-direct/lexer-inputs/PROVENANCE.md).
+[PROVENANCE.md](../gcc-direct/lexer-inputs/PROVENANCE.md).
 
 The built `lexer-prepare patch` applies each full unified hunk at its unique,
 exact context, allowing line offsets (the first historical patch needs -1)

@@ -4,10 +4,10 @@ The QEMU route gets its modern userland in two steps. Ladder stage 9
 replays host-captured builds of ten packages (`tools/capture-build.py`: the
 host ran each `./configure` and `make` once, and the ladder replays the
 compiler calls with the captured `config.h` and other configure output as
-fixtures). Then [chain/ladder/stage10.sh](../chain/ladder/stage10.sh) configures the
+fixtures). Then [chain/ladder/stage10.sh](https://github.com/delta9000/seed-forth/blob/0dd2b88/ladder/stage10.sh) configures the
 rest with those ten. The host capture is the step this replaces.
 
-[chain/gcc-direct/late-tools.sh](../chain/gcc-direct/late-tools.sh) builds all of them
+[chain/gcc-direct/late-tools.sh](../gcc-direct/late-tools.sh) builds all of them
 with nothing captured. Each package's own `./configure` runs under the
 plumbing bash 2.05b, its Makefile under the plumbing make 3.82, and its C
 goes through the stage-D GCC 4.0.4 with the stage-C musl 1.1.24 and
@@ -24,7 +24,7 @@ diffutils patch is a tcc workaround GCC does not need.
 
 ## Running it
 
-After [chain/gcc-direct/chain.sh](../chain/gcc-direct/chain.sh), with the 17 archives
+After [chain/gcc-direct/chain.sh](../gcc-direct/chain.sh), with the 17 archives
 in `build-out/distfiles`:
 
 ```sh
@@ -34,7 +34,7 @@ build-out/plumbing/bin/bash chain/gcc-direct/late-check.sh -j 8     # each packa
 
 On the host, `#!/bin/sh` scripts and `system()` still reach the host's
 `/bin/sh`, and config.guess runs `/usr/bin/uname` by absolute path. A host
-run traced 150-odd such calls. [tools/late-root.sh](../tools/late-root.sh)
+run traced 150-odd such calls. [tools/late-root.sh](https://github.com/delta9000/seed-forth/blob/0dd2b88/tools/late-root.sh)
 removes them: it copies a finished `chain/plumbing-root.sh` root (the one
 that started with `hex0-seed` as its only executable), checks that the copy
 holds no executable the chain run did not write, and runs late-tools.sh in

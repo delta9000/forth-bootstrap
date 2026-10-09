@@ -14,7 +14,7 @@ elsewhere and keeps its own license.
 | kaem, compiled by seed-cc as the first shell | `vendor/mescc-tools/Kaem` | [mescc-tools](https://github.com/oriansj/mescc-tools) | GPL-3.0-or-later |
 | M2-Planet, compiled by the Forth compiler for Stage A (and its headers, copied into `tests/cc/` for the compiler's include fallback) | `vendor/M2-Planet`, `tests/cc/*.h` | [M2-Planet](https://github.com/oriansj/M2-Planet) | GPL-3.0-or-later |
 | Patches for gcc-4.7.4, gcc-10.5.0, musl-1.1.24 and bash-2.05b, each with a provenance header | `chain/patches/gcc64/`, `chain/plumbing/bash-2.05b/missing-defines.patch` | [live-bootstrap](https://github.com/fosslinux/live-bootstrap) b1ceced7, `steps/*/patches` | each patch's SPDX header (the patched project's license) |
-| flex 2.5.11's `scan.lex.l` and two patches | `chain/gcc-direct/lexer-inputs/recipe-reference/` | live-bootstrap `steps/flex-2.5.11` | BSD-2-Clause (`LICENSES/BSD-2-Clause.txt` there) |
+| flex 2.5.11's `scan.lex.l` and two patches | `chain/gcc-direct/lexer-inputs/recipe-reference/` | live-bootstrap b1ceced7, `steps/flex-2.5.11` (`chain/gcc-direct/lexer-inputs/PROVENANCE.md`) | BSD-2-Clause (`LICENSES/BSD-2-Clause.txt` there) |
 | Test programs `tests/gcc64/libc-test.c`, `cxx-test.cc` and the other patches in `chain/patches/` and `chain/plumbing/` | as named | written for seed-forth | MIT, unless a header says otherwise |
 
 ## Read as pinned archives (MANIFEST.sha256, not in the repository)

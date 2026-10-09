@@ -6,8 +6,8 @@
 #   <dir>/hex2-ref   mescc-tools hex2
 #
 # TRUSTS: the host gcc and the pinned vendor sources.  These binaries exist
-# only to be *compared against* (verify.sh, stage-a-check.sh, tests/asm/*);
-# nothing in bootstrap.sh's output is built with them.
+# only to be *compared against* (stage-a-check.sh here; seed-forth's
+# verify.sh and tests/asm/ too); nothing the route builds uses them.
 #
 # Always rebuilds: <dir> is wiped first, so a reference left over from an
 # older pin, another STAGE0_COMPAT mode, or a different compiler is never

@@ -9,13 +9,13 @@ scripts replace them and run on those tools alone:
 
 | Script | Port of | Does |
 |---|---|---|
-| [chain-lib.sh](../chain/gcc-direct/chain-lib.sh) | | shared helpers: pins, unpacking, hashing, file lists |
-| [configure.sh](../chain/gcc-direct/configure.sh) | configure.py | one unmodified GCC or binutils configure with seed-cc |
-| [census.sh](../chain/gcc-direct/census.sh) | census.py | every cc1 object through GCC's own Makefile; links cc1 |
-| [binutils.sh](../chain/gcc-direct/binutils.sh) | binutils.py | binutils 2.30 stage B (as, ld, ar, nm, objdump, readelf) |
-| [stage-c.sh](../chain/gcc-direct/stage-c.sh) | stage-c.py | GCC 4.0.4 driver, libgcc, musl, a hosted hello |
-| [stage-d.sh](../chain/gcc-direct/stage-d.sh) | stage-d.py | stages 2, 3 and 4 and their comparison |
-| [chain.sh](../chain/gcc-direct/chain.sh) | | the three in order, with `PATH` = `build-out/plumbing/bin` |
+| [chain-lib.sh](../gcc-direct/chain-lib.sh) | | shared helpers: pins, unpacking, hashing, file lists |
+| [configure.sh](../gcc-direct/configure.sh) | configure.py | one unmodified GCC or binutils configure with seed-cc |
+| [census.sh](../gcc-direct/census.sh) | census.py | every cc1 object through GCC's own Makefile; links cc1 |
+| [binutils.sh](../gcc-direct/binutils.sh) | binutils.py | binutils 2.30 stage B (as, ld, ar, nm, objdump, readelf) |
+| [stage-c.sh](../gcc-direct/stage-c.sh) | stage-c.py | GCC 4.0.4 driver, libgcc, musl, a hosted hello |
+| [stage-d.sh](../gcc-direct/stage-d.sh) | stage-d.py | stages 2, 3 and 4 and their comparison |
+| [chain.sh](../gcc-direct/chain.sh) | | the three in order, with `PATH` = `build-out/plumbing/bin` |
 
 They are written for the bash 2.05b that [bash.kaem](bash.kaem) builds, which
 has no arrays, brace expansion or `pipefail`, and call only programs the
@@ -37,7 +37,7 @@ minutes (before the make fix below, so mostly one job at a time), stage C
 about 22 and stage D about 9.
 
 `chain/plumbing/chain.kaem` runs every stage from stage 1 to here, and
-[chain/plumbing-root.sh](../chain/plumbing-root.sh) runs all of it inside a
+[chain/plumbing-root.sh](../plumbing-root.sh) runs all of it inside a
 root that starts with stage0-posix's `hex0-seed` as its only executable,
 tracing every `execve`.
 

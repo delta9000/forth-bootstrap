@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 # Stage-A parity check — the key invariant for seed-forth correctness.
 #
-# A COMPARISON AGAINST A GCC-BUILT REFERENCE (see verify.sh; the GCC-free
-# build itself is bootstrap.sh).  Trusts the host gcc for m2-ref only.
+# A COMPARISON AGAINST A GCC-BUILT REFERENCE: it trusts the host gcc for
+# m2-ref only.  (seed-forth's bootstrap.sh and verify.sh, not in this
+# repository, ran the GCC-free self-host and the other comparisons.)
 #
 # Verifies that seed-forth-compiled M2-Planet (cc-out-v1) produces the same
 # .M1 output as the gcc-built reference (m2-ref) when self-compiling
-# M2-Planet for amd64.  cc-out-v1 and m2-ref are rebuilt on every run.  This is the "A" sub-stage of bootstrap-chain.sh
-# extracted into a standalone, faster script.
+# M2-Planet for amd64.  cc-out-v1 and m2-ref are rebuilt on every run.  This is the "A" sub-stage of seed-forth's
+# bootstrap-chain.sh, as a standalone, faster script.
 #
-# Unlike bootstrap-chain.sh, this does NOT run stages B–G (M1/hex2 assembly,
+# Unlike that chain, this does NOT run stages B–G (M1/hex2 assembly,
 # v2/v3 self-compile, fixed-point, hello smoke test).  Those exercise
 # M2-Planet's self-hosting properties, not our compiler's correctness.
 #
@@ -48,7 +49,7 @@ cp "$BUILDROOT/gcc-ref/m2-ref" "$BUILDROOT/m2-ref"
 
 # --- Build cc-out-v1 (seed-forth compiles M2-Planet monolith) ---
 # CC_OUT: the compiler goes straight to $BUILDROOT, and seed-forth gets a
-# private /tmp (unshare -rm, as in bootstrap.sh) when the kernel allows it,
+# private /tmp (unshare -rm) when the kernel allows it,
 # so this never reads or clobbers a shared /tmp/cc-out.
 rm -f "$BUILDROOT/cc-out-v1" "$BUILDROOT"/self-*-amd64.M1
 CC_OUT="$BUILDROOT/cc-out-v1" ./tests/cc/build-m2planet-monolith.sh >/dev/null \

@@ -8,7 +8,7 @@
 # is kept so the monolith, and so cc-out-v1, stay the same bytes.)
 #
 # Output: /tmp/cc-out is the seed-forth-built M2-Planet-compatible compiler
-# used by the Stage-A parity and bootstrap-chain checks (the monolith itself
+# used by the Stage-A parity check (the monolith itself
 # goes to /tmp/m2planet-monolith.c).  The Forth compiler always writes the
 # fixed path /tmp/cc-out, so two concurrent runs collide there.
 #
@@ -17,7 +17,7 @@
 #     Write the compiler to <path> instead, and keep the shared /tmp out of
 #     it: the monolith goes to <path>.monolith.c, and seed-forth runs with a
 #     private /tmp (bind-mounted from <path>.tmp via `unshare -rm`, as
-#     bootstrap.sh does) when the kernel allows it; otherwise it falls back
+#     seed-forth's bootstrap.sh did) when the kernel allows it; otherwise it falls back
 #     to the shared /tmp/cc-out and moves the result.  stage-a-check.sh
 #     uses this.  Unset: the /tmp/cc-out behaviour the book describes.
 #   STAGE0_COMPAT=1
@@ -31,8 +31,8 @@
 #     optimization.  With the patch, cc-out-v1's self-host output equals an
 #     M2-Planet-built M2-Planet's (stage0 route or this repo's v2/v3).
 #     Default (unset) keeps the optimization on and matches the GCC-built
-#     reference instead.  tests/cc/stage0-check.sh proves both; see
-#     REPRODUCIBLE.md "Stage0 cross-check and STAGE0_COMPAT".
+#     reference instead.  seed-forth's tests/cc/stage0-check.sh proves
+#     both; see its REPRODUCIBLE.md, "Stage0 cross-check and STAGE0_COMPAT".
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
