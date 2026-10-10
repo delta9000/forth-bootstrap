@@ -1,5 +1,10 @@
 # Buffered streams
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 Until this stage every `FILE` operation was a system call: `getc` read one
 byte with `read(2)` and `printf` issued one `write(2)` per directive. Tools
 that read or write a character at a time (`cut`, `od`, `uniq`, `tr`, the

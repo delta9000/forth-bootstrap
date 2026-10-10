@@ -1,5 +1,10 @@
 # Source-built unsigned conversion
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 Original oyacc 6.6 `reader.c` calls `strtoul` for octal/hexadecimal character
 escapes and decimal token numbers. The implementation in `strtoul.c` is
 original project source under the repository license and is compiled by the

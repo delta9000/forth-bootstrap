@@ -1,5 +1,10 @@
 # Binutils runtime: file metadata, rewind, temporary names, wide and calendar helpers
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 Original binutils 2.30 `gas`, `ld`, `ar`, `nm`, `objdump`, `readelf` and
 `objcopy` need these interfaces beyond the GCC driver set. The stage-B census
 found two compile failures (undeclared `S_IWUSR` in `binutils/rename.c` and

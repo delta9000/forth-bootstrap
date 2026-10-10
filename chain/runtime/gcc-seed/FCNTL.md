@@ -1,5 +1,10 @@
 # Bounded descriptor control
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 Original binutils 2.30 `libiberty/pex-unix.c` saves, marks and restores
 descriptors around child creation with `fcntl(fd, F_GETFD)`,
 `fcntl(fd, F_SETFD, FD_CLOEXEC)`, and `fcntl(fd, F_DUPFD_CLOEXEC, 3)` (or

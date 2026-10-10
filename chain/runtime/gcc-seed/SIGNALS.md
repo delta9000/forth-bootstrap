@@ -1,5 +1,10 @@
 # POSIX signals: numbers, sets, sigaction and delivery
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 The plumbing tools need far more than the persistent `signal()` handlers of
 [SIGNAL.md](SIGNAL.md): `make` and `bash` block `SIGCHLD` around job control
 with `sigprocmask` and wait with `sigsuspend`; `sort`, `tail` and `tee` name

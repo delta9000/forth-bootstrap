@@ -1,5 +1,10 @@
 # Public descriptor I/O on Linux AMD64
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 `descriptor-io.c` supplies `open`, `read`, `close`, and `lseek` to original
 source clients, including GCC libcpp. The public prototypes live in the
 existing `fcntl.h` and `unistd.h`; `sys/types.h` already defines signed

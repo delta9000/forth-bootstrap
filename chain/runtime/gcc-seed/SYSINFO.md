@@ -1,5 +1,10 @@
 # System information, limits, resources and clocks
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 Configure scripts and the plumbing tools ask the system about itself:
 `uname`/`hostname` print names, `ls`/`du`/`pathchk` use `PATH_MAX`,
 `NAME_MAX` and `pathconf`, `xargs`-like code and `bash` use `sysconf`, `nice`

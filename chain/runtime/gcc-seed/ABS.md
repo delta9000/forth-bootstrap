@@ -1,5 +1,10 @@
 # Representable integer absolute values
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 The original GCC 4.0.4 `libiberty/vasprintf.c` sizing pass uses `abs` for
 star-supplied width and precision. `abs.c` implements the ordinary C `int`
 operation, with its actual prototype in `stdlib.h`; the direct driver compiles

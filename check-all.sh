@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # check-all.sh -- the repository's checks in one run.
 #
-# Quick steps (about a minute):
+# Quick steps (under a minute):
 #   01  seed/build.sh: hex0-seed assembles seed/000-seed.hex0 into the
 #       1,772-byte seed-forth
 #   02  ./test.sh: the seed primitives, forth/010-lib.fth and the first
@@ -21,11 +21,11 @@
 # Long steps, opt in:
 #   CHECK_CHAIN=1   chain/plumbing-root.sh: hex0-seed to the GCC 4.0.4 fixed
 #                   point in a root whose only executable is hex0-seed
-#                   (about 40 minutes; needs bwrap, strace and the archives
-#                   of MANIFEST.sha256 in build-out/)
-#   CHECK_K1=smoke  kernel/k1/run-chain.sh --direct-smoke under QEMU (a minute)
+#                   (18 minutes on 24 threads; needs bwrap, strace and the
+#                   archives of MANIFEST.sha256 in build-out/)
+#   CHECK_K1=smoke  kernel/k1/run-chain.sh --direct-smoke under QEMU (under a minute)
 #   CHECK_K1=linux  kernel/k1/run-chain.sh --direct-linux: hex0 to Linux under
-#                   K1 (about 80 minutes with KVM; 24 GiB guest RAM)
+#                   K1 (1 h 38 min with KVM; 24 GiB guest RAM)
 #
 # Each step's output goes to $TMPDIR/check-all-NAME.log (default /tmp); the
 # console shows one OK, SKIP or FAIL line per step and the verdict.

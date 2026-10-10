@@ -1,5 +1,10 @@
 # Core-note records, gettimeofday and features.h
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 For a native `x86_64-*-linux*` build, original binutils 2.30 `bfd/configure.ac`
 sets `CORE_HEADER="hosts/x86-64linux.h"`, and `bfd/elf.c` and
 `bfd/elf64-x86-64.c` include it unconditionally. That unchanged header

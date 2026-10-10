@@ -1,5 +1,10 @@
 # Integer input measured from original Flex
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 Flex2.5.11 misc.c uses exactly plain %d, %o and %x through sscanf; scanopt.c
 uses atoi for a decimal column count. This stage implements those conversions
 with ASCII whitespace, optional signs, hexadecimal prefixes, real variadic

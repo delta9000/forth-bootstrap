@@ -11,7 +11,7 @@ linker, and K0 then starts it.
 ```sh
 ./seed-forth < kernel/tools/k1-direct-start.fth   # build K1 on the host: build-out/k1-direct/k1
 sh kernel/k1/tests/direct-build-check.sh           # the same, audited (see Tests)
-kernel/k1/run-chain.sh --direct-smoke              # K0 -> K1 -> seed-cc, seed-ar, kaem under K1 (3 GiB, a minute)
+kernel/k1/run-chain.sh --direct-smoke              # K0 -> K1 -> seed-cc, seed-ar, kaem under K1 (3 GiB, under a minute)
 kernel/k1/run-chain.sh --direct                    # ... then the plumbing stages to bash 2.05b (8 GiB)
 kernel/k1/run-chain.sh --direct-linux              # ... then on to Linux and kexec (24 GiB, 1 h 38 min)
 ```
@@ -39,7 +39,7 @@ that runs besides that runner:
 K0 lacks `stat`, `fstat`, `munmap` and `getpid`, which the object writer
 and the linker use; `kernel/k1/boot/k0-syscalls.fth` retries those calls
 with what K0 has when they return ENOSYS, and changes nothing on Linux.
-On the host the whole build takes about 7 seconds.  K1 is 221,672 bytes,
+On the host the whole build takes under a second.  K1 is 221,672 bytes,
 sha256 `f90229b116c5a3b5...`.
 
 ## The runs
@@ -232,7 +232,7 @@ each is a place K1 differs from Linux.
 
 ## Tests
 
-- `sh kernel/k1/tests/direct-build-check.sh` (about a minute; needs strace
+- `sh kernel/k1/tests/direct-build-check.sh` (about ten seconds; needs strace
   and GNU as): `kernel/tools/k1-direct.recipe` lists exactly the compiler
   layers seed-cc uses; the K1 build under strace runs only the seed and
   the runner; each C object equals `seed-cc -nostdinc -c`'s; `k1-asm.fth`'s

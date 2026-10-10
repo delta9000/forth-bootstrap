@@ -1,5 +1,10 @@
 # Strings, integers, random numbers and line input
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 The remaining C89/POSIX string and number functions the plumbing tools call,
 all in the fixed ASCII C locale. Each function that a program commonly
 supplies itself (gnulib and libiberty replacements) is a separate archive

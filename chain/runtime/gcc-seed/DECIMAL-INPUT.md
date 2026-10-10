@@ -1,5 +1,10 @@
 # Correctly rounded floating input: strtod, strtof, strtold, atof
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 Original binutils 2.30 `binutils/stabs.c` reads stabs floating constants
 with `atof`; gawk 3.0.4 converts every numeric-looking field and string with
 `strtod`; coreutils `seq`, `printf` and `sort -g` parse their operands with

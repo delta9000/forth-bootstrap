@@ -1,5 +1,10 @@
 # Public private mappings on Linux AMD64
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 The complete original GCC 4.0.4 `gcc/config/host-linux.c` includes
 `sys/mman.h` unconditionally. Its PCH hooks need `mmap`, `munmap`, `PROT_NONE`,
 `PROT_READ`, `PROT_WRITE`, `MAP_PRIVATE`, both anonymous spellings, and

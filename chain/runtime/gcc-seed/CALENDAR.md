@@ -1,5 +1,10 @@
 # Wall clock, time zones and calendar runtime
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 Original GCC 4.0.4 `libcpp/macro.c` needs `time(NULL)`, `localtime(&tt)` and
 six standard `struct tm` fields for its cached `__DATE__` and `__TIME__` text.
 Original binutils 2.30 adds `gmtime`, `ctime` and `strftime`

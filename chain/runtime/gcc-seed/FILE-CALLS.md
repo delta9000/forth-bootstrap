@@ -1,5 +1,10 @@
 # File-system calls, device numbers and realpath
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 `cp`, `mv`, `ln`, `install`, `touch`, `mkfifo`, `mknod`, `readlink`, `tar`
 and `patch` need the rest of the POSIX file calls. Each wrapper below is one
 Linux AMD64 syscall through `__seed_syscall6`; raw results in `[-4095, -1]`

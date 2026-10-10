@@ -1,6 +1,6 @@
 #!/bin/sh
 # K1 without TinyCC, checked on the host.  Run from the repository root after
-# ./seed/build.sh.  About a minute; needs GNU as for the assembly comparison.
+# ./seed/build.sh.  About ten seconds; needs GNU as for the assembly comparison.
 #   1. kernel/tools/k1-direct.recipe lists exactly the compiler layers seed-cc uses.
 #   2. ./seed-forth < kernel/tools/k1-direct-start.fth builds build-out/k1-direct/k1
 #      under strace: every execve is the seed or the runner it built.

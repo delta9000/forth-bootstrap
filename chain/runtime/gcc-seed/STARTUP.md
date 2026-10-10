@@ -1,5 +1,10 @@
 # Runtime-aware process entry
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 Original oyacc probes for __progname. The runtime-aware entry initializes this
 real symbol before main to the basename within argv[0], or an empty string for
 an absent name or trailing slash. Initialization allocates nothing and preserves

@@ -1,5 +1,10 @@
 # Ordinary C90 nonlocal return
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 The original Flex 2.5.11 source needs ordinary `setjmp` and `longjmp`.
 `include/setjmp.h` declares a private Linux AMD64 LP64 `jmp_buf`: an array of
 eight `long` cells, 64 bytes with eight-byte alignment. It is not compatible

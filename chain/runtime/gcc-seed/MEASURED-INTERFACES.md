@@ -1,5 +1,10 @@
 # Four measured original-GCC runtime interfaces
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 The preliminary historical a535 inventory contains 206 successful cc1 objects,
 not a complete cohort. `prefix.o` references `access`, `toplev.o` references
 `getpid`, `rtlanal.o` and `builtins.o` reference `strpbrk`, and `builtins.o`

@@ -1,5 +1,10 @@
 # Process creation, replacement and waiting
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 Original binutils 2.30 `libiberty/pex-unix.c` runs every subprocess for
 the `pex_*` interface, which GCC's driver and collect2 also use to run cc1,
 as and ld. Under a glibc-like configuration (`HAVE_SYS_WAIT_H`,

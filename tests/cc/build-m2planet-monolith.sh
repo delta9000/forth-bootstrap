@@ -29,7 +29,7 @@
 #     M2-Planet-family compilers (cc_amd64, M2, M2-Planet) compile `&&` as
 #     bitwise AND, 8 & 1 = 0, so every M2-Planet-built M2-Planet skips the
 #     optimization.  With the patch, cc-out-v1's self-host output equals an
-#     M2-Planet-built M2-Planet's (stage0 route or this repo's v2/v3).
+#     M2-Planet-built M2-Planet's (the stage0 route, or seed-forth's v2/v3).
 #     Default (unset) keeps the optimization on and matches the GCC-built
 #     reference instead.  seed-forth's tests/cc/stage0-check.sh proves
 #     both; see its REPRODUCIBLE.md, "Stage0 cross-check and STAGE0_COMPAT".

@@ -1,5 +1,10 @@
 # Source-built short options
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 Original oyacc 6.6 main.c parses `b:dlo:p:rtv` through getopt and reads optarg
 and optind. The original project implementation in getopt.c supplies this
 measured short-option interface, declared in the bounded unistd.h header.

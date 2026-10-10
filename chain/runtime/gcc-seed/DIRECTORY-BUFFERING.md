@@ -1,5 +1,10 @@
 # Measured working-directory and setbuf interfaces
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 Original GCC 4.0.4 at `944765863eec87a9f37e297994fd2af960397138`
 uses `getcwd` in `libiberty/getpwd.c`. The historical configuration lacks
 `HAVE_GETCWD`, selecting original `libiberty/getcwd.c`, which calls unavailable

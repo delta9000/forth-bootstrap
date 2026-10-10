@@ -25,7 +25,8 @@ build-out/plumbing/bin/kaem --verbose --strict --file chain/plumbing/stage1.kaem
 build-out/plumbing/bin/kaem --verbose --strict --file chain/plumbing/stage2.kaem
 ```
 
-Stage 1 takes about a minute and stage 2 about three (four parallel jobs).
+On a 24-thread host stage 1 takes about 15 seconds and stage 2 about 35
+(four parallel jobs), measured 2026-10-10.
 Everything is written under `build-out/plumbing/`: sources unpack into
 `src/`, programs install into `bin/`.
 

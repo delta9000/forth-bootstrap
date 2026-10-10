@@ -1,5 +1,10 @@
 # Process CPU clock and filesystem removal
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 The original GCC 4.0.4 `libiberty/getruntime.c` falls back to `clock()` when
 getrusage/times are unavailable. `gcc/genautomata.c` calls that timing helper
 and calls `remove()` for diagnostic-file cleanup. These implementations use

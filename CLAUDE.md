@@ -39,10 +39,10 @@ GCC 4.0.4, GCC 10.5.0 and Linux (`chain/`).  `README.md` has the map,
 
 ## Checks
 
-`./check-all.sh` runs the quick ones (about a minute).  The long ones
+`./check-all.sh` runs the quick ones (under a minute).  The long ones
 are opt in: `CHECK_CHAIN=1` (host chain to the GCC 4.0.4 fixed point,
-about 40 minutes) and `CHECK_K1=linux` (hex0 to Linux under K1, about 80
-minutes with KVM and 24 GiB for the guest).  Do not run the long ones on
+18 minutes on 24 threads) and `CHECK_K1=linux` (hex0 to Linux under K1,
+1 h 38 min with KVM and 24 GiB for the guest).  Do not run the long ones on
 every commit.
 
 ## Style

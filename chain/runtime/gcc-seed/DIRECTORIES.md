@@ -1,5 +1,10 @@
 # Linux AMD64 directories
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 `dirent.c` implements `opendir`, `readdir` and `closedir` through the existing
 raw syscall bridge. It supplies the directory traversal used by unmodified
 GCC 4.0.4 `libcpp/files.c` when scanning precompiled-header directories. The

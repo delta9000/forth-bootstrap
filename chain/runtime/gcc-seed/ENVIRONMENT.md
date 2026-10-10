@@ -1,5 +1,10 @@
 # Runtime environment and C/POSIX locale
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 The full runtime entry now calls __seed_init_runtime. It preserves the existing
 standalone program-name helper and captures the genuine environment vector
 immediately after argv's null terminator. Raw entry remains independent.

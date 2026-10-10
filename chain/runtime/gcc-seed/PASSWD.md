@@ -1,5 +1,10 @@
 # User and group databases and the login name
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 `ls -l`, `id`, `chown`, `tar`, `make` (`~user`), `bash` and `whoami` look up
 users and groups. The runtime reads the two classic files directly; there is
 no NSS, NIS, LDAP or systemd lookup.

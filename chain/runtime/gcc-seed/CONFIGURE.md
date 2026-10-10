@@ -1,5 +1,10 @@
 # Configure runtime contracts
 
+The checks this note names under `tests/gcc/` are seed-forth's
+([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
+not carried over.  Here the runtime is exercised by the chain itself:
+every tool seed-cc builds links against it.
+
 This increment supplies the interfaces demanded by the original GCC 4.0.4
 configure source and its C preprocessor. It does not make every GCC configure
 test pass, and does not claim a complete libc or a completed GCC bootstrap.
