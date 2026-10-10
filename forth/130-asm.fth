@@ -761,8 +761,10 @@ variable asm-cp-i
     then,
   again, ;
 
-\ Pre-baked output path: "/tmp/asm-out\0"
+\ The output path: asm-out-name holds the address of a NUL-terminated path,
+\ "/tmp/asm-out" unless the caller stores its own there before asm-main.
 create asm-out-path  s, /tmp/asm-out  [lit] 0 c,
+variable asm-out-name  asm-out-path asm-out-name !
 
 : asm-main
   asm-load-stdin
@@ -777,9 +779,10 @@ create asm-out-path  s, /tmp/asm-out  [lit] 0 c,
   asm-out-init
   [lit] 2 asm-pass !
   asm-pass-loop
-  asm-out-path asm-write-output
+  asm-out-name @ asm-write-output
   bye ;
 
-\ The caller invokes 'asm-main' (after optionally setting 'asm-base').
+\ The caller invokes 'asm-main' (after optionally setting 'asm-base' and
+\ 'asm-out-name').
 \ Existing pipelines append it on stdin between the Forth prelude and the M1
 \ source; see tests/asm/*.sh.

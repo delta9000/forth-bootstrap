@@ -2,25 +2,15 @@
 # hi-check.sh -- forth/130-asm.fth assembles and links a hand-written M1
 # program (ELF header included) that writes "hi" and exits 42.
 #
-# The assembler writes its output to the fixed path /tmp/asm-out
-# (asm-out-path in forth/130-asm.fth); any existing file there is moved
-# aside and restored. Checks: stdout "hi", exit status 42, 160 bytes.
+# The assembler writes to a file in a fresh temporary directory, named by
+# storing its path in asm-out-name (forth/130-asm.fth) before asm-main.
+# Checks: stdout "hi", exit status 42, 160 bytes.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 [ -x seed-forth ] || seed/build.sh >/dev/null
 
 work=$(mktemp -d)
-saved=
-if [ -e /tmp/asm-out ] || [ -L /tmp/asm-out ]; then
-    saved=$work/saved-asm-out
-    mv /tmp/asm-out "$saved"
-fi
-cleanup() {
-    rm -f /tmp/asm-out
-    [ -z "$saved" ] || mv "$saved" /tmp/asm-out
-    rm -rf "$work"
-}
-trap cleanup EXIT
+trap 'rm -rf "$work"' EXIT
 
 cat > "$work/hi.M1" <<'M1'
 DEFINE mov_eax, B8
@@ -56,9 +46,10 @@ DEFINE syscall 0F05
 :ELF_end
 M1
 
-{ cat forth/010-lib.fth forth/130-asm.fth; echo asm-main; cat "$work/hi.M1"; } \
+{ cat forth/010-lib.fth forth/130-asm.fth
+  echo "create hi-out s, $work/hi [lit] 0 c,  hi-out asm-out-name !"
+  echo asm-main; cat "$work/hi.M1"; } \
     | ./seed-forth
-mv /tmp/asm-out "$work/hi"
 chmod +x "$work/hi"
 status=0
 out=$("$work/hi") || status=$?

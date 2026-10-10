@@ -77,17 +77,11 @@ out=$(printf ': t [lit] 65 [lit] 4268032 c! [lit] 1 [lit] 4268032 [lit] 1 [lit] 
 out=$(cat forth/010-lib.fth <(printf '[lit] 53 digit? [lit] 90 + [lit] 89 + emit\n[lit] 65 digit? [lit] 90 + [lit] 89 + emit\n[lit] 65 alpha? [lit] 90 + [lit] 89 + emit\n[lit] 32 space? [lit] 90 + [lit] 89 + emit\nbye\n') | timeout 5 ./seed-forth | od -An -tx1 | tr -d ' \n')
 [ "$out" = "b2b3b2b2" ] && pass "lib: digit?/alpha?/space? classifiers" || fail "classify got: '$out'"
 
-# T-fileio: open+write+close round-trip
-rm -f /tmp/forth-fwio-test
-cat > /tmp/test-fileio.fth <<'TFEOF'
-: path  ( -- pathaddr )
-  here
-  [lit] 47 c, [lit] 116 c, [lit] 109 c, [lit] 112 c,
-  [lit] 47 c, [lit] 102 c, [lit] 111 c, [lit] 114 c,
-  [lit] 116 c, [lit] 104 c, [lit] 45 c, [lit] 102 c,
-  [lit] 119 c, [lit] 105 c, [lit] 111 c, [lit] 45 c,
-  [lit] 116 c, [lit] 101 c, [lit] 115 c, [lit] 116 c,
-  [lit] 0 c, ;
+# T-fileio: open+write+close round-trip, into a fresh temporary directory
+fwio=$(mktemp -d)
+trap 'rm -rf "$fwio"' EXIT
+cat > "$fwio/test-fileio.fth" <<TFEOF
+create path  s, $fwio/forth-fwio-test  [lit] 0 c,
 
 : payload  ( -- bufaddr )
   here
@@ -100,8 +94,8 @@ cat > /tmp/test-fileio.fth <<'TFEOF'
   close drop  bye ;
 go
 TFEOF
-cat forth/010-lib.fth /tmp/test-fileio.fth | timeout 5 ./seed-forth
-[ "$(cat /tmp/forth-fwio-test 2>/dev/null)" = "OK" ] && pass "lib: open/write/close round-trip writes correct bytes" || fail "fileio got: '$(cat /tmp/forth-fwio-test 2>/dev/null)'"
+cat forth/010-lib.fth "$fwio/test-fileio.fth" | timeout 5 ./seed-forth
+[ "$(cat "$fwio/forth-fwio-test" 2>/dev/null)" = "OK" ] && pass "lib: open/write/close round-trip writes correct bytes" || fail "fileio got: '$(cat "$fwio/forth-fwio-test" 2>/dev/null)'"
 
 # T-lib: forth/010-lib.fth comparison, stack, arith, control-flow, defining words
 out=$(cat forth/010-lib.fth forth/test-010-lib.fth | timeout 5 ./seed-forth)
