@@ -188,7 +188,7 @@ int main(int argc, char **argv)
         return 0;
     }
     if (argc < 3)
-        value_fail("usage: gcc-direct-ar.py rc[s][D] ARCHIVE OBJECT... | s[D] ARCHIVE");
+        value_fail("usage: seed-ar r[c][u][s][D] ARCHIVE OBJECT... | s[D] ARCHIVE");
     flags = argv[1];
     if (flags[0] == '-')
         flags = flags + 1;
