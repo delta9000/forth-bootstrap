@@ -12,7 +12,7 @@
    from the seed, after which seed-cc can rebuild itself. */
 #include "seed-tool.h"
 
-#define VERSION "seed-forth direct C compiler (experimental)"
+#define VERSION "seed-cc direct C compiler (experimental)"
 #define TARGET "x86_64-pc-linux-gnu"
 #define RUNTIME "chain/runtime/gcc-seed"
 #define LAYERS "cc"
