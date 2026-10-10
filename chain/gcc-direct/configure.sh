@@ -7,14 +7,13 @@
 #       [--component gcc|libiberty|libcpp] [--forth-ar]
 #       [--with-binutils DIR] [--with-sysroot DIR]
 #
-# The bash port of seed-forth's configure.py.  DIR is an unpacked source tree, prepared by
+# DIR is an unpacked source tree, prepared by
 # the caller (binutils.sh and stage-c.sh unpack the pinned archives and make
 # their documented adjustments); WORK may exist but must not hold a build/
-# directory yet.  configure.py's per-invocation probe capture and its frozen
-# copy of the compiler sources are not ported: seed-cc reads the repository's
-# compiler layers, and the chain runs from a fixed source tree.
+# directory yet.  seed-cc reads the repository's compiler layers, and the
+# chain runs from a fixed source tree.
 #
-# Host target tools are guarded as in configure.py: WORK/guard, first in PATH,
+# Host target tools are guarded: WORK/guard, first in PATH,
 # holds a script for each of gcc, cc, clang, as, ld, ar, ranlib, nm, ... (and
 # their x86_64-pc-linux-gnu- spellings) that logs the attempt to
 # WORK/host-tool-attempts.log and exits 127.  CC, CPP and CC_FOR_BUILD name
@@ -123,7 +122,7 @@ if [ -n "$binutils" ]; then
   done
 fi
 
-# The part of the environment later make runs need, as configure.py records it.
+# The part of the environment later make runs need.
 : > "$work/configure-env.sh"
 for name in CC CPP CXX CXXCPP CC_FOR_BUILD CFLAGS CPPFLAGS LDFLAGS LIBS CONFIG_SITE CONFIG_SHELL \
             PATH AS LD AR RANLIB NM; do

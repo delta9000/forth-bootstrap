@@ -1,4 +1,4 @@
-# Provenance: ours (seed-forth gcc64), not in live-bootstrap.
+# Provenance: written for this project's gcc64 climb, not in live-bootstrap.
 # musl-1.1.24, for gcc >= 15 (C23 default): string.h's non-prototype
 # 'char *basename();' now means basename(void) and clashes with libiberty's
 # prototype when gcc-15 builds libstdc++.  Later musl dropped this

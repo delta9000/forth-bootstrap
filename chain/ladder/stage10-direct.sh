@@ -4,8 +4,7 @@
 # after kernel/k1/direct-full.sh, whose chain/gcc-direct/late-tools.sh built make 4.4.1,
 # bash 5.2, coreutils 9.5 and the rest with the stage-D GCC.  This installs
 # them as /usr (/usr/bin, /bin/sh = bash 5.2) and adds the helpers gcc64's
-# scripts ask the system for, for chain/ladder/stage11.sh.  (The name is
-# seed-forth's: its TinyCC route had a stage 10 that built these with tcc.)
+# scripts ask the system for, for chain/ladder/stage11.sh.
 set -eu
 L=/build-out/late/usr
 B=/build-out/plumbing/bin

@@ -6,7 +6,7 @@
 #   chain/gcc-direct/census.sh WORK --oyacc OYACC --flex FLEX [-j JOBS] [--link]
 #   (JOBS defaults to 6)
 #
-# The bash port of seed-forth's census.py.  WORK holds `gcc`, `libiberty` and `libcpp`
+# WORK holds `gcc`, `libiberty` and `libcpp`
 # directories made by `configure.sh --work WORK/<component>`.  OYACC and FLEX
 # are the chain's parser generators; no host bison or flex is used.
 #
@@ -16,8 +16,8 @@
 # express: empty LDFLAGS and CFLAGS (the template hardcodes -g), the parser
 # generators, and the libiberty and libcpp archive paths.  CFLAGS carries
 # -Werror=implicit-function-declaration, which makes seed-cc reject any call
-# to an undeclared function (census.py ran host GCC as a lint for this; under
-# C90 an undeclared function returns int, which truncates a pointer result).
+# to an undeclared function (under C90 an undeclared function returns int,
+# which truncates a pointer result).
 # `make -k` keeps going past failures, so one census reports every unit.
 #
 # With --link it also archives libcpp and lets the Makefile link cc1.

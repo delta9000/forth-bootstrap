@@ -7,7 +7,7 @@
 #       --flex FLEX [-j JOBS]
 #   (JOBS defaults to 8)
 #
-# The bash port of seed-forth's stage-d.py, run by the chain's own bash and make.
+# Run by the chain's own bash and make.
 # STAGE_C_WORK is a finished stage-c.sh run: its installed GCC (whose cc1 and
 # driver seed-cc compiled), its musl sysroot and its binutils (toolchain/).
 # GCC 4.0.4 (C only) is then built three times, as chain/gcc64/build-gcc4.sh does
@@ -23,7 +23,7 @@
 # reached at once: stages 2, 3 and 4 must install the same files with the
 # same bytes.  Archives are compared member by member (names, order and
 # member bytes), because binutils 2.30 `ar` stores member timestamps.  Stage 2
-# can match only because the runtime's qsort is musl's (see stage-d.py and
+# can match only because the runtime's qsort is musl's (see
 # chain/runtime/gcc-seed/SORT.md).
 #
 # Source adaptation, applied to a fresh unpacking of the pinned tar: gcc's

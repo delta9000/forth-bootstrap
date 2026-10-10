@@ -8,8 +8,7 @@
 #
 # make 4.4.1, bash 5.2, coreutils 9.5, sed, grep, gawk, tar, gzip, xz,
 # patch and the rest, pinned in chain/plumbing/late.SOURCES, with nothing
-# captured from a host (seed-forth's TinyCC route replayed host-captured
-# configure runs for some of these; this route does not): each one's own
+# captured from a host: each one's own
 # ./configure runs under the plumbing bash 2.05b, its Makefile under the
 # plumbing make 3.82, and its C code goes through the stage-D GCC 4.0.4
 # (CHAIN/stage-d/prefix) with the stage-C musl and binutils.
@@ -112,8 +111,7 @@ lrun() {
   exit 1
 }
 
-# configure_args NAME: NAME's configure arguments (the ones seed-forth's
-# TinyCC route used for the same packages).
+# configure_args NAME: NAME's configure arguments.
 configure_args() {
   case $1 in
     make-4.4.1) echo --without-guile ;;

@@ -6,7 +6,7 @@
 #   chain/gcc-direct/binutils.sh WORK --oyacc OYACC --flex FLEX [-j JOBS]
 #   (JOBS defaults to 6)
 #
-# The bash port of seed-forth's binutils.py.  WORK must be new.  The pinned
+# WORK must be new.  The pinned
 # binutils-2.30.tar (chain/plumbing/chain.SOURCES) is unpacked into WORK/src, and
 # the parser and scanner C shipped in the release is deleted, so that the
 # original Makefiles must regenerate it from the .y and .l sources with the
@@ -33,7 +33,7 @@ ROOT=$(cd "${0%/*}/../.." && pwd)
 . "$ROOT/chain/gcc-direct/chain-lib.sh"
 
 TOOLS="gas/as-new ld/ld-new binutils/ar binutils/nm-new binutils/objdump binutils/readelf"
-# Shipped generated parser/scanner C and headers (configure.py's list).
+# Shipped generated parser/scanner C and headers.
 GENERATED="binutils/arlex.c binutils/arparse.c binutils/arparse.h
   binutils/deflex.c binutils/defparse.c binutils/defparse.h
   binutils/mcparse.c binutils/mcparse.h binutils/nlmheader.c

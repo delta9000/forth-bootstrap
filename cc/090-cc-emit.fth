@@ -1130,7 +1130,7 @@ variable cc-bss-pos
 [lit] 1099511627776 constant cc-bss-flag           \ 2^40: "this slot is in the bss"
 
 \ Capacity for deferred global-vaddr fixups (each use of a global's name
-\ is one).  M2-Planet's source has about 1,600, and so has pnut's.
+\ is one).  M2-Planet's source has about 1,600.
 [lit] 16384 constant cc-gfixup-default-cap
 variable cc-gfixup-limit
 cc-gfixup-default-cap cc-gfixup-limit !

@@ -1,6 +1,6 @@
 canonicalize.c: keep DEST valid when xrealloc moves RPATH (upstream bug)
 
-Origin: written for seed-forth's plumbing stage 2; later gnulib versions of
+Origin: written for this project's plumbing stage 2; later gnulib versions of
   canonicalize.c make the same correction (they keep the offset of DEST
   across the reallocation).
 Why: for a relative name, canonicalize_filename_mode copies the working

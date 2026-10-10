@@ -4,8 +4,8 @@
 #   root  the file embeds absolute paths under BUILDROOT (prefixes, sysroot, flex's
 #         m4 path, ...), so the hash holds only for the BUILDROOT on the "root" line:
 #         /build-out/g64, where chain/ladder/stage11.sh builds under K1.
-# Values: seed-forth's qemu-final run (0dd2b88, kernel/k1/run-chain.sh --direct-linux,
-# 2026-10-07), whose bzImage is byte-identical to the TinyCC route's.
+# Values: matched by the run under K1 of 2026-10-08 (kernel/k1/run-chain.sh
+# --direct-linux; results/k1-2026-10-08/gcc64-hashes.txt).
 root /build-out/g64
 c1a8867055f70b25cdd53f30c7f908f66833417ece9e091f7893a43e5dfea62d  bu/bin/as  root
 aca2fe4394d47502a9344730bbf17f7912d56e2e25705f0387b405455ceeba51  bu/bin/ld  root

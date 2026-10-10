@@ -4,8 +4,8 @@
 \ followed by a line that writes the object (kernel/k1/boot/asm.fth).
 \
 \ The bytes are the instructions, one per line with the instruction as its
-\ comment (originally transcribed from GNU as's listing of seed-forth's
-\ k1/k1.S).  python3 kernel/k1/tests/asm-check.py assembles the comments with GNU
+\ comment (originally transcribed from GNU as's listing of an earlier
+\ assembler source).  python3 kernel/k1/tests/asm-check.py assembles the comments with GNU
 \ as and proves that object equal to the one this file writes: the same
 \ section bytes, global symbols and relocations.  Change a byte line and its
 \ comment together.

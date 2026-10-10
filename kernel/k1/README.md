@@ -242,7 +242,3 @@ each is a place K1 differs from Linux.
   smoke recipe and `tests/direct-smoke.c`'s 26 checks, among them a demand
   page fault taken with DF set, which fails on a K1 without the `cld`.
 - `kernel/k1/run-chain.sh --direct-linux`: the full run, above.
-
-seed-forth's TinyCC route built K1 with TinyCC from an assembler source,
-`k1.S`, and tested it with a tcc-musl `ktest`; those files are in
-[seed-forth](https://github.com/delta9000/seed-forth) at 0dd2b88.

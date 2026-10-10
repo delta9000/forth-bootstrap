@@ -1,4 +1,4 @@
-/* seed-ar -- native replacement for seed-forth's tools/gcc-direct-ar.py.
+/* seed-ar -- a GNU-ar-compatible archiver for the Forth archive writer.
 
    Deterministic GNU ar archives built entirely by seed Forth
    (cc/141-archive.fth); this program only checks arguments, snapshots inputs
@@ -8,8 +8,8 @@
      r[u][s][D]  ARCHIVE OBJECT...   the same, saying "creating ARCHIVE"
      s[D] ARCHIVE                    validate the already-present index
 
-   Fresh creation produces exactly the bytes gcc-direct-ar.py produces.
-   Unlike the Python adapter, r on an existing archive updates it as GNU ar
+   Fresh creation produces deterministic bytes (cc/141-archive.fth).
+   r on an existing archive updates it as GNU ar
    does: an input whose basename equals a member's name replaces the first
    such member in place, every other input is appended, and the whole
    archive (index included) is then rewritten by Forth.  Members carry no
@@ -24,7 +24,7 @@ static const char *layers[5] = {
 
 static void value_fail(const char *message) { st_fail(2, message); }
 
-/* Path word with space separators, as gcc-direct-ar.py writes it. */
+/* Path word with space separators. */
 static void path_word(struct buf *b, const char *name, const char *path)
 {
     unsigned long i, n = strlen(path);

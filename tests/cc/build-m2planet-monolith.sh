@@ -16,8 +16,8 @@
 #   CC_OUT=<path>
 #     Write the compiler to <path> instead, and keep the shared /tmp out of
 #     it: the monolith goes to <path>.monolith.c, and seed-forth runs with a
-#     private /tmp (bind-mounted from <path>.tmp via `unshare -rm`, as
-#     seed-forth's bootstrap.sh did) when the kernel allows it; otherwise it falls back
+#     private /tmp (bind-mounted from <path>.tmp via `unshare -rm`) when
+#     the kernel allows it; otherwise it falls back
 #     to the shared /tmp/cc-out and moves the result.  stage-a-check.sh
 #     uses this.  Unset: the /tmp/cc-out behaviour the book describes.
 #   STAGE0_COMPAT=1
@@ -29,10 +29,9 @@
 #     M2-Planet-family compilers (cc_amd64, M2, M2-Planet) compile `&&` as
 #     bitwise AND, 8 & 1 = 0, so every M2-Planet-built M2-Planet skips the
 #     optimization.  With the patch, cc-out-v1's self-host output equals an
-#     M2-Planet-built M2-Planet's (the stage0 route, or seed-forth's v2/v3).
+#     M2-Planet-built M2-Planet's (stage0-posix's, for one).
 #     Default (unset) keeps the optimization on and matches the GCC-built
-#     reference instead.  seed-forth's tests/cc/stage0-check.sh proves
-#     both; see seed-forth's REPRODUCIBLE.md, "Stage0 cross-check and STAGE0_COMPAT".
+#     reference instead, which is what stage-a-check.sh compares against.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 

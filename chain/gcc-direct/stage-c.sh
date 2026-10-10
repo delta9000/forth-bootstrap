@@ -6,14 +6,14 @@
 #       --flex FLEX [-j JOBS] [--resume]
 #   (JOBS defaults to 6, 1 to 8)
 #
-# The bash port of seed-forth's stage-c.py, run by the chain's own bash and make.
+# Run by the chain's own bash and make.
 # BINUTILS_WORK is a finished binutils.sh run; its as-new, ld-new, ar, nm-new,
 # objdump and readelf are checked against its stage-B report and copied into
 # WORK/toolchain (ranlib there is a two-line `ar s` script).  Steps:
 #
 # 1. inputs     binutils copied; the pinned GCC tar and musl tarball
 #               (chain/plumbing/chain.SOURCES) unpacked into WORK/src.  The one
-#               source adjustment is configure.py's --alloca-frame adapter:
+#               source adjustment is the alloca-frame adapter:
 #               chain/gcc-direct/patches/alloca-frame.patch applied to
 #               libiberty/alloca.c with no fuzz, both hashes checked before
 #               and after (chain/gcc-direct/patches/alloca-frame.json).  The
@@ -49,8 +49,7 @@
 # Every make after step 3 runs with WORK/gcc/configure-env.sh, whose PATH
 # starts with the guards, so a host compiler, assembler or linker use is
 # blocked and logged in WORK/gcc/host-tool-attempts.log.  No GCC or musl
-# source is patched beyond the alloca adapter and the collect2 patch (see
-# stage-c.py for why linux-unwind.h's `struct ucontext` builds against musl).
+# source is patched beyond the alloca adapter and the collect2 patch.
 # Build-tree adjustments: the combined-tree links ../libiberty, ../libcpp,
 # ../build-TRIPLE/libiberty and ../binutils/{ar,ranlib}; STMP_FIXINC emptied
 # in the configured Makefile; gsyslimits.h as include/syslimits.h;
@@ -140,7 +139,7 @@ collect2_patch() {
   done
 }
 
-# alloca_frame SOURCE: configure.py's --alloca-frame adapter, applied exactly.
+# alloca_frame SOURCE: the alloca-frame adapter, applied exactly.
 alloca_frame() {
   local manifest=$ROOT/chain/gcc-direct/patches/alloca-frame.json patch=$ROOT/chain/gcc-direct/patches/alloca-frame.patch
   local file before after want_patch

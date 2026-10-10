@@ -11,9 +11,8 @@
 #   stage 10  gcc-10.5.0 (C, C++) by gcc-4.7.4
 #   then      pins     : every artifact in chain/gcc64/HASHES is compared (see below)
 #
-# The stage numbers are seed-forth's: there, stages 0-5 reached gcc-A through
-# TinyCC, and stages 11-12 went on to GCC 15.2.0.  This repository keeps only the
-# bridge and stages 6-10, which is what the route to Linux needs.
+# The bridge builds gcc-A from the stage-D GCC; the stage numbers 6-10 that
+# follow are kept from the ladder these scripts were first written for.
 #
 # Layout: this script and its helpers (build-gcc4.sh, build-gcc47.sh, build-gcc10.sh)
 # live in chain/gcc64/; patches in chain/patches/gcc64/; test programs in tests/gcc64/;
