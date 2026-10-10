@@ -5,8 +5,7 @@ with no host compiler, but configure scripts and Makefiles still need a
 shell, make, sed, awk, grep and the file utilities.  This directory builds
 those tools from their pinned upstream tarballs with seed-cc, driven by
 [kaem](../../vendor/mescc-tools/Kaem) scripts.  No host program runs: not a
-shell, not a host compiler.  How these stages were developed is recorded in
-seed-forth's [PLUMBING.md](https://github.com/delta9000/seed-forth/blob/0dd2b88/gcc-direct/PLUMBING.md).
+shell, not a host compiler.
 
 ## Running it
 
@@ -123,16 +122,11 @@ GCC during discovery, and host GNU tools where versions agree.
 | patch | 20-case transcript identical to patch 2.5.9 built by GCC |
 | diffutils | 50-case transcript (`diff` formats and options, `cmp`, `diff3`, `sdiff`) identical to diffutils 2.7 built by GCC |
 
-These comparisons were made in seed-forth, whose
-[tests/plumbing/stage2-check.sh](https://github.com/delta9000/seed-forth/blob/0dd2b88/tests/plumbing/stage2-check.sh)
-repeats them: it builds stages 1 and 2 from a clean `build-out/plumbing`,
-requires every `execve` to be kaem, seed-cc/seed-ar, the seed they run, or
-a program the stages built, then runs the fixed cases in
-[tests/plumbing/stage2-cases.sh](https://github.com/delta9000/seed-forth/blob/0dd2b88/tests/plumbing/stage2-cases.sh)
-with `PATH` holding only `build-out/plumbing/bin`.  Those scripts were not
-carried over.  Here, `chain/plumbing-root.sh` runs these stages in a root
-whose only starting executable is `hex0-seed` and traces every `execve`
-([results/host-2026-10-08/](../../results/host-2026-10-08/)).
+These comparisons were made when the stages were written, with the
+stage-2 tools run from a clean `build-out/plumbing` and `PATH` holding only
+`build-out/plumbing/bin`.  `chain/plumbing-root.sh` runs these stages in a
+root whose only starting executable is `hex0-seed` and traces every
+`execve` ([results/host-2026-10-08/](../../results/host-2026-10-08/)).
 
 ## Parser generators without host plumbing
 
@@ -158,9 +152,7 @@ stage-1 archives in `build-out/plumbing-inputs/` and the three lexer
 archives in `build-out/lexer-inputs/archives/`.
 [lexers.SOURCES](lexers.SOURCES) pins the exact archives and repository
 reference files from [sources.json](../gcc-direct/lexer-inputs/sources.json).
-The native stage uses the repository's pinned reference files directly;
-seed-forth's Python reference recipe needed a copy of `recipe-reference/`
-in its inputs tree.
+The native stage uses the repository's pinned reference files directly.
 
 Outputs are `build-out/plumbing/bin/{oyacc,lex,flex}`. Ordinary lex form
 files remain in `build-out/plumbing/src/heirloom-devtools-070527/lex/`;
@@ -175,9 +167,7 @@ and installed tools are independent.
 
 ### Source preparation and configuration
 
-The preparation reproduces seed-forth's Python reference,
-[lexers.py](https://github.com/delta9000/seed-forth/blob/0dd2b88/gcc-direct/lexers.py) and
-[prepare-lexer-sources.py](https://github.com/delta9000/seed-forth/blob/0dd2b88/gcc-direct/prepare-lexer-sources.py): unpack
+The preparation reproduces the Python reference recipe it replaced: unpack
 pinned originals, apply unchanged `scan_l.patch` then `yyin.patch`, copy
 unchanged `scan.lex.l`, remove shipped `parse.c`, `parse.h`, `scan.c` and
 `skel.c`, then regenerate the skeleton from original `flex.skl`. No shipped
@@ -208,11 +198,10 @@ Heirloom uses `unix=1`, as in the original recipe. GNU make 3.82 must retain
 its default `SHELL`: changing it disables the direct-command fast path.
 There are no shell metacharacters in expanded recipe lines.
 
-### Recorded equivalence (2026-10-06, in seed-forth)
+### Recorded equivalence (2026-10-06)
 
-The native stage and seed-forth's Python reference recipe were both run and
-compared with seed-forth's `tests/gcc/plumbing-lexers-check.py`; the Python
-recipe and the check stayed in seed-forth.
+The native stage and the Python reference recipe were both run and their
+outputs compared.
 
 The comparison checks prepared sources, all six generated C intermediates
 (including `skel.c`), `parse.h`, ASCII input, `libl.a`, and fixed configuration
@@ -245,10 +234,9 @@ so `#line` filename spelling agrees. Generated C SHA-256 values:
 | flex-scanner | `4cb3e1ce267d106449d734cec1a48d2b4213522f1f781c2591a918e028bd2a53` |
 | heirloom-bootstrap-scanner | `48a6e083b06fcdd5c57c97c6be9ed02e7d3f5a72d6023c7b0d50bc1a9ec7e52a` |
 
-A fresh complete stage also passed seed-forth's execution audit
-(`tests/gcc/plumbing-lexers-audit.py`, which denies executable access
-outside `seed-forth`, `build-out/seed-cc/`, `build-out/plumbing/` and
-`/tmp`), including every prepared and generated hash check and `flex -V`
+A fresh complete stage also passed an execution audit that denied
+executable access outside `seed-forth`, `build-out/seed-cc/`,
+`build-out/plumbing/` and `/tmp`, including every prepared and generated hash check and `flex -V`
 reporting 2.5.11.  Wide/EUC lex variants are outside this stage's evidence.
 
 ## Bash: [bash.kaem](bash.kaem)

@@ -15,8 +15,7 @@ Two patches apply: `chain/patches/late/bc-1.07.1/01-fix-libmath-sed.diff`
 (the chain has no `ed`) and
 `chain/patches/late/diffutils-3.10/01-unparenthesize-ifdef-formats.diff`
 (drops the parentheses around a string initializer, which leaves the
-string the same and keeps diffutils' source identical to seed-forth's
-other route).  Under K1,
+string the same and lets tcc compile it too).  Under K1,
 [chain/ladder/stage10-direct.sh](../ladder/stage10-direct.sh) then installs
 the late tools as `/usr`, with bash 5.2 as `/bin/sh`, for gcc64's climb.
 
@@ -41,15 +40,15 @@ accept only with `FORCE_UNSAFE_CONFIGURE=1`, which late-tools.sh sets.
 All 17 packages built in 631 s; the report, with each package's configure
 and make times and the sha256 of all 159 installed programs, is
 [results/k1-2026-10-08/late-tools-report.txt](../../results/k1-2026-10-08/late-tools-report.txt).
-The hashes are the same as those of seed-forth's run of this route.
+An earlier, independent run produced the same hashes ([HISTORY.md](../../HISTORY.md)).
 
-## Earlier: a traced host run and the test suites (2026-10-07, in seed-forth)
+## A traced host run and the test suites (2026-10-07)
 
-Before the route moved here, seed-forth's `tools/late-root.sh` ran
-late-tools.sh in a copy of a finished `chain/plumbing-root.sh` root (one
-that started with `hex0-seed` as its only executable), through bwrap under
-`strace -f -e trace=execve`, and ran each package's `make -k check` with
-its `late-check.sh`.  Neither script was carried over.
+late-tools.sh was also run on the host in a copy of a finished
+`chain/plumbing-root.sh` root (one that started with `hex0-seed` as its
+only executable), through bwrap under `strace -f -e trace=execve`, and
+each package's `make -k check` was run there.  The wrapper and check
+scripts used for that run are not kept in this repository.
 
 All 17 packages built in 409 s (configure is most of it).  76,974
 successful `execve` calls; one was the host's `bwrap`, the rest programs the
@@ -128,10 +127,5 @@ behind one of them is not ruled out.
 - No second run compared for reproducibility on the host; the absolute
   prefix (`/build-out/late/usr`) is compiled into several programs, so a
   different output directory gives different bytes.  Under K1 the prefix
-  is the same each run, and the 159 program hashes match seed-forth's run.
-- seed-forth's TinyCC route built some of these packages from configure
-  output captured on a host; this route configures every one.  How the
-  resulting `config.h` files differ (GCC 4.0.4 has VLAs and `visibility`,
-  fails autoconf's `restrict` probe, and bash's `HAVE_SYS_ERRLIST` probe
-  links) is recorded in seed-forth's
-  [chain/plumbing/LATE.md](https://github.com/delta9000/seed-forth/blob/0dd2b88/plumbing/LATE.md).
+  is the same each run, and the 159 program hashes match an earlier
+  independent run.

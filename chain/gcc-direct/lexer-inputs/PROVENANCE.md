@@ -31,8 +31,7 @@ The skeleton is derived from original flex.skl by original mkskel.sh and
 checked against an independent Python escaping transform. No shipped parser
 or scanner C is used as an input.
 
-Preparation and build logic were transcribed from seed-forth's 2026-10-03
-lexer-input-evidence/prepare-inputs.py, prepare-flex-source.py and
-lexer-build/build-heirloom.py, build-flex.py. The source archives retain their
+Preparation and build logic were transcribed from the Python reference
+scripts used while this stage was developed (2026-10-03). The source archives retain their
 own notices and licenses. Heirloom's ordinary scanner library contains only
 allprint, libmain, reject, yyless and yywrap; wide/EUC variants are untested.
