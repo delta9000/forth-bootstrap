@@ -57,9 +57,9 @@ ec=0; out=$(printf ': t [lit] 0x41 emit ;\nt\n' | ./seed-forth) || ec=$?
 ec=0; out=$(printf '[lit]' | ./seed-forth) || ec=$?
 [ "$ec" = "2" ] && [ "$out" = "?" ] && pass "[lit] at EOF -> '?', exit 2" || fail "[lit] at EOF: exit $ec, got '$out'"
 
-# T13c: [lit] handles large values (4337704 = 0x413028); emit prints the low byte.
+# T13c: [lit] handles large values (4337704 = 0x423028); emit prints the low byte.
 out=$(echo "[lit] 4337704 emit" | timeout 3 ./seed-forth)
-[ "$out" = "(" ] && pass "[lit] large value (low byte of 0x413028 is 0x28)" || fail "[lit] large got: '$out'"
+[ "$out" = "(" ] && pass "[lit] large value (low byte of 0x423028 is 0x28)" || fail "[lit] large got: '$out'"
 
 # T-div: divide primitive
 out=$(echo "[lit] 4096 [lit] 16 / [lit] 48 + emit" | timeout 3 ./seed-forth)
