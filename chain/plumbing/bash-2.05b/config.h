@@ -1,4 +1,4 @@
-/* config.h for the seed-forth bash build (from live-bootstrap common.mk) */
+/* config.h for the plumbing bash build (from live-bootstrap common.mk) */
 #define HAVE_DIRENT_H 1
 #define STRUCT_DIRENT_HAS_D_INO 1
 #define HAVE_STDINT_H 1
