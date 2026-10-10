@@ -1,7 +1,8 @@
 #!/bin/sh
 # k0.hex0 is what gets built; k0.asm is the same program as NASM source.
 # Prove they agree: k0.hex0 is exactly what asm2hex0.py writes from
-# k0.asm, and hex0-seed's k0.bin is byte-identical to nasm's.
+# k0.asm, and hex0-seed's k0.bin is byte-identical to nasm's.  Needs nasm;
+# HEX0 names another hex0 assembler to use instead of stage0-posix's.
 set -e
 HEX0=${HEX0:-vendor/stage0-posix/bootstrap-seeds/POSIX/AMD64/hex0-seed}
 t=$(mktemp -d)

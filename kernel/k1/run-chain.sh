@@ -14,7 +14,8 @@
 # Optional: JOBS=N passes into guest make; K1_DISKS names the disk directory;
 # K1_MEM the guest RAM; K1_RAM_FILE (avoid on an SSD: terabytes of writes
 # over a full run) names a new build-out file for shared,
-# non-preallocated RAM backing (K1_RAM_RESERVE defaults to 8G).
+# non-preallocated RAM backing (K1_RAM_RESERVE defaults to 8G); QEMU names
+# the emulator (default qemu-system-x86_64).
 set -eu
 cd "$(dirname "$0")/../.."
 usage="usage: $0 [--direct-smoke | --direct | --direct-linux]"
