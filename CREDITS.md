@@ -42,6 +42,4 @@ programs built from them keep their upstream licenses.
 The route stands on the work of the bootstrappable-builds community:
 Jeremiah Orians' stage0-posix, mescc-tools, M2-Planet and M2libc, and the
 live-bootstrap project, whose patches and ordering much of the GCC climb
-follows.  seed-forth, where this repository started, also drew on
-[pnut](https://github.com/udem-dlteam/pnut) and TinyCC for its other route
-(see [HISTORY.md](HISTORY.md)).
+follows.

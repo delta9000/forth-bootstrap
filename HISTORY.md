@@ -10,7 +10,12 @@ GCC 4.0.4 to a stage 2 = 3 = 4 fixed point, the late tools, gcc64's climb
 to GCC 10.5.0, and Linux 7.2.8 under K1.  seed-forth recorded its full run
 under K1 on 2026-10-07 (78 minutes, `JOBS=2 K1_MEM=24G`): stage D at its
 fixed point (54 files, 0 differ) and a 1,278,976-byte bzImage, sha256
-`881e96ad05da8e18...`, identical to the TinyCC route's.  Everything
+`881e96ad05da8e18...`, identical to the TinyCC route's.  This
+repository's own run (2026-10-08, `results/k1-2026-10-08/`) reproduced it:
+the same bzImage, the same 31 gcc64 pins, the same stage D report and the
+same hashes for all 159 late-tool programs.  K1 differs from seed-forth's
+(`7621950c...`) by the `cld` its exception entry now starts with; seed-cc
+and seed-ar differ because they name this repository's paths.  Everything
 else stayed in seed-forth with its results:
 
 - **The TinyCC route.**  seed Forth compiles TinyCC 0.9.27 directly
@@ -39,9 +44,8 @@ Its `file=` blocks quote this repository's `seed/`, `forth/` and `cc/`
 sources byte for byte, and its checks run against a checkout of this
 repository.
 
-Where this repository's notes report a result from before the move
-(`chain/plumbing/*.md`), they say so and link the seed-forth files
-involved.
+The rest of the repository describes only itself; seed-forth's scripts,
+tests and earlier runs are mentioned here and nowhere else.
 
 ## How seed-forth was built: models and strategies
 
