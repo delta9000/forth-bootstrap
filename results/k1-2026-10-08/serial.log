@@ -1,0 +1,1331 @@
+k1-direct: K1 built from the seed (no TinyCC):
+f90229b116c5a3b5335f17409dc7ea2bde6b25ae54c3af389a9b8e56e5951e4c
+k0: K1 built by seed Forth (no TinyCC); handing over
+k1: starting
+k1: hda: 858 MiB
+k1: hdb: 4096 MiB
+k1: imported 358 files, 858 MiB from hda
+k1: imported 93 files, 8164 KiB from K0 into /k0/
+k1: 24299 MiB RAM, TSC 3793878 kHz
+k1: seed-forth built by hex0-seed
+k1: seed-cc and seed-ar built by seed Forth
+ +> set -ex 
+ +> set -ex
+ +> CC=./build-out/seed-cc/seed-cc 
+ +> AR=./build-out/seed-cc/seed-ar 
+ +> X=vendor/stage0-posix/mescc-tools-extra 
+ +> O=build-out/k1-smoke 
+ +> ./build-out/seed-cc/seed-cc -c -Werror=implicit-function-declaration kernel/k1/tests/direct-smoke.c -o build-out/k1-smoke/direct-smoke.o 
+ +> ./build-out/seed-cc/seed-ar rcs build-out/k1-smoke/libsmoke.a build-out/k1-smoke/direct-smoke.o 
+ +> ./build-out/seed-cc/seed-cc -static -Lbuild-out/k1-smoke -lsmoke -o build-out/k1-smoke/direct-smoke 
+ +> K1_SMOKE=from-kaem 
+ +> cd build-out/k1-smoke 
+ +> ./direct-smoke 
+ok 1 environment from kaem
+ok 2 fopen for writing
+ok 3 fclose
+ok 4 stat
+ok 5 fgets and printf %f
+ok 6 open, lseek, read
+ok 7 rename
+ok 8 mkdir
+ok 9 opendir and readdir
+ok 10 getcwd and chdir
+ok 11 rmdir
+ok 12 unlink
+ok 13 mkdir for readdir-unlink
+ok 14 readdir while unlinking skips nothing
+ok 15 readlink /proc/self/exe
+ok 16 fork, execv, waitpid
+ok 17 pipe
+ok 18 pipe, dup2 and fork
+ok 19 malloc 64 MiB
+ok 20 realloc 128 MiB keeps contents
+ok 21 mmap and munmap
+ok 22 page fault with DF set zeroes the page forwards
+ok 23 clock_gettime
+ok 24 time moves forward
+ok 25 time
+ok 26 sigaction and kill
+direct-smoke: all 26 checks passed
+ +> cd ../.. 
+ +> ./build-out/seed-cc/seed-cc -static vendor/stage0-posix/mescc-tools-extra/mkdir.c vendor/stage0-posix/mescc-tools-extra/M2libc/bootstrappable.c -o build-out/k1-smoke/mkdir 
+ +> ./build-out/seed-cc/seed-cc -static vendor/stage0-posix/mescc-tools-extra/sha256sum.c vendor/stage0-posix/mescc-tools-extra/M2libc/bootstrappable.c -o build-out/k1-smoke/sha256sum 
+ +> ./build-out/k1-smoke/mkdir -p build-out/k1-smoke/made/two/levels 
+ +> ./build-out/k1-smoke/sha256sum --check kernel/k1/tests/direct-smoke.sha256 
+hex0-seed: OK
+k1: seed-cc, seed-ar and kaem work; starting the plumbing stages
+ +> set -ex 
+ +> set -ex
+ +> CC=./build-out/seed-cc/seed-cc 
+ +> X=vendor/stage0-posix/mescc-tools-extra 
+ +> B=build-out/plumbing 
+ +> BIN=./build-out/plumbing/bin 
+ +> ./build-out/seed-cc/seed-cc -static vendor/stage0-posix/mescc-tools-extra/mkdir.c vendor/stage0-posix/mescc-tools-extra/M2libc/bootstrappable.c -o build-out/plumbing-mkdir 
+ +> ./build-out/plumbing-mkdir -p ./build-out/plumbing/bin build-out/plumbing/src 
+ +> ./build-out/seed-cc/seed-cc -static vendor/stage0-posix/mescc-tools-extra/mkdir.c vendor/stage0-posix/mescc-tools-extra/M2libc/bootstrappable.c -o ./build-out/plumbing/bin/mkdir 
+ +> ./build-out/seed-cc/seed-cc -static vendor/stage0-posix/mescc-tools-extra/sha256sum.c vendor/stage0-posix/mescc-tools-extra/M2libc/bootstrappable.c -o ./build-out/plumbing/bin/sha256sum 
+ +> ./build-out/seed-cc/seed-cc -static vendor/stage0-posix/mescc-tools-extra/unbz2.c vendor/stage0-posix/mescc-tools-extra/M2libc/bootstrappable.c -o ./build-out/plumbing/bin/unbz2 
+ +> ./build-out/seed-cc/seed-cc -static vendor/stage0-posix/mescc-tools-extra/ungz.c vendor/stage0-posix/mescc-tools-extra/M2libc/bootstrappable.c -o ./build-out/plumbing/bin/ungz 
+ +> ./build-out/seed-cc/seed-cc -static vendor/stage0-posix/mescc-tools-extra/untar.c vendor/stage0-posix/mescc-tools-extra/M2libc/bootstrappable.c -o ./build-out/plumbing/bin/untar 
+ +> ./build-out/seed-cc/seed-cc -static vendor/stage0-posix/mescc-tools-extra/cp.c vendor/stage0-posix/mescc-tools-extra/M2libc/bootstrappable.c -o ./build-out/plumbing/bin/cp 
+ +> ./build-out/seed-cc/seed-cc -static vendor/stage0-posix/mescc-tools-extra/chmod.c vendor/stage0-posix/mescc-tools-extra/M2libc/bootstrappable.c -o ./build-out/plumbing/bin/chmod 
+ +> ./build-out/seed-cc/seed-cc -static vendor/stage0-posix/mescc-tools-extra/rm.c vendor/stage0-posix/mescc-tools-extra/M2libc/bootstrappable.c -o ./build-out/plumbing/bin/rm 
+ +> ./build-out/plumbing/bin/sha256sum --check chain/plumbing/SOURCES 
+build-out/plumbing-inputs/make-3.82.tar.bz2: OK
+build-out/plumbing-inputs/bash-2.05b.tar.gz: OK
+build-out/plumbing-inputs/sed-4.0.9.tar.gz: OK
+build-out/plumbing-inputs/coreutils-5.0.tar.bz2: OK
+build-out/plumbing-inputs/grep-2.4.tar.gz: OK
+build-out/plumbing-inputs/gawk-3.0.4.tar.gz: OK
+build-out/plumbing-inputs/tar-1.12.tar.gz: OK
+build-out/plumbing-inputs/gzip-1.2.4.tar.gz: OK
+build-out/plumbing-inputs/patch-2.5.9.tar.gz: OK
+build-out/plumbing-inputs/diffutils-2.7.tar.gz: OK
+ +> cd build-out/plumbing/src 
+ +> ../bin/unbz2 --file ../../plumbing-inputs/make-3.82.tar.bz2 --output make-3.82.tar 
+ +> ../bin/untar --file make-3.82.tar 
+The extraction of make-3.82.tar was successful
+ +> ../bin/rm make-3.82.tar 
+ +> cd make-3.82 
+ +> ../../bin/cp ../../../../chain/plumbing/make-3.82/config.h config.h 
+ +> M=../../../seed-cc/seed-cc 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob ar.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob arscan.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob commands.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob default.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob dir.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob expand.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob file.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob function.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob getopt.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob getopt1.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob implicit.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob job.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob main.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob misc.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob read.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob remake.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob rule.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob signame.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob strcache.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob variable.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob version.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob vpath.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob hash.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob remote-stub.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob getloadavg.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob alloca.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob glob/fnmatch.c 
+ +> ../../../seed-cc/seed-cc -c -DHAVE_CONFIG_H -I. -Iglob glob/glob.c 
+ +> ../../../seed-cc/seed-cc -static -o ../../bin/make ar.o arscan.o commands.o default.o dir.o expand.o file.o function.o getopt.o getopt1.o implicit.o job.o main.o misc.o read.o remake.o rule.o signame.o strcache.o variable.o version.o vpath.o hash.o remote-stub.o getloadavg.o alloca.o fnmatch.o glob.o 
+ +> cd ../../../.. 
+ +> ./build-out/plumbing/bin/make --version 
+GNU Make 3.82
+Built for unknown
+Copyright (C) 2010  Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+ +> set -ex 
+ +> set -ex
+ +> B=build-out/plumbing 
+ +> MK=../../bin/make 
+ +> P=../../../../chain/plumbing 
+ +> ./build-out/plumbing/bin/sha256sum --check chain/plumbing/SOURCES 
+build-out/plumbing-inputs/make-3.82.tar.bz2: OK
+build-out/plumbing-inputs/bash-2.05b.tar.gz: OK
+build-out/plumbing-inputs/sed-4.0.9.tar.gz: OK
+build-out/plumbing-inputs/coreutils-5.0.tar.bz2: OK
+build-out/plumbing-inputs/grep-2.4.tar.gz: OK
+build-out/plumbing-inputs/gawk-3.0.4.tar.gz: OK
+build-out/plumbing-inputs/tar-1.12.tar.gz: OK
+build-out/plumbing-inputs/gzip-1.2.4.tar.gz: OK
+build-out/plumbing-inputs/patch-2.5.9.tar.gz: OK
+build-out/plumbing-inputs/diffutils-2.7.tar.gz: OK
+ +> cd build-out/plumbing/src 
+ +> ../bin/ungz --file ../../plumbing-inputs/sed-4.0.9.tar.gz --output sed-4.0.9.tar 
+../../plumbing-inputs/sed-4.0.9.tar.gz => sed-4.0.9.tar: succeeded uncompressing 3358720 bytes
+ +> ../bin/untar --file sed-4.0.9.tar 
+The extraction of sed-4.0.9.tar was successful
+ +> ../bin/rm sed-4.0.9.tar 
+ +> cd sed-4.0.9 
+ +> ../../bin/cp ../../../../chain/plumbing/sed-4.0.9/config.h config.h 
+ +> ../../bin/make -j4 -f ../../../../chain/plumbing/sed-4.0.9/Makefile 
+../../bin/cp lib/regex_.h lib/regex.h
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c sed/compile.c -o sed/compile.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c sed/execute.c -o sed/execute.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c sed/regexp.c -o sed/regexp.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c sed/fmt.c -o sed/fmt.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c sed/sed.c -o sed/sed.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/alloca.c -o lib/alloca.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/getopt.c -o lib/getopt.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/getopt1.c -o lib/getopt1.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/utils.c -o lib/utils.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/regex.c -o lib/regex.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/obstack.c -o lib/obstack.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/strverscmp.c -o lib/strverscmp.o
+../../../seed-cc/seed-ar cr lib/libsed.a lib/alloca.o lib/getopt.o lib/getopt1.o lib/utils.o lib/regex.o lib/obstack.o lib/strverscmp.o
+../../../seed-cc/seed-cc -static -o sed/sed sed/compile.o sed/execute.o sed/regexp.o sed/fmt.o sed/sed.o lib/libsed.a
+ +> ../../bin/cp sed/sed ../../bin/sed 
+ +> ../../bin/chmod 755 ../../bin/sed 
+ +> cd .. 
+ +> ../bin/ungz --file ../../plumbing-inputs/gzip-1.2.4.tar.gz --output gzip-1.2.4.tar 
+../../plumbing-inputs/gzip-1.2.4.tar.gz => gzip-1.2.4.tar: succeeded uncompressing 798720 bytes
+ +> ../bin/untar --file gzip-1.2.4.tar 
+The extraction of gzip-1.2.4.tar was successful
+ +> ../bin/rm gzip-1.2.4.tar 
+ +> cd gzip-1.2.4 
+ +> ../../bin/make -j4 -f ../../../../chain/plumbing/gzip-1.2.4/Makefile 
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DSTDC_HEADERS -DHAVE_UNISTD_H -DDIRENT -DRETSIGTYPE=void -I. -c gzip.c -o gzip.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DSTDC_HEADERS -DHAVE_UNISTD_H -DDIRENT -DRETSIGTYPE=void -I. -c zip.c -o zip.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DSTDC_HEADERS -DHAVE_UNISTD_H -DDIRENT -DRETSIGTYPE=void -I. -c deflate.c -o deflate.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DSTDC_HEADERS -DHAVE_UNISTD_H -DDIRENT -DRETSIGTYPE=void -I. -c trees.c -o trees.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DSTDC_HEADERS -DHAVE_UNISTD_H -DDIRENT -DRETSIGTYPE=void -I. -c bits.c -o bits.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DSTDC_HEADERS -DHAVE_UNISTD_H -DDIRENT -DRETSIGTYPE=void -I. -c unzip.c -o unzip.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DSTDC_HEADERS -DHAVE_UNISTD_H -DDIRENT -DRETSIGTYPE=void -I. -c inflate.c -o inflate.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DSTDC_HEADERS -DHAVE_UNISTD_H -DDIRENT -DRETSIGTYPE=void -I. -c util.c -o util.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DSTDC_HEADERS -DHAVE_UNISTD_H -DDIRENT -DRETSIGTYPE=void -I. -c crypt.c -o crypt.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DSTDC_HEADERS -DHAVE_UNISTD_H -DDIRENT -DRETSIGTYPE=void -I. -c lzw.c -o lzw.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DSTDC_HEADERS -DHAVE_UNISTD_H -DDIRENT -DRETSIGTYPE=void -I. -c unlzw.c -o unlzw.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DSTDC_HEADERS -DHAVE_UNISTD_H -DDIRENT -DRETSIGTYPE=void -I. -c unpack.c -o unpack.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DSTDC_HEADERS -DHAVE_UNISTD_H -DDIRENT -DRETSIGTYPE=void -I. -c unlzh.c -o unlzh.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DSTDC_HEADERS -DHAVE_UNISTD_H -DDIRENT -DRETSIGTYPE=void -I. -c getopt.c -o getopt.o
+../../../seed-cc/seed-cc -static -o gzip gzip.o zip.o deflate.o trees.o bits.o unzip.o inflate.o util.o crypt.o lzw.o unlzw.o unpack.o unlzh.o getopt.o
+ +> ../../bin/cp gzip ../../bin/gzip 
+ +> ../../bin/cp gzip ../../bin/gunzip 
+ +> ../../bin/cp gzip ../../bin/zcat 
+ +> ../../bin/chmod 755 ../../bin/gzip 
+ +> ../../bin/chmod 755 ../../bin/gunzip 
+ +> ../../bin/chmod 755 ../../bin/zcat 
+ +> cd .. 
+ +> ../bin/ungz --file ../../plumbing-inputs/patch-2.5.9.tar.gz --output patch-2.5.9.tar 
+../../plumbing-inputs/patch-2.5.9.tar.gz => patch-2.5.9.tar: succeeded uncompressing 950784 bytes
+ +> ../bin/untar --file patch-2.5.9.tar 
+The extraction of patch-2.5.9.tar was successful
+ +> ../bin/rm patch-2.5.9.tar 
+ +> cd patch-2.5.9 
+ +> ../../bin/cp ../../../../chain/plumbing/patch-2.5.9/config.h config.h 
+ +> ../../bin/make -j4 -f ../../../../chain/plumbing/patch-2.5.9/Makefile 
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c error.c -o error.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c addext.c -o addext.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c argmatch.c -o argmatch.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c backupfile.c -o backupfile.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c basename.c -o basename.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c dirname.c -o dirname.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c getopt.c -o getopt.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c getopt1.c -o getopt1.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c inp.c -o inp.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c maketime.c -o maketime.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c partime.c -o partime.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c patch.c -o patch.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c pch.c -o pch.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c quote.c -o quote.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c quotearg.c -o quotearg.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c quotesys.c -o quotesys.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c util.c -o util.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c version.c -o version.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c xmalloc.c -o xmalloc.o
+../../../seed-cc/seed-cc -static -o patch error.o addext.o argmatch.o backupfile.o basename.o dirname.o getopt.o getopt1.o inp.o maketime.o partime.o patch.o pch.o quote.o quotearg.o quotesys.o util.o version.o xmalloc.o
+ +> ../../bin/cp patch ../../bin/patch 
+ +> ../../bin/chmod 755 ../../bin/patch 
+ +> cd .. 
+ +> ../bin/ungz --file ../../plumbing-inputs/diffutils-2.7.tar.gz --output diffutils-2.7.tar 
+../../plumbing-inputs/diffutils-2.7.tar.gz => diffutils-2.7.tar: succeeded uncompressing 1167360 bytes
+ +> ../bin/untar --file diffutils-2.7.tar 
+The extraction of diffutils-2.7.tar was successful
+ +> ../bin/rm diffutils-2.7.tar 
+ +> cd diffutils-2.7 
+ +> ../../bin/cp ../../../../chain/plumbing/diffutils-2.7/config.h config.h 
+ +> ../../bin/make -j4 -f ../../../../chain/plumbing/diffutils-2.7/Makefile 
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c cmp.c -o cmp.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c cmpbuf.c -o cmpbuf.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c error.c -o error.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c getopt.c -o getopt.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c getopt1.c -o getopt1.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c xmalloc.c -o xmalloc.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c version.c -o version.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c diff.c -o diff.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c analyze.c -o analyze.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c dir.c -o dir.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c io.c -o io.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c util.c -o util.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c context.c -o context.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c ed.c -o ed.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c ifdef.c -o ifdef.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c normal.c -o normal.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c side.c -o side.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c fnmatch.c -o fnmatch.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c regex.c -o regex.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c alloca.c -o alloca.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c diff3.c -o diff3.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c sdiff.c -o sdiff.o
+../../../seed-cc/seed-cc -static -o cmp cmp.o cmpbuf.o error.o getopt.o getopt1.o xmalloc.o version.o
+../../../seed-cc/seed-cc -static -o diff diff.o analyze.o cmpbuf.o dir.o io.o util.o context.o ed.o ifdef.o normal.o side.o fnmatch.o getopt.o getopt1.o regex.o version.o alloca.o
+../../../seed-cc/seed-cc -static -o diff3 diff3.o getopt.o getopt1.o version.o
+../../../seed-cc/seed-cc -static -o sdiff sdiff.o getopt.o getopt1.o version.o
+ +> ../../bin/cp cmp ../../bin/cmp 
+ +> ../../bin/cp diff ../../bin/diff 
+ +> ../../bin/cp diff3 ../../bin/diff3 
+ +> ../../bin/cp sdiff ../../bin/sdiff 
+ +> ../../bin/chmod 755 ../../bin/cmp 
+ +> ../../bin/chmod 755 ../../bin/diff 
+ +> ../../bin/chmod 755 ../../bin/diff3 
+ +> ../../bin/chmod 755 ../../bin/sdiff 
+ +> cd .. 
+ +> ../bin/ungz --file ../../plumbing-inputs/grep-2.4.tar.gz --output grep-2.4.tar 
+../../plumbing-inputs/grep-2.4.tar.gz => grep-2.4.tar: succeeded uncompressing 1761280 bytes
+ +> ../bin/untar --file grep-2.4.tar 
+The extraction of grep-2.4.tar was successful
+ +> ../bin/rm grep-2.4.tar 
+ +> cd grep-2.4 
+ +> ../../bin/cp ../../../../chain/plumbing/grep-2.4/config.h config.h 
+ +> ../../bin/make -j4 -f ../../../../chain/plumbing/grep-2.4/Makefile 
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Isrc -c src/grep.c -o src/grep.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Isrc -c src/dfa.c -o src/dfa.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Isrc -c src/kwset.c -o src/kwset.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Isrc -c src/obstack.c -o src/obstack.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Isrc -c src/regex.c -o src/regex.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Isrc -c src/savedir.c -o src/savedir.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Isrc -c src/getopt.c -o src/getopt.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Isrc -c src/getopt1.c -o src/getopt1.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Isrc -c src/search.c -o src/search.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Isrc -c src/alloca.c -o src/alloca.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Isrc -c src/grepmat.c -o src/grepmat.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Isrc -c src/egrepmat.c -o src/egrepmat.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Isrc -c src/fgrepmat.c -o src/fgrepmat.o
+../../../seed-cc/seed-cc -static -o src/grep src/grep.o src/dfa.o src/kwset.o src/obstack.o src/regex.o src/savedir.o src/getopt.o src/getopt1.o src/search.o src/alloca.o src/grepmat.o
+../../../seed-cc/seed-cc -static -o src/egrep src/grep.o src/dfa.o src/kwset.o src/obstack.o src/regex.o src/savedir.o src/getopt.o src/getopt1.o src/search.o src/alloca.o src/egrepmat.o
+../../../seed-cc/seed-cc -static -o src/fgrep src/grep.o src/dfa.o src/kwset.o src/obstack.o src/regex.o src/savedir.o src/getopt.o src/getopt1.o src/search.o src/alloca.o src/fgrepmat.o
+ +> ../../bin/cp src/grep ../../bin/grep 
+ +> ../../bin/cp src/egrep ../../bin/egrep 
+ +> ../../bin/cp src/fgrep ../../bin/fgrep 
+ +> ../../bin/chmod 755 ../../bin/grep 
+ +> ../../bin/chmod 755 ../../bin/egrep 
+ +> ../../bin/chmod 755 ../../bin/fgrep 
+ +> cd .. 
+ +> ../bin/ungz --file ../../plumbing-inputs/gawk-3.0.4.tar.gz --output gawk-3.0.4.tar 
+../../plumbing-inputs/gawk-3.0.4.tar.gz => gawk-3.0.4.tar: succeeded uncompressing 3788800 bytes
+ +> ../bin/untar --file gawk-3.0.4.tar 
+The extraction of gawk-3.0.4.tar was successful
+ +> ../bin/rm gawk-3.0.4.tar 
+ +> cd gawk-3.0.4 
+ +> ../../bin/cp ../../../../chain/plumbing/gawk-3.0.4/config.h config.h 
+ +> ../../bin/make -j4 -f ../../../../chain/plumbing/gawk-3.0.4/Makefile 
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c array.c -o array.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c builtin.c -o builtin.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c eval.c -o eval.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c field.c -o field.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c gawkmisc.c -o gawkmisc.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c io.c -o io.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c main.c -o main.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c missing.c -o missing.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c msg.c -o msg.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c node.c -o node.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c re.c -o re.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c version.c -o version.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c awktab.c -o awktab.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c getopt.c -o getopt.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c getopt1.c -o getopt1.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c regex.c -o regex.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c dfa.c -o dfa.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c random.c -o random.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -c alloca.c -o alloca.o
+../../../seed-cc/seed-cc -static -o gawk array.o builtin.o eval.o field.o gawkmisc.o io.o main.o missing.o msg.o node.o re.o version.o awktab.o getopt.o getopt1.o regex.o dfa.o random.o alloca.o -lm
+ +> ../../bin/cp gawk ../../bin/gawk 
+ +> ../../bin/cp gawk ../../bin/awk 
+ +> ../../bin/chmod 755 ../../bin/gawk 
+ +> ../../bin/chmod 755 ../../bin/awk 
+ +> cd .. 
+ +> ../bin/ungz --file ../../plumbing-inputs/tar-1.12.tar.gz --output tar-1.12.tar 
+../../plumbing-inputs/tar-1.12.tar.gz => tar-1.12.tar: succeeded uncompressing 3235840 bytes
+ +> ../bin/untar --file tar-1.12.tar 
+The extraction of tar-1.12.tar was successful
+ +> ../bin/rm tar-1.12.tar 
+ +> cd tar-1.12 
+ +> ../../bin/cp ../../../../chain/plumbing/tar-1.12/config.h config.h 
+ +> ../../bin/make -j4 -f ../../../../chain/plumbing/tar-1.12/Makefile 
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c src/arith.c -o src/arith.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c src/buffer.c -o src/buffer.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c src/compare.c -o src/compare.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c src/create.c -o src/create.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c src/delete.c -o src/delete.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c src/extract.c -o src/extract.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c src/incremen.c -o src/incremen.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c src/list.c -o src/list.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c src/mangle.c -o src/mangle.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c src/misc.c -o src/misc.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c src/names.c -o src/names.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c src/open3.c -o src/open3.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c src/rtapelib.c -o src/rtapelib.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c src/tar.c -o src/tar.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c src/update.c -o src/update.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/argmatch.c -o lib/argmatch.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/backupfile.c -o lib/backupfile.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/error.c -o lib/error.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/getdate.c -o lib/getdate.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/getopt.c -o lib/getopt.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/getopt1.c -o lib/getopt1.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/getversion.c -o lib/getversion.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/modechange.c -o lib/modechange.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/msleep.c -o lib/msleep.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/xgetcwd.c -o lib/xgetcwd.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/xmalloc.c -o lib/xmalloc.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/xstrdup.c -o lib/xstrdup.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/alloca.c -o lib/alloca.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -c lib/fnmatch.c -o lib/fnmatch.o
+../../../seed-cc/seed-ar cr lib/libtar.a lib/argmatch.o lib/backupfile.o lib/error.o lib/getdate.o lib/getopt.o lib/getopt1.o lib/getversion.o lib/modechange.o lib/msleep.o lib/xgetcwd.o lib/xmalloc.o lib/xstrdup.o lib/alloca.o lib/fnmatch.o
+../../../seed-cc/seed-cc -static -o src/tar src/arith.o src/buffer.o src/compare.o src/create.o src/delete.o src/extract.o src/incremen.o src/list.o src/mangle.o src/misc.o src/names.o src/open3.o src/rtapelib.o src/tar.o src/update.o lib/libtar.a
+ +> ../../bin/cp src/tar ../../bin/tar 
+ +> ../../bin/chmod 755 ../../bin/tar 
+ +> cd .. 
+ +> ../bin/unbz2 --file ../../plumbing-inputs/coreutils-5.0.tar.bz2 --output coreutils-5.0.tar 
+ +> ../bin/untar --file coreutils-5.0.tar 
+The extraction of coreutils-5.0.tar was successful
+ +> ../bin/rm coreutils-5.0.tar 
+ +> cd coreutils-5.0 
+ +> ../../bin/patch -p1 -i ../../../../chain/plumbing/coreutils-5.0/canonicalize-realloc.diff 
+patching file lib/canonicalize.c
+ +> ../../bin/cp ../../../../chain/plumbing/coreutils-5.0/config.h config.h 
+ +> ../../bin/make -j4 -f ../../../../chain/plumbing/coreutils-5.0/Makefile 
+../../bin/cp lib/fnmatch_.h lib/fnmatch.h
+../../bin/cp lib/ftw_.h lib/ftw.h
+../../bin/cp lib/search_.h lib/search.h
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/chmod.c -o src/chmod.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/acl.c -o lib/acl.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/getdate.c -o lib/getdate.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/posixtm.c -o lib/posixtm.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/posixver.c -o lib/posixver.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/strftime.c -o lib/strftime.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/getopt.c -o lib/getopt.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/getopt1.c -o lib/getopt1.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/hash.c -o lib/hash.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/hash-pjw.c -o lib/hash-pjw.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/addext.c -o lib/addext.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/argmatch.c -o lib/argmatch.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/backupfile.c -o lib/backupfile.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/basename.c -o lib/basename.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/canon-host.c -o lib/canon-host.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/closeout.c -o lib/closeout.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/cycle-check.c -o lib/cycle-check.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/diacrit.c -o lib/diacrit.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/dirname.c -o lib/dirname.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/dup-safer.c -o lib/dup-safer.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/exclude.c -o lib/exclude.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/exitfail.c -o lib/exitfail.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/filemode.c -o lib/filemode.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/file-type.c -o lib/file-type.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/fopen-safer.c -o lib/fopen-safer.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/full-read.c -o lib/full-read.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/full-write.c -o lib/full-write.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/getstr.c -o lib/getstr.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/gettime.c -o lib/gettime.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/getugroups.c -o lib/getugroups.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/hard-locale.c -o lib/hard-locale.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/human.c -o lib/human.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/idcache.c -o lib/idcache.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/isdir.c -o lib/isdir.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/imaxtostr.c -o lib/imaxtostr.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/linebuffer.c -o lib/linebuffer.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/localcharset.c -o lib/localcharset.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/long-options.c -o lib/long-options.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/makepath.c -o lib/makepath.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/mbswidth.c -o lib/mbswidth.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/md5.c -o lib/md5.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/memcasecmp.c -o lib/memcasecmp.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/memcoll.c -o lib/memcoll.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/modechange.c -o lib/modechange.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/offtostr.c -o lib/offtostr.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/path-concat.c -o lib/path-concat.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/physmem.c -o lib/physmem.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/quote.c -o lib/quote.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/quotearg.c -o lib/quotearg.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/readtokens.c -o lib/readtokens.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/safe-read.c -o lib/safe-read.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/safe-write.c -o lib/safe-write.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/same.c -o lib/same.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/save-cwd.c -o lib/save-cwd.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/savedir.c -o lib/savedir.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/settime.c -o lib/settime.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/sha.c -o lib/sha.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/stripslash.c -o lib/stripslash.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/umaxtostr.c -o lib/umaxtostr.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/unicodeio.c -o lib/unicodeio.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/userspec.c -o lib/userspec.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/version-etc.c -o lib/version-etc.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/xgetcwd.c -o lib/xgetcwd.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/xgethostname.c -o lib/xgethostname.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/xmalloc.c -o lib/xmalloc.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/xmemcoll.c -o lib/xmemcoll.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/xnanosleep.c -o lib/xnanosleep.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/xreadlink.c -o lib/xreadlink.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/xstrdup.c -o lib/xstrdup.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/xstrtod.c -o lib/xstrtod.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/xstrtol.c -o lib/xstrtol.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/xstrtoul.c -o lib/xstrtoul.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/xstrtoimax.c -o lib/xstrtoimax.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/xstrtoumax.c -o lib/xstrtoumax.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/yesno.c -o lib/yesno.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/alloca.c -o lib/alloca.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/canonicalize.c -o lib/canonicalize.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/error.c -o lib/error.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/euidaccess.c -o lib/euidaccess.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/fnmatch.c -o lib/fnmatch.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/__fpending.c -o lib/__fpending.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/ftw.c -o lib/ftw.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/group-member.c -o lib/group-member.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/memrchr.c -o lib/memrchr.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/obstack.c -o lib/obstack.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/regex.c -o lib/regex.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/rpmatch.c -o lib/rpmatch.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/sig2str.c -o lib/sig2str.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/strverscmp.c -o lib/strverscmp.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c lib/tsearch.c -o lib/tsearch.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/dd.c -o src/dd.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/dircolors.c -o src/dircolors.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/du.c -o src/du.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/link.c -o src/link.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/ln.c -o src/ln.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/mkdir.c -o src/mkdir.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/mkfifo.c -o src/mkfifo.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/mknod.c -o src/mknod.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/readlink.c -o src/readlink.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/rmdir.c -o src/rmdir.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/shred.c -o src/shred.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/sync.c -o src/sync.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/touch.c -o src/touch.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/unlink.c -o src/unlink.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/cat.c -o src/cat.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/cksum.c -o src/cksum.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/comm.c -o src/comm.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/csplit.c -o src/csplit.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/cut.c -o src/cut.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/expand.c -o src/expand.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/fmt.c -o src/fmt.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/fold.c -o src/fold.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/head.c -o src/head.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/join.c -o src/join.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/nl.c -o src/nl.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/od.c -o src/od.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/paste.c -o src/paste.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/pr.c -o src/pr.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/ptx.c -o src/ptx.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/sort.c -o src/sort.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/split.c -o src/split.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/sum.c -o src/sum.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/tac.c -o src/tac.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/tail.c -o src/tail.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/tr.c -o src/tr.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/tsort.c -o src/tsort.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/unexpand.c -o src/unexpand.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/uniq.c -o src/uniq.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/wc.c -o src/wc.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/basename.c -o src/basename.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/date.c -o src/date.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/dirname.c -o src/dirname.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/echo.c -o src/echo.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/env.c -o src/env.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/expr.c -o src/expr.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/factor.c -o src/factor.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/false.c -o src/false.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/hostname.c -o src/hostname.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/id.c -o src/id.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/kill.c -o src/kill.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/logname.c -o src/logname.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/pathchk.c -o src/pathchk.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/printenv.c -o src/printenv.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/printf.c -o src/printf.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/pwd.c -o src/pwd.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/seq.c -o src/seq.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/sleep.c -o src/sleep.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/tee.c -o src/tee.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/test.c -o src/test.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/true.c -o src/true.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/tty.c -o src/tty.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/whoami.c -o src/whoami.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/yes.c -o src/yes.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/chroot.c -o src/chroot.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/nice.c -o src/nice.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/stty.c -o src/stty.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/uname.c -o src/uname.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/cp.c -o src/cp.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/copy.c -o src/copy.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/cp-hash.c -o src/cp-hash.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/install.c -o src/install.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/mv.c -o src/mv.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/remove.c -o src/remove.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/rm.c -o src/rm.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/ls.c -o src/ls.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/ls-ls.c -o src/ls-ls.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/ls-dir.c -o src/ls-dir.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/ls-vdir.c -o src/ls-vdir.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/chown.c -o src/chown.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/chown-core.c -o src/chown-core.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/chgrp.c -o src/chgrp.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/md5sum.c -o src/md5sum.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/md5.c -o src/md5.o
+../../../seed-cc/seed-cc -Werror=implicit-function-declaration -DHAVE_CONFIG_H -I. -Ilib -Isrc -c src/sha1sum.c -o src/sha1sum.o
+../../../seed-cc/seed-ar cr lib/libfetish.a lib/acl.o lib/getdate.o lib/posixtm.o lib/posixver.o lib/strftime.o lib/getopt.o lib/getopt1.o lib/hash.o lib/hash-pjw.o lib/addext.o lib/argmatch.o lib/backupfile.o lib/basename.o lib/canon-host.o lib/closeout.o lib/cycle-check.o lib/diacrit.o lib/dirname.o lib/dup-safer.o lib/exclude.o lib/exitfail.o lib/filemode.o lib/file-type.o lib/fopen-safer.o lib/full-read.o lib/full-write.o lib/getstr.o lib/gettime.o lib/getugroups.o lib/hard-locale.o lib/human.o lib/idcache.o lib/isdir.o lib/imaxtostr.o lib/linebuffer.o lib/localcharset.o lib/long-options.o lib/makepath.o lib/mbswidth.o lib/md5.o lib/memcasecmp.o lib/memcoll.o lib/modechange.o lib/offtostr.o lib/path-concat.o lib/physmem.o lib/quote.o lib/quotearg.o lib/readtokens.o lib/safe-read.o lib/safe-write.o lib/same.o lib/save-cwd.o lib/savedir.o lib/settime.o lib/sha.o lib/stripslash.o lib/umaxtostr.o lib/unicodeio.o lib/userspec.o lib/version-etc.o lib/xgetcwd.o lib/xgethostname.o lib/xmalloc.o lib/xmemcoll.o lib/xnanosleep.o lib/xreadlink.o lib/xstrdup.o lib/xstrtod.o lib/xstrtol.o lib/xstrtoul.o lib/xstrtoimax.o lib/xstrtoumax.o lib/yesno.o lib/alloca.o lib/canonicalize.o lib/error.o lib/euidaccess.o lib/fnmatch.o lib/__fpending.o lib/ftw.o lib/group-member.o lib/memrchr.o lib/obstack.o lib/regex.o lib/rpmatch.o lib/sig2str.o lib/strverscmp.o lib/tsearch.o
+../../../seed-cc/seed-cc -static -o src/chmod src/chmod.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/dd src/dd.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/dircolors src/dircolors.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/du src/du.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/link src/link.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/ln src/ln.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/mkdir src/mkdir.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/mkfifo src/mkfifo.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/mknod src/mknod.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/readlink src/readlink.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/rmdir src/rmdir.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/shred src/shred.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/sync src/sync.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/touch src/touch.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/unlink src/unlink.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/cat src/cat.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/cksum src/cksum.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/comm src/comm.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/csplit src/csplit.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/cut src/cut.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/expand src/expand.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/fmt src/fmt.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/fold src/fold.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/head src/head.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/join src/join.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/nl src/nl.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/od src/od.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/paste src/paste.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/pr src/pr.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/ptx src/ptx.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/sort src/sort.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/split src/split.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/sum src/sum.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/tac src/tac.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/tail src/tail.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/tr src/tr.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/tsort src/tsort.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/unexpand src/unexpand.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/uniq src/uniq.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/wc src/wc.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/basename src/basename.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/date src/date.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/dirname src/dirname.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/echo src/echo.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/env src/env.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/expr src/expr.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/factor src/factor.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/false src/false.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/hostname src/hostname.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/id src/id.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/kill src/kill.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/logname src/logname.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/pathchk src/pathchk.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/printenv src/printenv.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/printf src/printf.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/pwd src/pwd.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/seq src/seq.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/sleep src/sleep.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/tee src/tee.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/test src/test.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/true src/true.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/tty src/tty.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/whoami src/whoami.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/yes src/yes.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/chroot src/chroot.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/nice src/nice.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/stty src/stty.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/uname src/uname.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/cp src/cp.o src/copy.o src/cp-hash.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/ginstall src/install.o src/copy.o src/cp-hash.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/mv src/mv.o src/copy.o src/cp-hash.o src/remove.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/rm src/rm.o src/remove.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/ls src/ls.o src/ls-ls.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/dir src/ls.o src/ls-dir.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/vdir src/ls.o src/ls-vdir.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/chown src/chown.o src/chown-core.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/chgrp src/chgrp.o src/chown-core.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/md5sum src/md5sum.o src/md5.o lib/libfetish.a -lm
+../../../seed-cc/seed-cc -static -o src/sha1sum src/md5sum.o src/sha1sum.o lib/libfetish.a -lm
+ +> ./src/ginstall -m 755 src/basename src/cat src/chgrp src/chmod src/chown src/chroot src/cksum src/comm src/cp src/csplit src/cut src/date src/dd src/dir src/dircolors src/dirname src/du src/echo src/env src/expand src/expr src/factor src/false src/fmt src/fold src/head src/hostname src/id src/join src/kill src/link src/ln src/logname src/ls src/md5sum src/mkdir src/mkfifo src/mknod src/mv src/nice src/nl src/od src/paste src/pathchk src/pr src/printenv src/printf src/ptx src/pwd src/readlink src/rm src/rmdir src/seq src/sha1sum src/shred src/sleep src/sort src/split src/stty src/sum src/sync src/tac src/tail src/tee src/test src/touch src/tr src/true src/tsort src/tty src/uname src/unexpand src/uniq src/unlink src/vdir src/wc src/whoami src/yes ../../bin 
+ +> ./src/ginstall -m 755 src/ginstall ../../bin/install 
+ +> ./src/ginstall -m 755 src/test ../../bin/[ 
+ +> cd .. 
+ +> cd ../../.. 
+ +> ./build-out/plumbing/bin/sed --version 
+GNU sed version 4.0.9
+Copyright (C) 2003 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE,
+to the extent permitted by law.
+ +> ./build-out/plumbing/bin/ls --version 
+ls (coreutils) 5.0
+Written by Richard Stallman and David MacKenzie.
+
+Copyright (C) 2003 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ +> set -ex 
+ +> set -ex
+ +> LC_ALL=C 
+ +> CC=./build-out/seed-cc/seed-cc 
+ +> BIN=./build-out/plumbing/bin 
+ +> B=build-out/plumbing/src 
+ +> F=flex-d160f0247ba1611aa59d28f027d6292ba24abb50 
+ +> R=../../../../chain/gcc-direct/lexer-inputs/recipe-reference/steps/flex-2.5.11 
+ +> ./build-out/plumbing/bin/sha256sum --check chain/plumbing/lexers.SOURCES 
+build-out/lexer-inputs/archives/oyacc-6.6.tar.gz: OK
+build-out/lexer-inputs/archives/heirloom-devtools-070527.tar.bz2: OK
+build-out/lexer-inputs/archives/flex-d160f0247ba1611aa59d28f027d6292ba24abb50.tar.gz: OK
+chain/gcc-direct/lexer-inputs/recipe-reference/steps/flex-2.5.11/files/scan.lex.l: OK
+chain/gcc-direct/lexer-inputs/recipe-reference/steps/flex-2.5.11/patches/scan_l.patch: OK
+chain/gcc-direct/lexer-inputs/recipe-reference/steps/flex-2.5.11/patches/yyin.patch: OK
+chain/gcc-direct/lexer-inputs/recipe-reference/LICENSES/BSD-2-Clause.txt: OK
+ +> ./build-out/seed-cc/seed-cc -static -Werror=implicit-function-declaration chain/plumbing/lexer-prepare.c -o ./build-out/plumbing/bin/lexer-prepare 
+ +> ./build-out/plumbing/bin/mkdir build-out/plumbing/src/oyacc-6.6 build-out/plumbing/src/heirloom-devtools-070527 build-out/plumbing/src/flex-d160f0247ba1611aa59d28f027d6292ba24abb50 
+ +> cd build-out/plumbing/src 
+ +> ../bin/ungz --file ../../lexer-inputs/archives/oyacc-6.6.tar.gz --output oyacc.tar 
+../../lexer-inputs/archives/oyacc-6.6.tar.gz => oyacc.tar: succeeded uncompressing 184320 bytes
+ +> ../bin/untar --file oyacc.tar 
+Could not create directory oyacc-6.6
+The extraction of oyacc.tar was successful
+ +> ../bin/unbz2 --file ../../lexer-inputs/archives/heirloom-devtools-070527.tar.bz2 --output heirloom.tar 
+ +> ../bin/untar --file heirloom.tar 
+The extraction of heirloom.tar was successful
+ +> ../bin/ungz --file ../../lexer-inputs/archives/flex-d160f0247ba1611aa59d28f027d6292ba24abb50.tar.gz --output flex.tar 
+../../lexer-inputs/archives/flex-d160f0247ba1611aa59d28f027d6292ba24abb50.tar.gz => flex.tar: succeeded uncompressing 2611200 bytes
+ +> ../bin/untar --file flex.tar 
+Could not create directory flex-d160f0247ba1611aa59d28f027d6292ba24abb50
+The extraction of flex.tar was successful
+ +> ../bin/rm oyacc.tar heirloom.tar flex.tar 
+ +> cd oyacc-6.6 
+ +> ../../bin/cp ../../../../chain/plumbing/oyacc-6.6/config.h config.h 
+ +> ../../bin/cp ../../../../chain/plumbing/oyacc-6.6/Makefile Makefile 
+ +> ../../bin/make 
+../../../seed-cc/seed-cc -D_GNU_SOURCE -D__unused= -I. -c closure.c -o closure.o
+../../../seed-cc/seed-cc -D_GNU_SOURCE -D__unused= -I. -c error.c -o error.o
+../../../seed-cc/seed-cc -D_GNU_SOURCE -D__unused= -I. -c lalr.c -o lalr.o
+../../../seed-cc/seed-cc -D_GNU_SOURCE -D__unused= -I. -c lr0.c -o lr0.o
+../../../seed-cc/seed-cc -D_GNU_SOURCE -D__unused= -I. -c main.c -o main.o
+../../../seed-cc/seed-cc -D_GNU_SOURCE -D__unused= -I. -c mkpar.c -o mkpar.o
+../../../seed-cc/seed-cc -D_GNU_SOURCE -D__unused= -I. -c output.c -o output.o
+../../../seed-cc/seed-cc -D_GNU_SOURCE -D__unused= -I. -c reader.c -o reader.o
+../../../seed-cc/seed-cc -D_GNU_SOURCE -D__unused= -I. -c skeleton.c -o skeleton.o
+../../../seed-cc/seed-cc -D_GNU_SOURCE -D__unused= -I. -c symtab.c -o symtab.o
+../../../seed-cc/seed-cc -D_GNU_SOURCE -D__unused= -I. -c verbose.c -o verbose.o
+../../../seed-cc/seed-cc -D_GNU_SOURCE -D__unused= -I. -c warshall.c -o warshall.o
+../../../seed-cc/seed-cc -D_GNU_SOURCE -D__unused= -I. -c portable.c -o portable.o
+../../../seed-cc/seed-cc -static -o ../../bin/oyacc closure.o error.o lalr.o lr0.o main.o mkpar.o output.o reader.o skeleton.o symtab.o verbose.o warshall.o portable.o
+ +> cd ../heirloom-devtools-070527/lex 
+ +> ../../../bin/lexer-prepare lexconfig config.h 
+ +> ../../../bin/cp ../../../../../chain/plumbing/heirloom-lex-070527/main-unit.c main-unit.c 
+ +> ../../../bin/cp ../../../../../chain/plumbing/heirloom-lex-070527/Makefile Makefile 
+ +> ../../../bin/make 
+../../../../seed-cc/seed-cc -Dunix=1 -I. -c main-unit.c -o main-unit.o
+../../../../seed-cc/seed-cc -Dunix=1 -I. -c sub1.c -o sub1.o
+../../../../seed-cc/seed-cc -Dunix=1 -I. -c sub2.c -o sub2.o
+../../../../seed-cc/seed-cc -Dunix=1 -I. -c sub3.c -o sub3.o
+../../../../seed-cc/seed-cc -Dunix=1 -I. -c header.c -o header.o
+../../../../seed-cc/seed-cc -Dunix=1 -I. -c wcio.c -o wcio.o
+../../../bin/oyacc parser.y
+../../../bin/cp y.tab.c parser.c
+../../../../seed-cc/seed-cc -Dunix=1 -I. -c parser.c -o parser.o
+../../../../seed-cc/seed-cc -Dunix=1 -I. -c getopt.c -o getopt.o
+../../../../seed-cc/seed-cc -Dunix=1 -I. -c lsearch.c -o lsearch.o
+../../../../seed-cc/seed-cc -static -o ../../../bin/lex main-unit.o sub1.o sub2.o sub3.o header.o wcio.o parser.o getopt.o lsearch.o
+../../../../seed-cc/seed-cc -Dunix=1 -I. -c allprint.c -o allprint.o
+../../../../seed-cc/seed-cc -Dunix=1 -I. -c libmain.c -o libmain.o
+../../../../seed-cc/seed-cc -Dunix=1 -I. -c reject.c -o reject.o
+../../../../seed-cc/seed-cc -Dunix=1 -I. -c yyless.c -o yyless.o
+../../../../seed-cc/seed-cc -Dunix=1 -I. -c yywrap.c -o yywrap.o
+../../../../seed-cc/seed-ar rcs libl.a allprint.o libmain.o reject.o yyless.o yywrap.o
+ +> cd ../../flex-d160f0247ba1611aa59d28f027d6292ba24abb50 
+ +> ../../bin/lexer-prepare patch ../../../../chain/gcc-direct/lexer-inputs/recipe-reference/steps/flex-2.5.11/patches/scan_l.patch 
+ +> ../../bin/lexer-prepare patch ../../../../chain/gcc-direct/lexer-inputs/recipe-reference/steps/flex-2.5.11/patches/yyin.patch 
+ +> ../../bin/cp ../../../../chain/gcc-direct/lexer-inputs/recipe-reference/steps/flex-2.5.11/files/scan.lex.l scan.lex.l 
+ +> ../../bin/lexer-prepare ungenerated 
+ +> ../../bin/lexer-prepare skeleton flex.skl skel.c 
+ +> ../../bin/cp ../../../../chain/plumbing/flex-2.5.11/config.h config.h 
+ +> ../../bin/cp ../../../../chain/plumbing/flex-2.5.11/Makefile Makefile 
+ +> cd ../../../.. 
+ +> ./build-out/plumbing/bin/sha256sum --check chain/plumbing/lexers.PREPARED 
+build-out/plumbing/src/flex-d160f0247ba1611aa59d28f027d6292ba24abb50/scan.l: OK
+build-out/plumbing/src/flex-d160f0247ba1611aa59d28f027d6292ba24abb50/flexdef.h: OK
+build-out/plumbing/src/flex-d160f0247ba1611aa59d28f027d6292ba24abb50/scan.lex.l: OK
+build-out/plumbing/src/flex-d160f0247ba1611aa59d28f027d6292ba24abb50/skel.c: OK
+ +> cd build-out/plumbing/src/flex-d160f0247ba1611aa59d28f027d6292ba24abb50 
+ +> ../../bin/make 
+../../bin/oyacc -d parse.y
+../../bin/cp y.tab.c parse.c
+../../bin/cp y.tab.h parse.h
+../../../seed-cc/seed-cc -I. -c ccl.c -o ccl.o
+../../../seed-cc/seed-cc -I. -c dfa.c -o dfa.o
+../../../seed-cc/seed-cc -I. -c ecs.c -o ecs.o
+../../../seed-cc/seed-cc -I. -c gen.c -o gen.o
+../../../seed-cc/seed-cc -I. -c main.c -o main.o
+../../../seed-cc/seed-cc -I. -c misc.c -o misc.o
+../../../seed-cc/seed-cc -I. -c nfa.c -o nfa.o
+../../../seed-cc/seed-cc -I. -c parse.c -o parse.o
+../../bin/lexer-prepare ascii scan.lex.l scan-ascii.l
+../../bin/lex -Y../heirloom-devtools-070527/lex scan-ascii.l
+2111/5000 nodes(%e), 5637/10000 positions(%p), 818/5000 (%n), 54603 transitions,
+1755/10000 packed char classes(%k),  5247/100000 packed transitions(%a),  6585/12000 output slots(%o)
+../../bin/cp lex.yy.c heirloom-scan.c
+../../bin/lexer-prepare scanner heirloom-scan.c scan-tmp.c
+../../../seed-cc/seed-cc -I. -c scan-tmp.c -o scan-tmp.o
+../../../seed-cc/seed-cc -I. -c skel.c -o skel.o
+../../../seed-cc/seed-cc -I. -c sym.c -o sym.o
+../../../seed-cc/seed-cc -I. -c tblcmp.c -o tblcmp.o
+../../../seed-cc/seed-cc -I. -c yylex.c -o yylex.o
+../../../seed-cc/seed-cc -I. -c options.c -o options.o
+../../../seed-cc/seed-cc -I. -c scanopt.c -o scanopt.o
+../../../seed-cc/seed-cc -I. -c buf.c -o buf.o
+../../../seed-cc/seed-cc -static -o flex-tmp ccl.o dfa.o ecs.o gen.o main.o misc.o nfa.o parse.o scan-tmp.o skel.o sym.o tblcmp.o yylex.o options.o scanopt.o buf.o ../heirloom-devtools-070527/lex/libl.a
+./flex-tmp scan.l
+../../bin/cp lex.yy.c scan.c
+../../../seed-cc/seed-cc -I. -c scan.c -o scan.o
+../../../seed-cc/seed-cc -static -o ../../bin/flex ccl.o dfa.o ecs.o gen.o main.o misc.o nfa.o parse.o scan.o skel.o sym.o tblcmp.o yylex.o options.o scanopt.o buf.o ../heirloom-devtools-070527/lex/libl.a
+ +> cd ../../../.. 
+ +> ./build-out/plumbing/bin/sha256sum --check chain/plumbing/lexers.GENERATED 
+build-out/plumbing/src/heirloom-devtools-070527/lex/parser.c: OK
+build-out/plumbing/src/flex-d160f0247ba1611aa59d28f027d6292ba24abb50/parse.c: OK
+build-out/plumbing/src/flex-d160f0247ba1611aa59d28f027d6292ba24abb50/parse.h: OK
+build-out/plumbing/src/flex-d160f0247ba1611aa59d28f027d6292ba24abb50/heirloom-scan.c: OK
+build-out/plumbing/src/flex-d160f0247ba1611aa59d28f027d6292ba24abb50/scan-tmp.c: OK
+build-out/plumbing/src/flex-d160f0247ba1611aa59d28f027d6292ba24abb50/scan.c: OK
+build-out/plumbing/src/heirloom-devtools-070527/lex/libl.a: OK
+build-out/plumbing/src/flex-d160f0247ba1611aa59d28f027d6292ba24abb50/scan-ascii.l: OK
+ +> ./build-out/plumbing/bin/flex -V 
+flex 2.5.11
+ +> set -ex 
+ +> set -ex
+ +> BIN=./build-out/plumbing/bin 
+ +> R=../../../../chain/plumbing/bash-2.05b 
+ +> cd build-out/plumbing/src 
+ +> ../bin/rm -rf bash-2.05b 
+ +> ../bin/ungz --file ../../plumbing-inputs/bash-2.05b.tar.gz --output bash-2.05b.tar 
+../../plumbing-inputs/bash-2.05b.tar.gz => bash-2.05b.tar: succeeded uncompressing 8028160 bytes
+ +> ../bin/untar --file bash-2.05b.tar 
+The extraction of bash-2.05b.tar was successful
+ +> ../bin/rm bash-2.05b.tar 
+ +> cd bash-2.05b 
+ +> ../../bin/cp ../../../../chain/plumbing/bash-2.05b/config.h config.h 
+ +> ../../bin/cp ../../../../chain/plumbing/bash-2.05b/Makefile Makefile 
+ +> ../../bin/cp ../../../../chain/plumbing/bash-2.05b/common.mk common.mk 
+ +> ../../bin/cp ../../../../chain/plumbing/bash-2.05b/builtins.mk builtins/Makefile 
+ +> ../../bin/cp ../../../../chain/plumbing/bash-2.05b/empty.h include/version.h 
+ +> ../../bin/cp ../../../../chain/plumbing/bash-2.05b/empty.h include/pipesize.h 
+ +> ../../bin/rm y.tab.c y.tab.h parser-built 
+ +> ../../bin/patch -p1 -i ../../../../chain/plumbing/bash-2.05b/missing-defines.patch 
+patching file execute_cmd.c
+ +> ../../bin/make prefix=/usr mkbuiltins 
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o builtins/mkbuiltins.o builtins/mkbuiltins.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H builtins/mkbuiltins.o -L. -Lbuiltins -static -o mkbuiltins
+./mkbuiltins -externfile builtins/builtext.h -structfile builtins/builtins.c -noproduction builtins/alias.def builtins/bind.def builtins/break.def builtins/builtin.def builtins/cd.def builtins/colon.def builtins/command.def builtins/declare.def builtins/echo.def builtins/enable.def builtins/eval.def builtins/exec.def builtins/exit.def builtins/fc.def builtins/fg_bg.def builtins/hash.def builtins/history.def builtins/jobs.def builtins/kill.def builtins/let.def builtins/read.def builtins/return.def builtins/set.def builtins/setattr.def builtins/shift.def builtins/source.def builtins/suspend.def builtins/test.def builtins/times.def builtins/trap.def builtins/type.def builtins/ulimit.def builtins/umask.def builtins/wait.def builtins/getopts.def builtins/pushd.def builtins/shopt.def builtins/printf.def
+ +> cd builtins 
+ +> ../../../bin/make prefix=/usr libbuiltins.a 
+../mkbuiltins alias.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o alias.o alias.c
+../mkbuiltins bind.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o bind.o bind.c
+../mkbuiltins break.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o break.o break.c
+../mkbuiltins builtin.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o builtin.o builtin.c
+../mkbuiltins cd.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o cd.o cd.c
+../mkbuiltins colon.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o colon.o colon.c
+../mkbuiltins command.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o command.o command.c
+../mkbuiltins declare.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o declare.o declare.c
+../mkbuiltins echo.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o echo.o echo.c
+../mkbuiltins enable.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o enable.o enable.c
+../mkbuiltins eval.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o eval.o eval.c
+../mkbuiltins exec.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o exec.o exec.c
+../mkbuiltins exit.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o exit.o exit.c
+../mkbuiltins fc.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o fc.o fc.c
+../mkbuiltins fg_bg.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o fg_bg.o fg_bg.c
+../mkbuiltins hash.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o hash.o hash.c
+../mkbuiltins history.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o history.o history.c
+../mkbuiltins jobs.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o jobs.o jobs.c
+../mkbuiltins kill.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o kill.o kill.c
+../mkbuiltins let.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o let.o let.c
+../mkbuiltins read.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o read.o read.c
+../mkbuiltins return.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o return.o return.c
+../mkbuiltins set.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o set.o set.c
+../mkbuiltins setattr.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o setattr.o setattr.c
+../mkbuiltins shift.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o shift.o shift.c
+../mkbuiltins source.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o source.o source.c
+../mkbuiltins suspend.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o suspend.o suspend.c
+../mkbuiltins test.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o test.o test.c
+../mkbuiltins times.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o times.o times.c
+../mkbuiltins trap.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o trap.o trap.c
+../mkbuiltins type.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o type.o type.c
+../mkbuiltins ulimit.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o ulimit.o ulimit.c
+../mkbuiltins umask.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o umask.o umask.c
+../mkbuiltins wait.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o wait.o wait.c
+../mkbuiltins getopts.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o getopts.o getopts.c
+../mkbuiltins pushd.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o pushd.o pushd.c
+../mkbuiltins shopt.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o shopt.o shopt.c
+../mkbuiltins printf.def
+../../../../seed-cc/seed-cc -c -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H -o printf.o printf.c
+../../../../seed-cc/seed-cc -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H   -c -o common.o common.c
+../../../../seed-cc/seed-cc -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H   -c -o evalstring.o evalstring.c
+../../../../seed-cc/seed-cc -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H   -c -o evalfile.o evalfile.c
+../../../../seed-cc/seed-cc -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H   -c -o getopt.o getopt.c
+../../../../seed-cc/seed-cc -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H   -c -o bashgetopt.o bashgetopt.c
+../../../../seed-cc/seed-cc -I. -I.. -I../include -I../lib -DHAVE_CONFIG_H   -c -o builtins.o builtins.c
+../../../../seed-cc/seed-ar cr libbuiltins.a alias.o bind.o break.o builtin.o cd.o colon.o command.o declare.o echo.o enable.o eval.o exec.o exit.o fc.o fg_bg.o hash.o history.o jobs.o kill.o let.o read.o return.o set.o setattr.o shift.o source.o suspend.o test.o times.o trap.o type.o ulimit.o umask.o wait.o getopts.o pushd.o shopt.o printf.o common.o evalstring.o evalfile.o getopt.o bashgetopt.o builtins.o
+ +> cd .. 
+ +> ../../bin/make prefix=/usr YACC=../../bin/oyacc 
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/clktck.o lib/sh/clktck.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/getcwd.o lib/sh/getcwd.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/getenv.o lib/sh/getenv.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/oslib.o lib/sh/oslib.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/setlinebuf.o lib/sh/setlinebuf.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/strcasecmp.o lib/sh/strcasecmp.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/strerror.o lib/sh/strerror.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/strtod.o lib/sh/strtod.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/vprint.o lib/sh/vprint.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/itos.o lib/sh/itos.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/rename.o lib/sh/rename.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/zread.o lib/sh/zread.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/zwrite.o lib/sh/zwrite.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/shtty.o lib/sh/shtty.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/inet_aton.o lib/sh/inet_aton.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/netopen.o lib/sh/netopen.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/strpbrk.o lib/sh/strpbrk.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/timeval.o lib/sh/timeval.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/clock.o lib/sh/clock.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/makepath.o lib/sh/makepath.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/pathcanon.o lib/sh/pathcanon.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/pathphys.o lib/sh/pathphys.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/stringlist.o lib/sh/stringlist.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/stringvec.o lib/sh/stringvec.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/tmpfile.o lib/sh/tmpfile.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/spell.o lib/sh/spell.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/strtrans.o lib/sh/strtrans.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/strindex.o lib/sh/strindex.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/shquote.o lib/sh/shquote.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/snprintf.o lib/sh/snprintf.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/mailstat.o lib/sh/mailstat.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/fmtulong.o lib/sh/fmtulong.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/fmtullong.o lib/sh/fmtullong.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/strtoll.o lib/sh/strtoll.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/strtoull.o lib/sh/strtoull.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/fmtumax.o lib/sh/fmtumax.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/netconn.o lib/sh/netconn.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/mktime.o lib/sh/mktime.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/xstrchr.o lib/sh/xstrchr.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/sh/zcatfd.o lib/sh/zcatfd.c
+./../../../seed-cc/seed-ar cr libsh.a lib/sh/clktck.o lib/sh/getcwd.o lib/sh/getenv.o lib/sh/oslib.o lib/sh/setlinebuf.o lib/sh/strcasecmp.o lib/sh/strerror.o lib/sh/strtod.o lib/sh/vprint.o lib/sh/itos.o lib/sh/rename.o lib/sh/zread.o lib/sh/zwrite.o lib/sh/shtty.o lib/sh/inet_aton.o lib/sh/netopen.o lib/sh/strpbrk.o lib/sh/timeval.o lib/sh/clock.o lib/sh/makepath.o lib/sh/pathcanon.o lib/sh/pathphys.o lib/sh/stringlist.o lib/sh/stringvec.o lib/sh/tmpfile.o lib/sh/spell.o lib/sh/strtrans.o lib/sh/strindex.o lib/sh/shquote.o lib/sh/snprintf.o lib/sh/mailstat.o lib/sh/fmtulong.o lib/sh/fmtullong.o lib/sh/strtoll.o lib/sh/strtoull.o lib/sh/fmtumax.o lib/sh/netconn.o lib/sh/mktime.o lib/sh/xstrchr.o lib/sh/zcatfd.o
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/glob/glob.o lib/glob/glob.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/glob/strmatch.o lib/glob/strmatch.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/glob/smatch.o lib/glob/smatch.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/glob/xmbsrtowcs.o lib/glob/xmbsrtowcs.c
+./../../../seed-cc/seed-ar cr libglob.a lib/glob/glob.o lib/glob/strmatch.o lib/glob/smatch.o lib/glob/xmbsrtowcs.o
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/tilde/tilde.o lib/tilde/tilde.c
+./../../../seed-cc/seed-ar cr libtilde.a lib/tilde/tilde.o
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o shell.o shell.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o eval.o eval.c
+../../bin/oyacc -d parse.y
+parse.y: oyacc finds 1 shift/reduce conflict
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o y.tab.o y.tab.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o general.o general.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o make_cmd.o make_cmd.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o print_cmd.o print_cmd.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o dispose_cmd.o dispose_cmd.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o execute_cmd.o execute_cmd.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o variables.o variables.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o copy_cmd.o copy_cmd.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o error.o error.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o expr.o expr.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o flags.o flags.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o nojobs.o nojobs.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o subst.o subst.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o hashcmd.o hashcmd.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o hashlib.o hashlib.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o mailcheck.o mailcheck.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o support/mksignames.o support/mksignames.c
+./../../../seed-cc/seed-cc support/mksignames.o -L. -Lbuiltins -static -o mksignames
+./mksignames signames.h
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o trap.o trap.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o input.o input.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o unwind_prot.o unwind_prot.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o pathexp.o pathexp.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o sig.o sig.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o test.o test.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o version.o version.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o alias.o alias.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o array.o array.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o arrayfunc.o arrayfunc.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o braces.o braces.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o bracecomp.o bracecomp.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o bashhist.o bashhist.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o bashline.o bashline.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o list.o list.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o stringlib.o stringlib.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o locale.o locale.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o findcmd.o findcmd.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o redir.o redir.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o pcomplete.o pcomplete.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o pcomplib.o pcomplib.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o mksyntax.o mksyntax.c
+./../../../seed-cc/seed-cc mksyntax.o -L. -Lbuiltins -static -o mksyntax
+./mksyntax -o syntax.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o syntax.o syntax.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o xmalloc.o xmalloc.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o siglist.o siglist.c
+./../../../seed-cc/seed-cc -I. -Iinclude -Ilib -Ilib/sh -Ibuiltins -DHAVE_CONFIG_H   -c -o lib/malloc/alloca.o lib/malloc/alloca.c
+./../../../seed-cc/seed-cc -static -o bash shell.o eval.o y.tab.o general.o make_cmd.o print_cmd.o dispose_cmd.o execute_cmd.o variables.o copy_cmd.o error.o expr.o flags.o nojobs.o subst.o hashcmd.o hashlib.o mailcheck.o trap.o input.o unwind_prot.o pathexp.o sig.o test.o version.o alias.o array.o arrayfunc.o braces.o bracecomp.o bashhist.o bashline.o list.o stringlib.o locale.o findcmd.o redir.o pcomplete.o pcomplib.o syntax.o xmalloc.o siglist.o lib/malloc/alloca.o lib/sh/zcatfd.o lib/sh/spell.o lib/sh/pathphys.o builtins/libbuiltins.a libsh.a libglob.a libtilde.a builtins/libbuiltins.a libsh.a libglob.a
+ +> ../../bin/cp bash ../../bin/bash 
+ +> ../../bin/cp bash ../../bin/sh 
+ +> cd ../../../.. 
+ +> ./build-out/plumbing/bin/bash --version 
+GNU bash, version 2.05b.0(0) (bootstrap)
+Copyright (C) 2002 Free Software Foundation, Inc.
+k1: PASS (direct route under K1: seed to bash 2.05b)
+k1: GCC chain (binutils, stage C, stage D) under K1
+[chain] binutils
+[binutils] unpacking ///build-out/stage-b-inputs/binutils-2.30.tar
+[binutils] configuring: //build-out/chain/binutils
+[binutils] configure exit 0
+[binutils] building with 2 jobs; log: //build-out/chain/binutils/make.log
+[binutils] make exit 2
+[binutils] make gas exit 0
+[binutils] make ld exit 0
+[binutils] make binutils exit 0
+scope: original binutils stage-B build; configure answers provisional; no execution or bootstrap claim
+compiler: ///build-out/seed-cc/seed-cc (19f202fe79f9ac1b02e90c59c972f73b330d60c931e15951cf31ee331ed33ec6)
+binutils_archive: 1cb3ceb55873f1c5b3b9a9477cd06ae471e2fd331321a2f03dcf46ce37c760ed
+oyacc: 9d814858a4b947131af848a0d9e67ee64cbc564be451ab40af1f9bc39aa2f571
+flex: bc465f8fd442de5201a481c51d51b12ed178af26c7f78f35e8f7040b45f7c3ce
+jobs: 2
+steps: configure 0; make 2; make-gas 0; make-ld 0; make-binutils 0
+tool: gas/as-new 25a09377770dbb8efa1adf2b95f08872e96ff6ac1df1ee31154db7e845e7bff7
+tool: ld/ld-new c1290a7b2b5dca98e084283a2190f713d0207fdf0c1844c2165d9365c2c5930e
+tool: binutils/ar 1810827243f45a54dd514099e6cd749df2f081ec85f8bbb269e6343fa4ef00d5
+tool: binutils/nm-new daf62063f721a1b2ccee56dad05173d57b0353dcffa1250aa3172838ef966103
+tool: binutils/objdump 7111598dc804a731abfd324c55d29f93a6d9b3fbd29bb7759d1b63e075a449f4
+tool: binutils/readelf adc0ca231e2b3abbbafc96d543b0e4bc3136c77e7d0fe3d9e973bd62a02e616b
+built: 6 of 6
+[chain] stage C
+[stage-c] inputs
+[stage-c] headers
+[stage-c] configure
+[stage-c] cc1
+[stage-c] driver
+[stage-c] libgcc
+[stage-c] install
+[stage-c] musl
+[stage-c] hello
+# Stage C: complete
+
+The seed-built GCC 4.0.4 (xgcc, cc1) with seed-built binutils builds libgcc
+and musl 1.1.24, then links and runs a static hosted program.
+
+- inputs: ok
+  as: 25a09377770dbb8efa1adf2b95f08872e96ff6ac1df1ee31154db7e845e7bff7
+  ld: c1290a7b2b5dca98e084283a2190f713d0207fdf0c1844c2165d9365c2c5930e
+  ar: 1810827243f45a54dd514099e6cd749df2f081ec85f8bbb269e6343fa4ef00d5
+  nm: daf62063f721a1b2ccee56dad05173d57b0353dcffa1250aa3172838ef966103
+  objdump: 7111598dc804a731abfd324c55d29f93a6d9b3fbd29bb7759d1b63e075a449f4
+  readelf: adc0ca231e2b3abbbafc96d543b0e4bc3136c77e7d0fe3d9e973bd62a02e616b
+  gcc_archive: 091f7e50fb712289632fb14d93582a6a49d731c59b8c095cc75cff01c1f40a67
+  musl_archive: 1370c9a812b2cf2a7d92802510cca0058cc37e66a7bedd70051f0a34015022a3
+  alloca_adapter: libiberty/alloca.c 290e59c965e6b40040e7962e9f9ad6ae6ac29c1777def7f9ef05905e9e147cc0
+  patch: 01-collect2-unlink-if-ordinary.diff c3648f4925c88873a82d0880b0d3eb6b6bf20a683d0612478af2317e3cc6c01f
+  seconds: 37
+- headers: ok
+  headers: 218
+  seconds: 4
+- configure: ok
+  components: libiberty libcpp gcc
+  seconds: 107
+- cc1: ok
+  cc1: 82b15b22b70866d33fdf6e4efbf3a1e1882106bbd4204479444c5e841cac2fa7
+  seconds: 180
+- driver: ok
+  xgcc: d2aef8799f042ed1d0532b834cdf6cde6be0c9759544f00dbf08da951d5e2c4e
+  cpp: 31f34b93edddea412eabccc5aee7049288a81692eead7dcbdb5fd3f55e528e6f
+  collect2: b1cbd38941f73049d483dcd64314c23961d3251603303d4feccb67b403aeca29
+  specs: 95a030a59060e068e11fe595823d1c3ea817f8676f4cbe07a0af6b36c3a5717e
+  seconds: 3
+- libgcc: ok
+  libgcc.a: 67a45caa881c8e0ee88bc7bbaebea93d69f2ba89492150f201e1a6d47c6ad613
+  libgcov.a: 3aae8e83f3e3930c7e770a2f5d1ca23fe5b9ec8712ba67e317238c084798fbeb
+  crtbegin.o: da889d9a4143b1073b1caa30d0e70dca1b62a60f7af5fbf2e88b44a042a85750
+  crtend.o: e389bbbcd60d56547aedb01b698464ccc9d8a6f00dd326de71cfad8cd12abde7
+  crtbeginS.o: 6d2791c330c35c3cf88d6d1673491ade83a2de03d58c8a06c04314f8978582a4
+  crtendS.o: 8b7a17b4c5675e7f14da562ffba6c53fa1218168f24c4b9f7aaa0680fcb7aae7
+  crtbeginT.o: da889d9a4143b1073b1caa30d0e70dca1b62a60f7af5fbf2e88b44a042a85750
+  seconds: 22
+- install: ok
+  gcc: d2aef8799f042ed1d0532b834cdf6cde6be0c9759544f00dbf08da951d5e2c4e
+  seconds: 2
+- musl: ok
+  libc.a: 374cdefda3ef1191146517903950d4342b186e47e61100e8c9004e10d1887487
+  crt1.o: 77a8fa04b79335fdf378d8059c7dc80a6b6efc01a4e29d27be074bed908776f0
+  crti.o: 16701a268025b1a1847d7497370adda631b31148bbbedc401517b894e29f680e
+  crtn.o: 20e27422647a675b5c0629359ea35700745c36257ef4e4dd20470616a00b054e
+  seconds: 144
+- hello: ok
+  hello: 3a6a7aec21450be0a89e112510a66bb2cfe5b554939e65e0bd4f6eacf90f0ae9
+  output_matches: yes
+  libgcc_divti3_linked: yes
+  seconds: 0
+
+Blocked host tool attempts (including configure probes): 2
+[chain] stage D
+[stage-d] stage2 built in 952 s
+[stage-d] stage3 built in 156 s
+[stage-d] stage4 built in 155 s
+# Stage D: fixed point reached
+
+Stage 3 vs stage 4: 54 files, 0 differ.
+Stage 2 vs stage 3: 54 files, 0 differ.
+
+- stage2: 952 s, built by //build-out/chain/stage-c/gcc/install/bin/gcc
+- stage3: 156 s, built by //build-out/chain/stage-d/prefix/bin/gcc
+- stage4: 155 s, built by //build-out/chain/stage-d/stage3//build-out/chain/stage-d/prefix/bin/gcc
+
+- bin/gcc: b9eebc1f772af4fde5c143564d632ef42ec8cfad20ce4bcc2dcae342c85def22
+- libexec/gcc/x86_64-pc-linux-gnu/4.0.4/cc1: c0ab2df0ec5dc6f79e002b57d368880bbe1c994e4d2924261b2e11e3c61ab715
+- libexec/gcc/x86_64-pc-linux-gnu/4.0.4/collect2: 4ba05db7508501398299414232a5788acf1d4c776ec052bcca7acdd627b0a9d4
+[chain] done in 2130 s
+k1: GCC 4.0.4 fixed point under K1; building the late tools
+[late-tools] make-4.4.1
+[late-tools] sed-4.9
+[late-tools] grep-3.11
+[late-tools] gzip-1.13
+[late-tools] xz-5.6.3
+[late-tools] bzip2-1.0.8
+[late-tools] tar-1.35
+[late-tools] gawk-5.3.1
+[late-tools] patch-2.7.6
+[late-tools] coreutils-9.5
+[late-tools] bash-5.2.37
+[late-tools] diffutils-3.10
+[late-tools] findutils-4.10.0
+[late-tools] m4-1.4.19
+[late-tools] bison-3.8.2
+[late-tools] flex-2.6.4
+[late-tools] bc-1.07.1
+[late-tools] done in 631 s; see //build-out/late/report.txt
+k1: late tools built by the stage-D GCC
+k1: GCC 4.0.4 fixed point and late tools built under K1
+GNU Make 4.4.1
+GNU bash, version 5.2.37(1)-release (x86_64-pc-linux-musl)
+/usr/bin/sed (GNU sed) 4.9
+grep (GNU grep) 3.11
+GNU Awk 5.3.1, PMA Avon 8-g1
+tar (GNU tar) 1.35
+xz (XZ Utils) 5.6.3
+bzip2, a block-sorting file compressor.  Version 1.0.8, 13-Jul-2019.
+m4 (GNU M4) 1.4.19
+bison (GNU Bison) 3.8.2
+flex 2.6.4
+bc 1.07.1
+find (GNU findutils) 4.10.0
+diff (GNU diffutils) 3.10
+GNU patch 2.7.6
+stage10: environment ready (direct route: tools built by the stage-D GCC)
+run-gcc64: host tool mawk not found (skipped)
+run-gcc64: host tool python3 not found (skipped)
+run-gcc64: host tool git not found (skipped)
+run-gcc64: host tool unshare not found (skipped)
+run-gcc64: host tool mount not found (skipped)
+[run-gcc64 +3s] BUILDROOT=/build-out/g64  GCC64_CACHE=/build-out/distfiles  stages: bridge stage6 stage7 stage8 stage9 stage10
+[run-gcc64 +3s] direct gcc-4.0.4 (stage-D fixed point) cc1: c0ab2df0ec5dc6f79e002b57d368880bbe1c994e4d2924261b2e11e3c61ab715
+[run-gcc64 +3s] oyacc: 9d814858a4b947131af848a0d9e67ee64cbc564be451ab40af1f9bc39aa2f571  flex-2.5.11: bc465f8fd442de5201a481c51d51b12ed178af26c7f78f35e8f7040b45f7c3ce
+[run-gcc64 +93s] binutils-2.30 by the direct gcc: as c1a8867055f70b25cdd53f30c7f908f66833417ece9e091f7893a43e5dfea62d  ld aca2fe4394d47502a9344730bbf17f7912d56e2e25705f0387b405455ceeba51
+[run-gcc64 +94s] sysroot: direct musl libc.a 374cdefda3ef1191146517903950d4342b186e47e61100e8c9004e10d1887487
+[run-gcc64 +210s] gcc-A (gcc-4.0.4 built by the direct gcc) cc1: 030e5eee9e6f3dbf973b9fd2359e219364a478e7a16edc89323530fc782edfbf
+[run-gcc64 +210s] gcc-A -O2 libc-test: PASSED: 0 failures
+[run-gcc64 +210s] guard: 11 configure-time probes of host tools (all refused):       3 cc       1 gcc       7 strip 
+[run-gcc64 +210s] bridge done in 207s
+[run-gcc64 +412s] gcc-B = gcc-C: bin/gcc 187f08bdf0be40c4347c1a9adb20d71e25f9a35a387bd677d753b963a00656b9
+[run-gcc64 +412s] gcc-B = gcc-C: bin/cpp 3d1506988002dacc36da972eab00267e511c319101909c8cb07137f337c1f33d
+[run-gcc64 +412s] gcc-B = gcc-C: libexec/gcc/x86_64-unknown-linux-gnu/4.0.4/cc1 519aae486df23b3d4d185b398e9143399ce7196ca2afaf3b246a70015267a5fc
+[run-gcc64 +412s] gcc-B = gcc-C: libexec/gcc/x86_64-unknown-linux-gnu/4.0.4/collect2 c46f74cb5eeba30087828624e318300924e921f5a1903f938f34bb3302b9e4c5
+[run-gcc64 +412s] gcc-B = gcc-C: lib/gcc/x86_64-unknown-linux-gnu/4.0.4/libgcc.a 90338bd5ff1dd7dc2f2e8d4f0fb1f1efd76ee13baaeee0459a203a6a3d4c28f7
+[run-gcc64 +412s] gcc-B = gcc-C: lib/gcc/x86_64-unknown-linux-gnu/4.0.4/crtbegin.o da889d9a4143b1073b1caa30d0e70dca1b62a60f7af5fbf2e88b44a042a85750
+[run-gcc64 +412s] gcc-B = gcc-C: lib/gcc/x86_64-unknown-linux-gnu/4.0.4/crtend.o e389bbbcd60d56547aedb01b698464ccc9d8a6f00dd326de71cfad8cd12abde7
+[run-gcc64 +413s] gcc-B -O2 libc-test: PASSED: 0 failures
+[run-gcc64 +413s] guard: 4 configure-time probes of host tools (all refused):       4 cc 
+[run-gcc64 +413s] stage6 done in 203s
+[run-gcc64 +438s] musl-1.1.24 by gcc-4.0.4: libc.a 58202246c15fa1fe9a68377a6704cabe7d236c50e3f4d6e47b0d81c59064edf8
+[run-gcc64 +558s] gmp: check PASS 175 FAIL 0
+[run-gcc64 +695s] mpfr: check PASS 179 FAIL 0
+[run-gcc64 +746s] mpc: check PASS 69 FAIL 0
+[run-gcc64 +746s] stage7 done in 333s
+[run-gcc64 +1094s] gcc-4.7.4 cc1: 8b2dd59ff084ed26fdb0e37e1d284af9416efedbf2964d48163f25c085e84382  cc1plus: 6607f0b2c6a39b46ec8eec89962ed2506fbe5fdb9991e0b1d40d810cd679c3b6
+[run-gcc64 +1095s] gcc-4.7.4: PASSED: 0 failures; PASSED: C++ test, 0 failures
+[run-gcc64 +1095s] guard: 5 configure-time probes of host tools (all refused):       4 cc       1 gcc 
+[run-gcc64 +1095s] stage8 done in 349s
+[run-gcc64 +1247s] binutils-2.41 as: ef597251efc5f7fd0243fe2a2b0661176617514b584bdece934e877de3b40c4c  ld: 47d853f5ee33091042176ed813bc1cc1277aeb5ece73ad56a8cb64f595c051d0
+[run-gcc64 +1247s] guard: 2 configure-time probes of host tools (all refused):       1 cc       1 gcc 
+[run-gcc64 +1247s] stage9 done in 152s
+[run-gcc64 +2333s] gcc-10.5.0 cc1: 9f4ca0beda6210939a47e5f6be2dd24cd651a7ceb9086683831e49e10fdd9b32  cc1plus: 3d36580d2c45ae0c5197b6e4c0ebf53f61c78a2cf4dd2da833de95ef73b44641
+[run-gcc64 +2334s] gcc-10.5.0: PASSED: 0 failures; PASSED: C++ test, 0 failures
+[run-gcc64 +2334s] guard: 3 configure-time probes of host tools (all refused):       2 cc       1 gcc 
+[run-gcc64 +2334s] stage10 done in 1087s
+[run-gcc64 +2335s] pins: 31 as pinned, 0 differ, 0 path-dependent and not comparable here; all in /build-out/g64/logs/hashes.txt
+[run-gcc64 +2335s] all requested stages passed
+gcc (GCC) 10.5.0
+GNU ld (GNU Binutils) 2.41
+stage12: zlib-1.3.1
+stage12: elfutils-0.192 libelf
+stage12: linux-7.2.8: /build-out/linux/bzImage (1278976 bytes) 881e96ad05da8e18
+finish: results written to hdb
+finish: K1 hands the machine to the Linux kernel it built
+k1: booting Linux (protocol 20f, load 195400000, init_size a10000, initrd 0 bytes)
+Linux version 7.2.8 (chain@chain-root) (gcc (GCC) 10.5.0, GNU ld (GNU Binutils) 2.41) #1 PREEMPT @0
+Command line: console=ttyS0 panic=-1
+x86 CPU feature dependency check failure: CPU0 has '18*32+31' enabled but '18*32+26' disabled. Kernel might be fine, but no guarantees.
+BIOS-provided physical RAM map:
+BIOS-e820: [mem 0x0000000000000000-0x00000000bfffffff]  System RAM
+BIOS-e820: [gap 0x00000000c0000000-0x00000000feffbfff]
+BIOS-e820: [mem 0x00000000feffc000-0x00000000feffffff]  device reserved
+BIOS-e820: [gap 0x00000000ff000000-0x00000000ffffffff]
+BIOS-e820: [mem 0x0000000100000000-0x000000063fffffff]  System RAM
+BIOS-e820: [gap 0x0000000640000000-0x000000fcffffffff]
+BIOS-e820: [mem 0x000000fd00000000-0x000000ffffffffff]  device reserved
+NX (Execute Disable) protection: active
+APIC: Static calls initialized
+tsc: Fast TSC calibration using PIT
+tsc: Detected 3792.794 MHz processor
+last_pfn = 0x640000 max_arch_pfn = 0x400000000
+x86/PAT: PAT support disabled because CONFIG_X86_PAT is disabled in the kernel.
+x86/PAT: Configuration [0-7]: WB  WT  UC- UC  WB  WT  UC- UC  
+last_pfn = 0xc0000 max_arch_pfn = 0x400000000
+found SMP MP-table at [mem 0x000f5460-0x000f546f]
+Using GB pages for direct mapping
+Intel MultiProcessor Specification v1.4
+MPTABLE: OEM ID: BOCHSCPU
+MPTABLE: Product ID: 0.1         
+MPTABLE: APIC at: 0xFEE00000
+Intel MultiProcessor Specification v1.4
+MPTABLE: OEM ID: BOCHSCPU
+MPTABLE: Product ID: 0.1         
+MPTABLE: APIC at: 0xFEE00000
+Processor #0 (Bootup-CPU)
+IOAPIC[0]: apic_id 0, version 17, address 0xfec00000, GSI 0-23
+Processors: 1
+TSC deadline timer available
+CPU topo: Max. logical packages:   1
+CPU topo: Max. logical nodes:      1
+CPU topo: Num. nodes per package:  1
+CPU topo: Max. logical dies:       1
+CPU topo: Max. dies per package:   1
+CPU topo: Max. threads per core:   1
+CPU topo: Num. cores per package:     1
+CPU topo: Num. threads per package:   1
+CPU topo: Allowing 1 present CPUs plus 0 hotplug CPUs
+[gap 0xc0000000-0xfeffbfff] available for PCI devices
+clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645519600211568 ns
+Zone ranges:
+  DMA32    [mem 0x0000000000001000-0x00000000ffffffff]
+  Normal   [mem 0x0000000100000000-0x000000063fffffff]
+Movable zone start for each node
+Early memory node ranges
+  node   0: [mem 0x0000000000001000-0x000000000009ffff]
+  node   0: [mem 0x0000000000100000-0x00000000bfffffff]
+  node   0: [mem 0x0000000100000000-0x000000063fffffff]
+Initmem setup node 0 [mem 0x0000000000001000-0x000000063fffffff]
+On node 0, zone DMA32: 1 pages in unavailable ranges
+On node 0, zone DMA32: 96 pages in unavailable ranges
+Kernel command line: console=ttyS0 panic=-1 console=ttyS0 panic=-1
+random: crng init done
+printk: log buffer data + meta data: 131072 + 458752 = 589824 bytes
+Dentry cache hash table entries: 4194304 (order: 13, 33554432 bytes, linear)
+Inode-cache hash table entries: 2097152 (order: 12, 16777216 bytes, linear)
+Sorting __ex_table...
+software IO TLB: area num 1.
+Built 1 zonelists, mobility grouping on.  Total pages: 6291359
+mem auto-init: stack:off, heap alloc:off, heap free:off
+SLUB: HWalign=64, Order=0-1, MinObjects=0, CPUs=1, Nodes=1
+NR_IRQS: 4352, nr_irqs: 48, preallocated irqs: 16
+clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 7645041785100000 ns
+Console: colour dummy device 80x25
+printk: legacy console [ttyS0] enabled
+APIC: Switch to symmetric I/O mode setup
+clocksource: tsc-early: mask: 0xffffffffffffffff max_cycles: 0x6d5780de94c, max_idle_ns: 881590831942 ns
+Calibrating delay loop (skipped), value calculated using timer frequency.. 7585.58 BogoMIPS (lpj=15171176)
+Last level iTLB entries: 4KB 512, 2MB 255, 4MB 127
+Last level dTLB entries: 4KB 512, 2MB 255, 4MB 127, 1GB 0
+CPU: AMD Ryzen 9 3900X 12-Core Processor (family: 0x17, model: 0x71, stepping: 0x0)
+mitigations: Enabled attack vectors: SMT mitigations: off
+Speculative Store Bypass: Vulnerable
+Spectre V2 : Vulnerable
+RETBleed: Vulnerable
+Speculative Return Stack Overflow: Vulnerable
+Spectre V1 : Vulnerable: __user pointer sanitization and usercopy barriers only; no swapgs barriers
+x86/fpu: Supporting XSAVE feature 0x001: 'x87 floating point registers'
+x86/fpu: Supporting XSAVE feature 0x002: 'SSE registers'
+x86/fpu: Supporting XSAVE feature 0x004: 'AVX registers'
+x86/fpu: xstate_offset[2]:  576, xstate_sizes[2]:  256
+x86/fpu: Enabled xstate features 0x7, context size is 832 bytes, using 'compacted' format.
+pid_max: default: 32768 minimum: 301
+Mount-cache hash table entries: 65536 (order: 7, 524288 bytes, linear)
+Mountpoint-cache hash table entries: 65536 (order: 7, 524288 bytes, linear)
+VFS: Finished mounting rootfs on nullfs
+Performance Events: Fam17h+ core perfctr, AMD PMU driver.
+... version:                   0
+... bit width:                 48
+... generic counters:          6
+... generic bitmap:            000000000000003f
+... fixed-purpose counters:    0
+... fixed-purpose bitmap:      0000000000000000
+... value mask:                0000ffffffffffff
+... max period:                00007fffffffffff
+... global_ctrl mask:          000000000000003f
+signal: max sigframe size: 1360
+Memory: 24646556K/25165436K available (3642K kernel code, 767K rwdata, 368K rodata, 584K init, 224K bss, 517144K reserved, 0K cma-reserved)
+clocksource: Switched to clocksource tsc-early
+PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+software IO TLB: mapped [mem 0x00000000bc000000-0x00000000c0000000] (64MB)
+platform rtc_cmos: registered fallback platform RTC device
+workingset: timestamp_bits=62 (anon: 57) max_order=23 bucket_order=0 (anon: 0)
+Serial: 8250/16550 driver, 4 ports, IRQ sharing disabled
+serial8250: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
+serio: i8042 KBD port at 0x60,0x64 irq 1
+serio: i8042 AUX port at 0x60,0x64 irq 12
+input: AT Translated Set 2 keyboard as /devices/platform/i8042/serio0/input/input0
+sched_clock: Marking stable (1226141112, 66512439)->(1326526912, -33873361)
+Freeing unused kernel image (initmem) memory: 584K
+Write protecting the kernel read-only data: 6144k
+Freeing unused kernel image (text/rodata gap) memory: 452K
+Freeing unused kernel image (rodata/data gap) memory: 1680K
+Run /init as init process
+init: hello from a Linux kernel built from hex0 and seed-forth
+init: Linux version 7.2.8 (chain@chain-root) (gcc (GCC) 10.5.0, GNU ld (GNU Binutils) 2.41) #1 PREEMPT @0

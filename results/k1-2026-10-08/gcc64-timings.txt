@@ -1,0 +1,6 @@
+bridge 207s
+stage6 203s
+stage7 333s
+stage8 349s
+stage9 152s
+stage10 1087s

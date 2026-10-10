@@ -1,0 +1,57 @@
+# Stage C: complete
+
+The seed-built GCC 4.0.4 (xgcc, cc1) with seed-built binutils builds libgcc
+and musl 1.1.24, then links and runs a static hosted program.
+
+- inputs: ok
+  as: 25a09377770dbb8efa1adf2b95f08872e96ff6ac1df1ee31154db7e845e7bff7
+  ld: c1290a7b2b5dca98e084283a2190f713d0207fdf0c1844c2165d9365c2c5930e
+  ar: 1810827243f45a54dd514099e6cd749df2f081ec85f8bbb269e6343fa4ef00d5
+  nm: daf62063f721a1b2ccee56dad05173d57b0353dcffa1250aa3172838ef966103
+  objdump: 7111598dc804a731abfd324c55d29f93a6d9b3fbd29bb7759d1b63e075a449f4
+  readelf: adc0ca231e2b3abbbafc96d543b0e4bc3136c77e7d0fe3d9e973bd62a02e616b
+  gcc_archive: 091f7e50fb712289632fb14d93582a6a49d731c59b8c095cc75cff01c1f40a67
+  musl_archive: 1370c9a812b2cf2a7d92802510cca0058cc37e66a7bedd70051f0a34015022a3
+  alloca_adapter: libiberty/alloca.c 290e59c965e6b40040e7962e9f9ad6ae6ac29c1777def7f9ef05905e9e147cc0
+  patch: 01-collect2-unlink-if-ordinary.diff c3648f4925c88873a82d0880b0d3eb6b6bf20a683d0612478af2317e3cc6c01f
+  seconds: 37
+- headers: ok
+  headers: 218
+  seconds: 4
+- configure: ok
+  components: libiberty libcpp gcc
+  seconds: 107
+- cc1: ok
+  cc1: 82b15b22b70866d33fdf6e4efbf3a1e1882106bbd4204479444c5e841cac2fa7
+  seconds: 180
+- driver: ok
+  xgcc: d2aef8799f042ed1d0532b834cdf6cde6be0c9759544f00dbf08da951d5e2c4e
+  cpp: 31f34b93edddea412eabccc5aee7049288a81692eead7dcbdb5fd3f55e528e6f
+  collect2: b1cbd38941f73049d483dcd64314c23961d3251603303d4feccb67b403aeca29
+  specs: 95a030a59060e068e11fe595823d1c3ea817f8676f4cbe07a0af6b36c3a5717e
+  seconds: 3
+- libgcc: ok
+  libgcc.a: 67a45caa881c8e0ee88bc7bbaebea93d69f2ba89492150f201e1a6d47c6ad613
+  libgcov.a: 3aae8e83f3e3930c7e770a2f5d1ca23fe5b9ec8712ba67e317238c084798fbeb
+  crtbegin.o: da889d9a4143b1073b1caa30d0e70dca1b62a60f7af5fbf2e88b44a042a85750
+  crtend.o: e389bbbcd60d56547aedb01b698464ccc9d8a6f00dd326de71cfad8cd12abde7
+  crtbeginS.o: 6d2791c330c35c3cf88d6d1673491ade83a2de03d58c8a06c04314f8978582a4
+  crtendS.o: 8b7a17b4c5675e7f14da562ffba6c53fa1218168f24c4b9f7aaa0680fcb7aae7
+  crtbeginT.o: da889d9a4143b1073b1caa30d0e70dca1b62a60f7af5fbf2e88b44a042a85750
+  seconds: 22
+- install: ok
+  gcc: d2aef8799f042ed1d0532b834cdf6cde6be0c9759544f00dbf08da951d5e2c4e
+  seconds: 2
+- musl: ok
+  libc.a: 374cdefda3ef1191146517903950d4342b186e47e61100e8c9004e10d1887487
+  crt1.o: 77a8fa04b79335fdf378d8059c7dc80a6b6efc01a4e29d27be074bed908776f0
+  crti.o: 16701a268025b1a1847d7497370adda631b31148bbbedc401517b894e29f680e
+  crtn.o: 20e27422647a675b5c0629359ea35700745c36257ef4e4dd20470616a00b054e
+  seconds: 144
+- hello: ok
+  hello: 3a6a7aec21450be0a89e112510a66bb2cfe5b554939e65e0bd4f6eacf90f0ae9
+  output_matches: yes
+  libgcc_divti3_linked: yes
+  seconds: 0
+
+Blocked host tool attempts (including configure probes): 2

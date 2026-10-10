@@ -1,0 +1,14 @@
+scope: original binutils stage-B build; configure answers provisional; no execution or bootstrap claim
+compiler: ///build-out/seed-cc/seed-cc (19f202fe79f9ac1b02e90c59c972f73b330d60c931e15951cf31ee331ed33ec6)
+binutils_archive: 1cb3ceb55873f1c5b3b9a9477cd06ae471e2fd331321a2f03dcf46ce37c760ed
+oyacc: 9d814858a4b947131af848a0d9e67ee64cbc564be451ab40af1f9bc39aa2f571
+flex: bc465f8fd442de5201a481c51d51b12ed178af26c7f78f35e8f7040b45f7c3ce
+jobs: 2
+steps: configure 0; make 2; make-gas 0; make-ld 0; make-binutils 0
+tool: gas/as-new 25a09377770dbb8efa1adf2b95f08872e96ff6ac1df1ee31154db7e845e7bff7
+tool: ld/ld-new c1290a7b2b5dca98e084283a2190f713d0207fdf0c1844c2165d9365c2c5930e
+tool: binutils/ar 1810827243f45a54dd514099e6cd749df2f081ec85f8bbb269e6343fa4ef00d5
+tool: binutils/nm-new daf62063f721a1b2ccee56dad05173d57b0353dcffa1250aa3172838ef966103
+tool: binutils/objdump 7111598dc804a731abfd324c55d29f93a6d9b3fbd29bb7759d1b63e075a449f4
+tool: binutils/readelf adc0ca231e2b3abbbafc96d543b0e4bc3136c77e7d0fe3d9e973bd62a02e616b
+built: 6 of 6

@@ -1,0 +1,12 @@
+# Stage D: fixed point reached
+
+Stage 3 vs stage 4: 54 files, 0 differ.
+Stage 2 vs stage 3: 54 files, 0 differ.
+
+- stage2: 952 s, built by //build-out/chain/stage-c/gcc/install/bin/gcc
+- stage3: 156 s, built by //build-out/chain/stage-d/prefix/bin/gcc
+- stage4: 155 s, built by //build-out/chain/stage-d/stage3//build-out/chain/stage-d/prefix/bin/gcc
+
+- bin/gcc: b9eebc1f772af4fde5c143564d632ef42ec8cfad20ce4bcc2dcae342c85def22
+- libexec/gcc/x86_64-pc-linux-gnu/4.0.4/cc1: c0ab2df0ec5dc6f79e002b57d368880bbe1c994e4d2924261b2e11e3c61ab715
+- libexec/gcc/x86_64-pc-linux-gnu/4.0.4/collect2: 4ba05db7508501398299414232a5788acf1d4c776ec052bcca7acdd627b0a9d4
