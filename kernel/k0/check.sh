@@ -3,7 +3,7 @@
 # Prove they agree: k0.hex0 is exactly what asm2hex0.py writes from
 # k0.asm, and hex0-seed's k0.bin is byte-identical to nasm's.  Needs nasm;
 # HEX0 names another hex0 assembler to use instead of stage0-posix's.
-set -e
+set -eu
 HEX0=${HEX0:-vendor/stage0-posix/bootstrap-seeds/POSIX/AMD64/hex0-seed}
 t=$(mktemp -d)
 trap 'rm -rf "$t"' EXIT
