@@ -1,4 +1,4 @@
-; K0: a single-task bootstrap kernel for the seed-forth amd64 route.
+; K0: the single-task bootstrap kernel that starts the K1 run.
 ;
 ; Multiboot (a.out kludge) -> long mode, the first 4 GiB identity-mapped
 ; with 1 GiB pages, everything in ring 0, interrupts off.  Programs enter

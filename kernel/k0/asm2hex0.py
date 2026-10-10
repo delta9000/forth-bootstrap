@@ -184,7 +184,7 @@ def main():
     open(out, "w").write(header + "\n" + text + "\n")
 
 HEADER = """\
-;; k0.hex0 — K0, a single-task bootstrap kernel for seed-forth's amd64 route
+;; k0.hex0 — K0, the single-task bootstrap kernel that starts the K1 run
 ;;
 ;; License: MIT (see /LICENSE)
 ;;

@@ -1,4 +1,4 @@
-;; k0.hex0 — K0, a single-task bootstrap kernel for seed-forth's amd64 route
+;; k0.hex0 — K0, the single-task bootstrap kernel that starts the K1 run
 ;;
 ;; License: MIT (see /LICENSE)
 ;;
@@ -28,7 +28,7 @@
 ;;   0x50000000  FSIMG, the boot image from mkfs.py; rbp = 0x50000080
 ;;   0x80000000  anonymous mmap and fork snapshots, growing up
 
-;; K0: a single-task bootstrap kernel for the seed-forth amd64 route.
+;; K0: the single-task bootstrap kernel that starts the K1 run.
 ;;
 ;; Multiboot (a.out kludge) -> long mode, the first 4 GiB identity-mapped
 ;; with 1 GiB pages, everything in ring 0, interrupts off.  Programs enter
