@@ -250,3 +250,21 @@ A fresh complete stage also passed seed-forth's execution audit
 outside `seed-forth`, `build-out/seed-cc/`, `build-out/plumbing/` and
 `/tmp`), including every prepared and generated hash check and `flex -V`
 reporting 2.5.11.  Wide/EUC lex variants are outside this stage's evidence.
+
+## Bash: [bash.kaem](bash.kaem)
+
+After the parser generators, `bash.kaem` builds GNU bash 2.05b with the
+stage-1 make: the parser is regenerated from `parse.y` by the chain's
+oyacc (the shipped `y.tab.c` is deleted), one reviewed patch
+(`bash-2.05b/missing-defines.patch`) is applied by the stage-2 `patch`, and
+configure's answers are in [bash-2.05b/config.h](bash-2.05b/config.h)
+([NOTES.md](bash-2.05b/NOTES.md) gives the reasons).  It installs `bash`
+and `sh` into `build-out/plumbing/bin`, and the GCC chain
+([CHAIN.md](CHAIN.md)) runs under that bash:
+
+```sh
+build-out/plumbing/bin/kaem --verbose --strict --file chain/plumbing/bash.kaem
+```
+
+`chain/plumbing/chain.kaem` runs stage 1, stage 2, the lexers and bash in
+that order, then the GCC chain.
