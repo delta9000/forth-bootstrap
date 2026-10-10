@@ -9,6 +9,7 @@ Linux 7.2.8.  The whole run can happen inside two small kernels under QEMU:
 K0, 1,313 bytes of hex0, and K1, a C kernel that seed Forth compiles.  K1
 then hands the machine to the Linux kernel the run built.  A host `gcc`
 appears only in the checks, as the reference Stage A compares against.
+The terms in the tree below are defined under Names.
 
 ```
 hex0-seed (229 bytes)
@@ -29,6 +30,9 @@ hex0-seed (229 bytes)
 
 The tools and formats:
 
+- **stage0-posix**: the bootstrap project (`vendor/stage0-posix`) whose
+  229-byte `hex0-seed` is the only program this route starts from; its
+  kaem and mescc-tools-extra sources are compiled here by seed-cc.
 - **hex0**: hexadecimal bytes with comments, which `hex0-seed` turns into
   a file byte for byte.  The seed and K0 are written in it.
 - **M1, hex2**: stage0-posix's assembler-level formats.  M1 is macro
@@ -39,6 +43,12 @@ The tools and formats:
   exists.
 - **mescc-tools, mescc-tools-extra**: stage0-posix's small C tools (kaem,
   `mkdir`, `cp`, `sha256sum`, `untar` and others), compiled here by seed-cc.
+- **M2libc**: the small C library of the stage0-posix tools
+  (`vendor/stage0-posix/mescc-tools-extra/M2libc`); kaem and
+  mescc-tools-extra are compiled against its `bootstrappable.c`.
+- **plumbing**: the first Unix tools the route builds with seed-cc (make,
+  sed, grep, gawk, coreutils, tar, gzip, patch, diffutils, the parser
+  generators and bash 2.05b), before any GCC; `chain/plumbing/`.
 - **seed-cc, seed-ar**: the C compiler driver and archiver, written in C
   and compiled by the Forth compiler; both run the seed underneath.
 - **K0, K1**: the two kernels the QEMU run boots, one after the other.
@@ -67,8 +77,9 @@ The stages:
 - **gcc-A, gcc-B, gcc-C**: `chain/gcc64`'s GCC 4.0.4 builds on the way to
   GCC 10.5.0.  gcc-A is built by the stage-D GCC; gcc-B by gcc-A; gcc-C by
   gcc-B, and gcc-B = gcc-C.  Then gcc-4.7.4, binutils 2.41 and gcc-10.5.0.
-- **route D**: this route's name in seed-forth, the project it came from
-  ([HISTORY.md](HISTORY.md)).
+- **route D**: this route's name in seed-forth, the project it came from:
+  of seed-forth's lettered routes, D is the one that reaches Linux with no
+  other compiler ([HISTORY.md](HISTORY.md)).
 
 ## What you trust
 
