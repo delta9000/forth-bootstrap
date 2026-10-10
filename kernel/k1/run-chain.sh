@@ -58,7 +58,7 @@ rc=$?
 set -e
 echo "run-chain: qemu exit $rc (expected $expected)"
 [ "$rc" -eq "$expected" ]
-set -- "k0: K1 built by seed Forth (no TinyCC); handing over"
+set -- "k0: K1 built by seed Forth; handing over"
 case $mode in
     --direct-smoke) set -- "$@" "k1: PASS (seed-cc, seed-ar and kaem work under the K1 that seed Forth built)" ;;
     --direct) set -- "$@" "k1: PASS (direct route under K1: seed to bash 2.05b" ;;

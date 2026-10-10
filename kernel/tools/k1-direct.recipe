@@ -1,4 +1,4 @@
-# K1 built from the seed with no TinyCC.
+# K1 built from the seed by its own compiler, with no other compiler.
 # kernel/tools/k1-direct-start.fth builds the runner and runs this recipe, on Linux
 # or under K0.  Seed Forth compiles each K1 C file with the same layers,
 # arena and driver words as seed-cc -nostdinc -c; kernel/tools/obj-asm.fth writes
@@ -48,5 +48,5 @@ cat ${K}/link.input ${ROOT}/forth/010-lib.fth ${ROOT}/kernel/k1/boot/k0-syscalls
 run 0 ${K}/link.input ${K}/link.out ${K}/link.err ${ROOT}/seed-forth
 same ${K}/empty ${K}/link.out
 chmod ${K}/k1
-say "k1-direct: K1 built from the seed (no TinyCC):"
+say "k1-direct: K1 built from the seed:"
 hash ${K}/k1
