@@ -14,7 +14,7 @@ static long seed_identity_call(long number, long a1, long a2, long a3)
     return result;
 }
 
-/* These five cannot fail and leave errno unchanged. */
+/* These six cannot fail and leave errno unchanged. */
 uid_t getuid(void) { return (uid_t)__seed_syscall6(102, 0, 0, 0, 0, 0, 0); }
 gid_t getgid(void) { return (gid_t)__seed_syscall6(104, 0, 0, 0, 0, 0, 0); }
 uid_t geteuid(void) { return (uid_t)__seed_syscall6(107, 0, 0, 0, 0, 0, 0); }
