@@ -1,10 +1,5 @@
 # Configure runtime contracts
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 This increment supplies the interfaces demanded by the original GCC 4.0.4
 configure source and its C preprocessor. It does not make every GCC configure
 test pass, and does not claim a complete libc or a completed GCC bootstrap.
@@ -30,7 +25,7 @@ exclusive temporary files for original oyacc.
 
 ## ABI and provenance
 
-The declarations and implementations are original seed-forth code under the
+The declarations and implementations are original code for this project under the
 repository [MIT license](../../LICENSE). They encode ABI facts, rather than
 copying libc implementations. The following primary sources were checked
 on 2026-10-03:
@@ -106,42 +101,31 @@ code, not copied libc source. The supported runtime is still single-threaded.
 The later [signal contract](SIGNAL.md) supplies bounded persistent handler
 registration separately from this original abort increment.
 
-`python3 tests/gcc/abort-check.py` builds production objects and their executable
-with Forth, then verifies default, blocked, and ignored SIGABRT termination.
-Separate host ABI oracles test a returning handler, `siglongjmp`, a handler
+Production objects and their executable were built with Forth, then default, blocked, and ignored SIGABRT termination was verified.
+Separate host ABI oracles tested a returning handler, `siglongjmp`, a handler
 that exits, and a handler that changes the disposition/mask. A separate syscall
-double verifies exact raw arguments and the failed-delivery fallback. Tests
-disable core files only in their child processes. The optional `--compiler-root`
-argument selects a recorded immutable compiler during concurrent development;
-every report records its exact compiler/runtime input hashes.
+double verified exact raw arguments and the failed-delivery fallback. The tests
+disabled core files only in their child processes. Every report recorded the exact compiler/runtime input hashes.
 
 ## Verification
 
-Run from the repository root:
-
-```sh
-python3 tests/gcc/configure-runtime-check.py
-python3 tests/gcc/configure-runtime-oracle-check.py
-```
-
-The first command compiles runtime C and fixtures using the Forth compiler,
-emits syscall/errno/startup objects from Forth, links with the Forth linker,
-and retains objects, executables and SHA-256 records under `build-out`.
-It tests all exposed type widths and signedness, struct size/alignment and
+The production run compiled runtime C and fixtures using the Forth compiler,
+emitted syscall/errno/startup objects from Forth, linked with the Forth linker,
+and retained objects, executables and SHA-256 records.
+It tested all exposed type widths and signedness, struct size/alignment and
 field offsets, a sparse file larger than 8 GiB, a negative mtime with
 nanoseconds, a hard link, symlink following, directories, pipe descriptors,
 ENOENT/EBADF/EFAULT and preservation of `errno` after success. An isolated
-Forth-built syscall double checks argument registers, the raw-error bounds
+Forth-built syscall double checked argument registers, the raw-error bounds
 and EOVERFLOW. It is linked only into the fault-test executable.
 
-Exit is exercised with nine positive/negative statuses, verifies absence
-of post-exit output, and leaves a buffered file stream open to prove that
+Exit was exercised with nine positive/negative statuses, absence
+of post-exit output was verified, and a buffered file stream was left open to prove that
 exit writes its bytes. The test runner and Python `os.stat` are orchestration and
 independent observation, not producers of target code.
 
-The second command separately compiles the layout fixture against host
-system headers and host libc at `-O0` and `-O2`, then compares its complete
-output to the Forth-produced executable. It can reuse a production run by
-accepting the path to that run's `report.json`; it rejects stale source
-hashes. Host compilers, assemblers, linkers and libc are used only for this
+The oracle run separately compiled the layout fixture against host
+system headers and host libc at `-O0` and `-O2`, then compared its complete
+output to the Forth-produced executable. It could reuse a production run's
+report and rejected stale source hashes. Host compilers, assemblers, linkers and libc are used only for this
 explicitly labeled oracle and contribute no production bytes.

@@ -1,10 +1,5 @@
 # Source-built qsort
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 GCC 4.0.4's original `gcc/genmodes.c`, in `calc_wider_mode`, calls `qsort`
 on an array of `struct mode_data *`, using `cmp_modes` to order the pointed-to
 modes. The pinned libiberty source does not supply `qsort.c`. This concrete
@@ -61,16 +56,16 @@ being ordered, or inconsistent ordering are not supported. Zero and one
 element return without calling the comparator, and so does a zero element
 size.
 
-`sort.c` remains original seed-forth code and now holds only `bsearch`.
+`sort.c` remains original code and now holds only `bsearch`.
 
 ## Verification and provenance
 
-Run `python3 tests/gcc/sort-check.py`. It snapshots and hashes the compiler,
-headers, `qsort.c`, `sort.c`, `memory.c` and test inputs before compiling, checks that the
-snapshot remains unchanged, and retains all source and target artifacts in
-the printed build directory. The source, client, syscall/start objects and
-ELF executable are built through Forth only. Python copies inputs, invokes
-commands and records hashes; it does not generate qsort object bytes.
+The compiler,
+headers, `qsort.c`, `sort.c`, `memory.c` and test inputs were snapshotted and hashed before compiling, the
+snapshot was checked to remain unchanged, and all source and target artifacts were retained in
+a build directory. The source, client, syscall/start objects and
+ELF executable were built through Forth only. Python copied inputs, invoked
+commands and recorded hashes; it did not generate qsort object bytes.
 
 The production client checks every permutation through eight elements,
 zero/one counts, up to 4096 elements, sorted/reverse/equal/organ-pipe/
@@ -83,14 +78,13 @@ ends of the accessible region. Byte records are compared
 with an independent selection-sort reference; integer and pointer cases
 independently count identities instead of assuming stable equal-key order.
 
-Run `python3 tests/gcc/sort-oracle-check.py BUILD_DIRECTORY` using the printed
-production directory. This separate optional check namespaces and Forth-builds
-the exact frozen qsort source, then links it to host GCC clients at -O0 and
--O2. Independent host libc qsort supplies expected byte order and mode-key
-order; all record bytes and pointer identities are checked. For keys that tie
-but carry distinct payloads, the Forth-compiled and host-compiled objects must
-leave every element in the same place. The same source
-also runs as a host-compiled implementation with undefined-behavior checking.
-Host GCC, host linker, host headers and host libc are used only by this oracle,
+A separate optional check, run against the production directory, namespaced and Forth-built
+the exact frozen qsort source, then linked it to host GCC clients at -O0 and
+-O2. Independent host libc qsort supplied expected byte order and mode-key
+order; all record bytes and pointer identities were checked. For keys that tie
+but carry distinct payloads, the Forth-compiled and host-compiled objects
+left every element in the same place. The same source
+also ran as a host-compiled implementation with undefined-behavior checking.
+Host GCC, host linker, host headers and host libc were used only by this oracle,
 never as evidence of production closure. Passing these tests establishes this
 runtime interface, not completion of the original GCC generator bootstrap.

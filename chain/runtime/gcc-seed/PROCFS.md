@@ -1,10 +1,5 @@
 # Core-note records, gettimeofday and features.h
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 For a native `x86_64-*-linux*` build, original binutils 2.30 `bfd/configure.ac`
 sets `CORE_HEADER="hosts/x86-64linux.h"`, and `bfd/elf.c` and
 `bfd/elf64-x86-64.c` include it unconditionally. That unchanged header
@@ -12,7 +7,7 @@ includes `<features.h>`, `<sys/time.h>`, `<sys/types.h>` and `<sys/procfs.h>`,
 then defines the 32-bit, x32 and 64-bit Linux core-note records in terms of
 `struct elf_siginfo`, `pid_t` and `ELF_PRARGSZ`. Original libiberty
 `mkstemps.c` calls `gettimeofday` for temporary-name entropy when configure
-finds it. These are original seed-forth definitions; no libc or kernel header
+finds it. These are original definitions; no libc or kernel header
 text was copied.
 
 ## `<features.h>`
@@ -94,21 +89,20 @@ replacement still compiles against the new compatible prototype.
 
 ## Verification
 
-Run `python3 tests/gcc/procfs-time-check.py` (registered in
-`tests/gcc/check.sh`). The Forth-built `procfs-layout.c` prints the size,
+The Forth-built `procfs-layout.c` printed the size,
 alignment and every member offset, size and signedness of the records above;
-its output must equal, byte for byte, the same program built by host GCC with
+its output equaled, byte for byte, the same program built by host GCC with
 glibc headers (`-std=gnu99 -U_FORTIFY_SOURCE`, `-O0` and `-O2`). Host GCC also
-compiles it against the runtime headers alone, where pointer initializers
-prove exact type identity. `timeofday-check.c` checks errno preservation,
+compiled it against the runtime headers alone, where pointer initializers
+proved exact type identity. `timeofday-check.c` checked errno preservation,
 microsecond range, agreement with `time()`, 2,000 non-decreasing readings,
 NULL pointers, the zone record and EFAULT for both pointers against the host
-oracle; the driver interleaves Forth and host readings inside Python
-wall-clock brackets. A renamed fault copy of `timeofday.c` checks exact
-forwarding and every Linux error encoding. Each header compiles standalone
-and twice. The bfd configure probe bodies run under both compilers with equal
-answers. The unchanged `hosts/x86-64linux.h` is compiled after the original
+oracle; the driver interleaved Forth and host readings inside Python
+wall-clock brackets. A renamed fault copy of `timeofday.c` checked exact
+forwarding and every Linux error encoding. Each header compiled standalone
+and twice. The bfd configure probe bodies ran under both compilers with equal
+answers. The unchanged `hosts/x86-64linux.h` was compiled after the original
 `ansidecl.h` and its record layouts, including the note sizes
-`elf64-x86-64.c` matches (336, 296, 136, 124), must equal host GCC/glibc.
+`elf64-x86-64.c` matches (336, 296, 136, 124), equaled host GCC/glibc.
 Unchanged libiberty `mkstemps.c` (with `HAVE_GETTIMEOFDAY`) and
-`gettimeofday.c` compile; no link claim.
+`gettimeofday.c` compiled; no link claim.

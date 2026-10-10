@@ -1,10 +1,5 @@
 # Measured working-directory and setbuf interfaces
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 Original GCC 4.0.4 at `944765863eec87a9f37e297994fd2af960397138`
 uses `getcwd` in `libiberty/getpwd.c`. The historical configuration lacks
 `HAVE_GETCWD`, selecting original `libiberty/getcwd.c`, which calls unavailable
@@ -68,12 +63,12 @@ arbitrary FILE pointer remains outside the live-object contract.
 
 ## Focused evidence and limits
 
-Run `python3 tests/gcc/directory-buffering-check.py`. It separates static
+The check separated static
 Forth-only production from independent host libc/source at O0/O2 and both
 caller/provider ABI directions. Real root, physical symlink, renamed and
 deleted directory cases, every short capacity, exact pointer/NUL/errno,
-protected-page boundaries and an actually constructed overlong cwd exercise
-getcwd. Test doubles check all kernel errno values, full-width sizes and the
+protected-page boundaries and an actually constructed overlong cwd exercised
+getcwd. Test doubles checked all kernel errno values, full-width sizes and the
 non-absolute rejection without security-setting changes.
 
 Real fopen/fdopen streams prove immediate binary I/O with NULL setbuf, and a
@@ -88,10 +83,10 @@ This focused check does not run the held broad suites, establish a new genuine
 configure epoch, link or execute GCC, or prove a bootstrap. Owner/independent
 qualification results must identify the final source identity separately.
 
-The test cleanup helper is a repository-relative dependency on the preceding
-qualified 80667 harness packet: `tests/gcc/measured_runtime_runner.py`, SHA256
-`993cbfbeb9fd45db92afa3a945be4cc6f007dbb4969657f9c0e54bd482e4d0cf`.
-It is test infrastructure and does not change the compiler/runtime identity.
+The test cleanup helper was a dependency on the preceding
+qualified 80667 harness packet (SHA256
+`993cbfbeb9fd45db92afa3a945be4cc6f007dbb4969657f9c0e54bd482e4d0cf`).
+It was test infrastructure and does not change the compiler/runtime identity.
 
 Qualification identifies the final source separately. Independent review
 exposed diagnostic-induced SIGPIPE and SIGXFSZ in the initial terminal path.

@@ -1,10 +1,5 @@
 # Terminals: termios, ioctl, window size and terminal names
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 `bash` (line editing and job control), `stty`, `tty`, `ls` (`TIOCGWINSZ` for
 the column count) and `more`-like code need terminal control. These are all
 Linux tty ioctls.
@@ -60,14 +55,14 @@ and `TIOCM_*` bits. `termio.h`, as in glibc, just includes `termios.h` and
 
 ## Gate
 
-`python3 tests/gcc/posix-termios-check.py` gives each build (Forth, host
-GCC/glibc `-O0` and `-O2`) a fresh 33x101 pseudo-terminal as standard input
+Each build (Forth, host
+GCC/glibc `-O0` and `-O2`) was given a fresh 33x101 pseudo-terminal as standard input
 and as the controlling terminal of a new session, with standard output a
-pipe, and requires identical output: every constant, `tcgetattr` on the pty,
+pipe, and identical output was required: every constant, `tcgetattr` on the pty,
 `cfmakeraw`, `tcsetattr` with all three actions and an invalid one, the
 reread attributes, symbolic speed round trips, window size get and set,
 `ttyname`/`ttyname_r` (including `ERANGE`, a pipe and a closed descriptor),
 `ENOTTY`/`EBADF` from `tcgetattr`, foreground group and session,
 `tcsetpgrp`, `tcflush` (valid and invalid), `tcdrain`, `tcflow` and
-`tcsendbreak`. `c_cflag` is printed without the `CIBAUD` bits, and the
-runtime-only checks (speed codes, invalid speed) run under `#ifndef __GLIBC__`.
+`tcsendbreak`. `c_cflag` was printed without the `CIBAUD` bits, and the
+runtime-only checks (speed codes, invalid speed) ran under `#ifndef __GLIBC__`.

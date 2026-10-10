@@ -1,10 +1,5 @@
 # Correctly rounded floating input: strtod, strtof, strtold, atof
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 Original binutils 2.30 `binutils/stabs.c` reads stabs floating constants
 with `atof`; gawk 3.0.4 converts every numeric-looking field and string with
 `strtod`; coreutils `seq`, `printf` and `sort -g` parse their operands with
@@ -83,13 +78,13 @@ like the rest of the single-threaded runtime.
 
 ## Gates
 
-`tests/gcc/strtod-check.py` builds `tests/gcc/strtod-check.c` with the
+A fixture was built with the
 Forth compiler (production) and with host GCC against glibc (expected-output
-oracle only). The fixture generates its own inputs from a seeded generator,
-with an independent exact decimal expander for half-way points, and prints
+oracle only). The fixture generated its own inputs from a seeded generator,
+with an independent exact decimal expander for half-way points, and printed
 for each input the result bits, errno and end offset of `strtod`, `atof`,
-`strtof` and (for every extended80 case) `strtold`. At scale 1 it checks
-340,132 inputs; the outputs must be byte-identical:
+`strtof` and (for every extended80 case) `strtold`. At scale 1 it checked
+340,132 inputs; the outputs had to be byte-identical:
 
 - 200,000 random decimals of 1 to 800 digits, with and without a point,
   exponents from -350 to 349 (some to +-5000), signs, white space and
@@ -104,6 +99,6 @@ for each input the result bits, errno and end offset of `strtod`, `atof`,
   exponents and prefixes, 2,000-digit inputs.
 
 A scale-10 run checked 3,400,132 inputs with no difference.
-`tests/gcc/binutils-runtime-check.py` keeps its original `atof` gate: 4,397
+The original `atof` gate was kept: 4,397
 lines compared with host glibc at `-O0`/`-O2` and with Python's correctly
 rounded `float()`, and hexadecimal `0x10` and `0x1p3` now convert to 16 and 8.

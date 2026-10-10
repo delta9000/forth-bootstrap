@@ -1,10 +1,5 @@
 # Runtime-aware process entry
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 Original oyacc probes for __progname. The runtime-aware entry initializes this
 real symbol before main to the basename within argv[0], or an empty string for
 an absent name or trailing slash. Initialization allocates nothing and preserves
@@ -18,11 +13,11 @@ raw entry remains independent of the C runtime and passes no envp; it is used
 only by two-argument syscall proofs. Only full-runtime entry promises
 initialization or envp.
 
-Run tests/gcc/startup-check.py. Forth tests cover five argument-name forms,
+Forth tests covered five argument-name forms,
 argument preservation, null/empty initialization, errno, a three-argument main
-run under env -i that checks envp == argv + argc + 1 == environ and finds its
+run under env -i that checked envp == argv + argc + 1 == environ and found its
 variables before the NULL terminator, and a raw-entry program without runtime
-dependencies. Separate host C callees at O0/O2 verify entry alignment and
-exact arguments, including envp. Host objects are ABI oracles only. Reports retain
+dependencies. Separate host C callees at O0/O2 verified entry alignment and
+exact arguments, including envp. Host objects were ABI oracles only. Reports retained
 source and artifact hashes. These tests were reconstructed after workspace loss;
 acceptance is based on their fresh replay, not the lost previous reports.

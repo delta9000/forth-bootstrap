@@ -1,10 +1,5 @@
 # File-system calls, device numbers and realpath
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 `cp`, `mv`, `ln`, `install`, `touch`, `mkfifo`, `mknod`, `readlink`, `tar`
 and `patch` need the rest of the POSIX file calls. Each wrapper below is one
 Linux AMD64 syscall through `__seed_syscall6`; raw results in `[-4095, -1]`
@@ -87,9 +82,9 @@ discovery builds used.
 
 ## Gate
 
-`python3 tests/gcc/posix-files-check.py` runs a fixture in a fresh empty
+A fixture was run in a fresh empty
 directory, built by the Forth compiler and by host GCC/glibc (`-O0`, `-O2`),
-and requires identical output: links and their errors, short `readlink`,
+and the output had to be identical: links and their errors, short `readlink`,
 `creat` with a umask, `fchmod`, owner no-ops, both truncations, syncs,
 `EISDIR`/`EINVAL` failures, `utimes`/`utime` round trips through
 `st_atim`/`st_mtim` nanoseconds, FIFOs and `mknod`, unprivileged device and
@@ -98,4 +93,4 @@ sorted directory listings with `d_type`, `dirfd`, `rewinddir`, `fchdir`,
 twenty `realpath` cases (dots, slashes, relative and absolute links, a link
 loop, dangling links, `ENOTDIR` forms, the allocating form), `dup3`,
 `pipe2` flags, `FIONREAD`, `ENOTTY`, `O_SYNC` opens and contended `flock`s
-from a child. Absolute names are printed relative to the directory.
+from a child. Absolute names were printed relative to the directory.

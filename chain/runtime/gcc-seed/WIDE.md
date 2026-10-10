@@ -1,10 +1,5 @@
 # ASCII wide-character primitives
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 Original Heirloom lex requires pointer-sized integers, wchar_t/wint_t,
 C-locale classification/conversion and wcstol. This bounded header layer uses
 signed32-bit wchar_t, unsigned32-bit wint_t with all-one WEOF, and LP64 pointer
@@ -19,14 +14,14 @@ A zero byte count fails; this implementation explicitly chooses EILSEQ where
 the host oracle leaves errno unchanged. iswprint/iswspace cover only the two
 measured C-locale predicates and return false for WEOF and other non-ASCII values.
 
-wcstol implements bases0 and2..36, sign/whitespace/prefix handling, exact end
+wcstol implements bases0 and 2..36, sign/whitespace/prefix handling, exact end
 positions, LONG_MIN/MAX and complete digit consumption after overflow. Overflow
 sets ERANGE; invalid bases set EINVAL; successful/no-conversion results preserve
 errno. No binary-prefix extension or Unicode digit classification is promised.
 
-wide-check.py tests every byte plus boundary/reset cases and356 independently
-constructed numeric cases. Separate host C90 O0/O2 builds compare the shared
-contract; the explicit zero-count errno choice is checked only for this runtime.
+Every byte was tested, plus boundary/reset cases and 356 independently
+constructed numeric cases. Separate host C90 O0/O2 builds compared the shared
+contract; the explicit zero-count errno choice was checked only for this runtime.
 Wide stream I/O and wide printf formatting are a separate successor stage.
 Original binutils adds ASCII `mbstowcs` and C-locale `towlower`; see
 [FILE-METADATA.md](FILE-METADATA.md).
@@ -43,4 +38,4 @@ destination returns 1), `mbsinit` (true for NULL or the zero state),
 `btowc`/`wctob` (ASCII only, `WEOF`/`EOF` otherwise), and in `stdlib.h`
 `mblen` (as `mbtowc`) and `wcstombs` (the inverse of `mbstowcs`). Host glibc
 in the C locale rejects bytes above 127 the same way, and
-`tests/gcc/posix-strings-check.py` compares every case with it.
+every case was compared with it.

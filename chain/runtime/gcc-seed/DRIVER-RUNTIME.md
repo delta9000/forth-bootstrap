@@ -1,10 +1,5 @@
 # GCC driver runtime: paths, descriptors, environment and stream input
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 Original GCC 4.0.4 `make xgcc cpp collect2` needs a few more interfaces. The
 driver discovery pass found exactly these gaps and no compiler gap:
 
@@ -98,10 +93,9 @@ consumes both bytes before the matching failure.
 
 ## Gate
 
-`python3 tests/gcc/driver-runtime-check.py`, registered in
-`tests/gcc/check.sh`, runs the Forth-built `tests/gcc/driver-runtime-check.c`
-and host GCC/glibc builds at `-O0`/`-O2` in fresh directories with the same
-two-variable environment; the 75 output lines must be identical. It covers
+A fixture built by Forth and host GCC/glibc builds at `-O0`/`-O2` were run in
+fresh directories with the same
+two-variable environment; the 75 output lines had to be identical. It covered
 `MAXPATHLEN`, lowest-free `dup`, shared offsets and close-on-exec,
 `EBADF`; `chdir` with relative names, `ENOENT`, `ENOTDIR` and the empty
 path; `link` counts, `EEXIST`, `ENOENT`, `EPERM` on directories; `rename`
@@ -110,12 +104,12 @@ in-place edit, replace (including a startup variable), removal, growth past
 40 entries, a program-assigned vector left untouched, and children started
 with `fork`/`execv` that see exactly the changed environment; tlink's
 `fscanf("%c ")` loop with `fgets`, numeric and `%c` mixes, mismatch
-pushback, `%%` and `EOF`. Host GCC also lints the runtime sources and the
+pushback, `%%` and `EOF`. Host GCC also linted the runtime sources and the
 test against the runtime headers alone.
 
 ## Consumer build
 
-Fresh `gcc-direct/configure.py` runs (`--forth-ar`, `--alloca-frame` for
+Fresh configure runs (seed-ar as `AR`, and the alloca-frame adapter for
 libiberty) now answer `HAVE_SYS_PARAM_H`, `HAVE_PUTENV` and `HAVE_RENAME`;
 libiberty's `LIBOBJS` loses `putenv.o` and `rename.o` (`setenv.o` is still
 built, unreferenced). The original Makefiles, driven as in the discovery

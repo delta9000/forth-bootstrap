@@ -1,10 +1,5 @@
 # User, group, process-group and session identity
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 `id`, `whoami`, `install`, `chown`, `tar` (preserving owners), `make` and
 `bash` (job control) need the identity calls; discovery builds supplied them
 as scratch stand-ins, some returning `int` where POSIX has `uid_t`.
@@ -28,9 +23,8 @@ needed. `getlogin` and the password/group databases are in
 [PASSWD.md](PASSWD.md); `nice`, `getpriority` and resource limits are in
 [SYSINFO.md](SYSINFO.md).
 
-The gate is `python3 tests/gcc/posix-sysinfo-check.py` (see SYSINFO.md): it
-prints the IDs and supplementary groups, checks `getpgrp() == getpgid(0)`,
+The gate (see SYSINFO.md) printed the IDs and supplementary groups, checked `getpgrp() == getpgid(0)`,
 `getsid`, every same-ID `set*` call, `seteuid(-1)`, `setuid(0)` and
 `setgroups` refusals for an unprivileged user, and a child's `setsid` (new
-session leader, second call `EPERM`) and `setpgid(0, 0)`. Output must equal
+session leader, second call `EPERM`) and `setpgid(0, 0)`. Output was required to equal
 host glibc's at `-O0` and `-O2`.

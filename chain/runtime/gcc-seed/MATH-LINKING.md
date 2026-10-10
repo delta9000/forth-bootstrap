@@ -1,10 +1,5 @@
 # Explicit bootstrap math archive
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 The direct driver accepts `-lm` and `-l m` in link mode. It first searches
 all explicit `-L DIR` / `-LDIR` directories in their supplied order for `libm.a`.
 A found static archive takes precedence over the builtin math implementation.
@@ -31,11 +26,10 @@ syscall support. The caller must supply any such dependencies as explicit
 objects. The generated math archive exists only in the private per-invocation
 workspace; output publication retains the driver's atomic replacement checks.
 
-Run `python3 tests/gcc/math-check.py` for Forth numerical production, then the
-separate oracle command it prints. Run `python3 tests/gcc/math-link-check.py`
-for archive membership (including the libc-resident `fpclass.o`), ordering,
+Forth numerical production was checked, then compared in a separate oracle run.
+Archive membership (including the libc-resident `fpclass.o`), ordering,
 missing-library, missing-source, nostdlib and existing-output preservation
-checks. Host `ar` in that fixture only inspects
+were also checked. Host `ar` in that fixture only inspected
 Forth-produced archive bytes. MATH.md documents the functions, algorithms, errno policy, measured accuracy
 and the original GCC optional-split reachability boundary. The library is
 binary64-only, without `float`/`long double` variants or a floating-point

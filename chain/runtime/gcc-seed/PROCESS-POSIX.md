@@ -1,10 +1,5 @@
 # exec lists, system, popen and process termination
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 `gawk` and `diff`/`sdiff` run commands through `system` and `popen`, `tar`
 runs `gzip` with `execlp`, `make` and `bash` use `execle`/`execl`, and
 coreutils programs register `close_stdout` with `atexit` and return from
@@ -75,8 +70,8 @@ syscall proofs is unchanged.
 
 ## Gate
 
-`python3 tests/gcc/posix-process-check.py` builds the fixture with the
-Forth compiler and with host GCC/glibc (`-O0`, `-O2`) and requires identical
+The fixture was built with the
+Forth compiler and with host GCC/glibc (`-O0`, `-O2`) and required identical
 output and exit status 5: `execl` with `$0`/`$#`, `execlp` through `PATH`,
 `execle` with a replacement environment, exec failures, `system` exit,
 signal death, 127, `NULL`, a `SIGINT` sent by the command to its parent while
@@ -85,4 +80,4 @@ through `pclose`, the descriptor list of a second `popen` child (no inherited
 first stream), `"e"`, invalid modes, `wait4`/`wait3` with `WNOHANG` and
 `ECHILD`, the new status macros, `exit` running a handler in a child,
 `_Exit` skipping it, 32 registrations, and finally `atexit`/`on_exit`
-handlers printing in reverse order after `main` returns 5.
+handlers printing in reverse order after `main` returned 5.

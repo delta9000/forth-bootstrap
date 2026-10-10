@@ -1,11 +1,6 @@
 # Bounded Linux AMD64 C runtime
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
-These are original seed-forth implementations under the repository MIT
+These are original implementations under the repository MIT
 license, not copied or adapted libc source. The target is Linux AMD64 with
 LP64 types, signed plain `char`, and the measured System V calling contracts.
 The public headers intentionally declare only implemented
@@ -47,10 +42,9 @@ Production reconstruction and any host compiler/libc oracle are separate
 checks. A successful host oracle must never be reported as evidence that a
 production object came from the Forth compiler.
 
-Run `python3 tests/gcc/runtime-check.py` for the Forth-only production build
-and execution test. Its report records retained objects, executable and hashes.
-Run `python3 tests/gcc/runtime-oracle-check.py` for the optional comparison
-between Forth-built functions and host libc at host GCC `-O0` and `-O2`.
+A Forth-only production build and execution test was run; its report recorded
+retained objects, executable and hashes. An optional comparison
+between Forth-built functions and host libc at host GCC `-O0` and `-O2` was also made.
 See chapter 39 of the book (forth-bootstrap-book) for the design and proof boundary.
 
 `perror` prints `strerror(errno)`, which has the glibc text for every Linux
@@ -95,12 +89,11 @@ file and line to real stderr on failure, and invoke the existing real `abort`.
 `NDEBUG` updates the macro as required. Implicit C99 function-name metadata is
 not supplied; the failure helper accepts an optional explicit function name.
 
-Run `python3 tests/gcc/ctype-assert-check.py` for Forth-built production checks
-covering EOF and every byte, side effects, NDEBUG and header reinclusion, exact
-error text and real SIGABRT. Results and hashes are retained in a fresh directory.
-If host GCC is available, a separate C90 build of the same ctype fixture with
-host headers/libc at `-O0` and `-O2` is compared as an independent oracle. Those
-host executables are never production inputs.
+Forth-built production checks covered EOF and every byte, side effects, NDEBUG
+and header reinclusion, exact error text and real SIGABRT. Results and hashes
+were retained in a fresh directory. A separate C90 build of the same ctype
+fixture with host headers/libc at `-O0` and `-O2` was compared as an independent
+oracle. Those host executables are never production inputs.
 
 The measured parser-generator path also uses [unsigned string conversion](STRTOUL.md),
 [integer absolute values](ABS.md), [short option parsing](GETOPT.md), and
@@ -208,10 +201,8 @@ plus [correctly rounded decimal `atof`](DECIMAL-INPUT.md) for `binutils/stabs.c`
 The GNU tools that replace the host plumbing (make, bash, sed, grep, gawk,
 coreutils, tar, gzip, patch, diffutils; see
 [../../gcc-direct/PLUMBING.md](../../gcc-direct/PLUMBING.md)) need a broad
-POSIX layer. Each topic has its contract and a gate in
-`tests/gcc/posix-*-check.py` that compares a Forth-built fixture with host
-GCC/glibc at `-O0` and `-O2` (shared driver:
-`tests/gcc/posix_runtime_harness.py`):
+POSIX layer. Each topic has its contract and a gate that compared a Forth-built fixture with host
+GCC/glibc at `-O0` and `-O2`:
 
 - [error numbers and their text](ERRNO.md): every Linux errno, `strerror`,
   `perror`;

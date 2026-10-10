@@ -1,10 +1,5 @@
 # Process creation, replacement and waiting
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 Original binutils 2.30 `libiberty/pex-unix.c` runs every subprocess for
 the `pex_*` interface, which GCC's driver and collect2 also use to run cc1,
 as and ld. Under a glibc-like configuration (`HAVE_SYS_WAIT_H`,
@@ -88,28 +83,27 @@ holds every Linux error number and `perror` uses `strerror`; see
 
 ## Focused gate
 
-Run `python3 tests/gcc/process-api-check.py`; it is registered in
-`tests/gcc/check.sh`. Processes run serially under a one-GiB limit. The
-Forth-built program forks and execs `/bin/sh` and a Forth-built child, moves
-data through pipes both ways, uses `dup2` for stdin/stdout redirection and
-file output, and checks exit and signal statuses, `execve`/`execv`
+Processes ran serially under a one-GiB limit. The
+Forth-built program forked and exec'd `/bin/sh` and a Forth-built child, moved
+data through pipes both ways, used `dup2` for stdin/stdout redirection and
+file output, and checked exit and signal statuses, `execve`/`execv`
 environments, `execvp` search success, skipped and final `EACCES`, `ENOENT`
 and the default path, vfork, `WNOHANG`, `WUNTRACED` stops, `kill` with
 `SIGKILL`/`ESRCH`/`EINVAL`, `ECHILD`, and `sleep` interrupted by `SIGUSR1`.
-The same program built by host GCC with glibc at `-O0`/`-O2` is the oracle.
-The W* macros are evaluated for every 16-bit status word and wider values,
-and `strerror` for every defined value and some unknown ones. That output must
-match host glibc byte for byte. Host GCC also lints the runtime sources
+The same program built by host GCC with glibc at `-O0`/`-O2` was the oracle.
+The W* macros were evaluated for every 16-bit status word and wider values,
+and `strerror` for every defined value and some unknown ones. That output had to
+match host glibc byte for byte. Host GCC also linted the runtime sources
 against the runtime headers alone.
 
-When the pinned binutils source is present, the gate compiles unchanged
+With the pinned binutils source present, the gate compiled unchanged
 libiberty `pex-unix.c`, `pex-common.c`, `xmalloc.c`, `xstrerror.c`,
 `make-temp-file.c`, `concat.c`, `xexit.c`, `xstrdup.c` and `mkstemps.c` with
 the Forth driver and a hand-written glibc-like `config.h` (no `wait4`,
 `getrusage`, `gettimeofday`, `dup3` or spawn). Host GCC lint with
-`-Werror=implicit-function-declaration` over the runtime headers checks every
-unit. A Forth-linked `tests/gcc/pex-check.c` then uses the public API: a
+`-Werror=implicit-function-declaration` over the runtime headers checked every
+unit. A Forth-linked fixture then used the public API: a
 `printf | tr` PATH-searched pipeline read with `pex_read_output`, a `PEX_LAST`
 output file with exit status 3, a signal death, an absolute-path Forth child,
 and a missing program reported by the child on stderr with status 255.
-A host GCC/glibc build of the same units must behave identically.
+A host GCC/glibc build of the same units behaved identically.

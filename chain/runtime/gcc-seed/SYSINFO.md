@@ -1,10 +1,5 @@
 # System information, limits, resources and clocks
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 Configure scripts and the plumbing tools ask the system about itself:
 `uname`/`hostname` print names, `ls`/`du`/`pathchk` use `PATH_MAX`,
 `NAME_MAX` and `pathconf`, `xargs`-like code and `bash` use `sysconf`, `nice`
@@ -96,8 +91,8 @@ and time zones are outside this document ([CALENDAR.md](CALENDAR.md)).
 
 ## Gate
 
-`python3 tests/gcc/posix-sysinfo-check.py` builds one fixture with the Forth
-compiler and with host GCC/glibc (`-O0`, `-O2`) and requires identical
+One fixture was built with the Forth
+compiler and with host GCC/glibc (`-O0`, `-O2`) and required identical
 output from identity calls ([IDENTITY.md](IDENTITY.md)), `uname` fields and
 `gethostname` (including the one-byte failure), every constant above, every
 `sysconf` name, all twelve `pathconf`/`fpathconf` names on `.` (ext4 in the

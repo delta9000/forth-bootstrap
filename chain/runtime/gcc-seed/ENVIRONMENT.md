@@ -1,10 +1,5 @@
 # Runtime environment and C/POSIX locale
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 The full runtime entry now calls __seed_init_runtime. It preserves the existing
 standalone program-name helper and captures the genuine environment vector
 immediately after argv's null terminator. Raw entry remains independent.
@@ -36,12 +31,12 @@ localeconv returns the C locale's struct lconv (glibc's member order): a
 decimal point of ".", empty strings for every other text member, and
 CHAR_MAX (127, "not available") for every numeric member, including the
 international ones. The record is rewritten on every call. The POSIX gate
-`tests/gcc/posix-strings-check.py` compares setenv, unsetenv, the
+compared setenv, unsetenv, the
 environment seen by a system() child and localeconv with host glibc; see
 [STRINGS-POSIX.md](STRINGS-POSIX.md).
 
 The production test injects known environment values through actual process
-startup, checks the vector and getenv boundaries, and exercises24 precedence
+startup, checks the vector and getenv boundaries, and exercises 24 precedence
 cases plus UTF-8 rejection. Separate host C90 O0/O2 builds repeat shared cases.
 The startup checks still verify argument/name behavior, raw-entry independence
 and both call-site alignments, using the new initializer symbol in the ABI

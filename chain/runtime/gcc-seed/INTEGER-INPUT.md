@@ -1,10 +1,5 @@
 # Integer input measured from original Flex
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 Flex2.5.11 misc.c uses exactly plain %d, %o and %x through sscanf; scanopt.c
 uses atoi for a decimal column count. This stage implements those conversions
 with ASCII whitespace, optional signs, hexadecimal prefixes, real variadic
@@ -12,8 +7,8 @@ destination pointers and assignment counts. The format walker also handles
 ordinary literals, percent literals, whitespace and repeated supported fields.
 Percent conversions skip leading input whitespace through the same path as
 numeric conversions; ordinary literal characters still match the next input
-byte exactly. scanf-percent-check.py covers this distinction, EOF, mismatch,
-and assignment counts with independent host C90 O0/O2 comparisons.
+byte exactly. This distinction, EOF, mismatch,
+and assignment counts were covered with independent host C90 O0/O2 comparisons.
 It does not advertise width, suppression, length modifiers, other conversion
 letters or floating input. `%c` and `fscanf` were added later for GCC's
 driver; see [DRIVER-RUNTIME.md](DRIVER-RUNTIME.md#fscanf). Original binutils
@@ -36,10 +31,10 @@ No-conversion atoi returns zero. Successful and ordinary nonmatching operations
 preserve errno; the host resets errno on an empty scanf input, so that detail
 is tested as a target contract and excluded from the shared oracle comparison.
 
-integer-input-check.py calculates 203 scanf and 49 atoi expectations, checks
+Expectations for 203 scanf and 49 atoi cases were calculated, and
 assignment/mismatch/EOF cases, eight spilled pointer arguments, unsupported
-formats, overflow and a protected-page input boundary. Separate host C90 O0/O2
-builds compare representable results. The production compiler, runtime and
+formats, overflow and a protected-page input boundary were checked. Separate host C90 O0/O2
+builds compared representable results. The production compiler, runtime and
 linker remain Forth-built; host execution is only an independent oracle.
 
 ## Binutils conversions
@@ -61,11 +56,11 @@ as malformed. The scanner now also accepts:
   is stored and the C string ends there.
 
 Any other width (zero, or on another conversion), `l` with another
-conversion, `h`, `%i` and suppression remain EINVAL. `integer-input-check.py`
-now lists `%i`, `%hd`, `%lc`, `%2d`, `%*d` and `%0s` as unsupported.
-`tests/gcc/binutils-runtime-check.py` compares the archive and readelf
+conversion, `h`, `%i` and suppression remain EINVAL. The checks
+now list `%i`, `%hd`, `%lc`, `%2d`, `%*d` and `%0s` as unsupported.
+The archive and readelf
 patterns, `ULONG_MAX`, `LONG_MIN`, negative unsigned fields, `%3s` splitting
-and a stream with an embedded NUL with host glibc
+and a stream with an embedded NUL were compared with host glibc
 ([FILE-METADATA.md](FILE-METADATA.md)).
 
 ## Consumed-byte count: %n
@@ -76,7 +71,7 @@ the end of the text. `%n` (and `%ln` for a `long`) stores the number of
 input bytes consumed so far by this call, reads no input, skips no white
 space, and does not count as an assignment, as ISO C specifies; it works in
 `sscanf` and `fscanf`, including after the last input byte.
-`tests/gcc/scanf-count-check.py` compares a Forth-built fixture with its
+A Forth-built fixture was compared with its
 host-glibc build: the `stty` pattern on complete, longer, short, empty and
 nonmatching text, `%n` around white space, literals, `%s` and `%d`, at
 empty input, and through `fscanf` with the following byte left unread.

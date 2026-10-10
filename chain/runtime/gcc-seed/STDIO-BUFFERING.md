@@ -1,10 +1,5 @@
 # Buffered streams
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 Until this stage every `FILE` operation was a system call: `getc` read one
 byte with `read(2)` and `printf` issued one `write(2)` per directive. Tools
 that read or write a character at a time (`cut`, `od`, `uniq`, `tr`, the
@@ -106,14 +101,14 @@ trivial: the runtime is single-threaded.
 
 ## Tests
 
-`tests/gcc/stdio-check.py` builds the production fixture and the scripted
-syscall-fault fixture with Forth tools only. The fault fixture first makes
+The production fixture and the scripted
+syscall-fault fixture were built with Forth tools only. The fault fixture first made
 `stdin` and `stdout` unbuffered, so its original EINTR, short-write, error,
-EOF and pushback scenarios still see every call; it then checks a caller's
+EOF and pushback scenarios still saw every call; it then checked a caller's
 fully buffered and line-buffered buffer (no write until `fflush` or a
 newline, EINTR and short writes during the flush, `ENOSPC` reported by
-`fflush`, `fclose` writing pending bytes). `tests/gcc/stdio-buffering-check.py`
-checks the observable behaviour of a Forth-built program against the same
+`fflush`, `fclose` writing pending bytes). A further check
+compared the observable behaviour of a Forth-built program against the same
 program built with host glibc (oracle only): the bytes and status for
 stdout/stderr interleaving through a shared pipe, a shared file and a
 pseudo-terminal,

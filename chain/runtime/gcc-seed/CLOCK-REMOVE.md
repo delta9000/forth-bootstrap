@@ -1,10 +1,5 @@
 # Process CPU clock and filesystem removal
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 The original GCC 4.0.4 `libiberty/getruntime.c` falls back to `clock()` when
 getrusage/times are unavailable. `gcc/genautomata.c` calls that timing helper
 and calls `remove()` for diagnostic-file cleanup. These implementations use
@@ -52,10 +47,10 @@ adding their names does not simulate successful operations.
 
 ## Validation and references
 
-Run `python3 tests/gcc/clock-remove-check.py`. Forth production verifies real
+Forth production was checked against real
 CPU-time brackets, busy work and sleep exclusion, disposable filesystem cases,
 and injected syscall results covering all 4,095 Linux error encodings. Exact
-checks cover submicrosecond truncation, the final representable tick, overflow,
+checks covered submicrosecond truncation, the final representable tick, overflow,
 malformed timespecs, directory fallback and errno preservation. Independent GCC
 O0/O2 oracles repeat these checks. Host remove success errno is not compared:
 the stronger preservation behavior belongs to this runtime's stated contract.

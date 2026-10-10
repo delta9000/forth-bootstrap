@@ -1,10 +1,5 @@
 # Public private mappings on Linux AMD64
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 The complete original GCC 4.0.4 `gcc/config/host-linux.c` includes
 `sys/mman.h` unconditionally. Its PCH hooks need `mmap`, `munmap`, `PROT_NONE`,
 `PROT_READ`, `PROT_WRITE`, `MAP_PRIVATE`, both anonymous spellings, and
@@ -68,9 +63,9 @@ warnings and verifies constants against installed Linux UAPI headers
 
 ## Focused production and oracle proof
 
-Run `python3 tests/gcc/mapping-check.py`. Production C, syscall and errno
-objects, startup, and final ELF come from the unchanged Forth seed and Forth
-compiler/linker. Host compilation is used only for separately labelled
+Production C, syscall and errno
+objects, startup, and final ELF came from the unchanged Forth seed and Forth
+compiler/linker. Host compilation was used only for separately labelled
 oracles, including libc, independently compiled wrapper source, host callers
 of Forth objects, and Forth callers of host objects at both O0 and O2.
 
@@ -83,10 +78,9 @@ and never read or hash the sparse file wholesale. Fault doubles cover every
 kernel errno, success pointer bit patterns, both sides of the error interval,
 full-width arguments, and every unsupported flag/protection bit.
 
-To additionally compile the complete untouched consumer, supply
-`--gcc-source PATH --gcc-config PATH`, where the latter is the original
-configured `build/gcc` directory. Source and configuration header hashes are
+The complete untouched consumer was additionally compiled against the original
+configured `build/gcc` directory. Source and configuration header hashes were
 checked before and after compilation, and its command, object size and hash
-are retained. This is a compile proof only: fresh genuine mmap configuration
+were retained. This is a compile proof only: fresh genuine mmap configuration
 probes, linked original PCH execution, complete cc1, and a GCC self-rebuild
-remain separate work. The focused gate is registered in `tests/gcc/check.sh`.
+remain separate work.

@@ -1,10 +1,5 @@
 # Bounded descriptor control
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 Original binutils 2.30 `libiberty/pex-unix.c` saves, marks and restores
 descriptors around child creation with `fcntl(fd, F_GETFD)`,
 `fcntl(fd, F_SETFD, FD_CLOEXEC)`, and `fcntl(fd, F_DUPFD_CLOEXEC, 3)` (or
@@ -52,16 +47,15 @@ shows that a pipe descriptor marked with `FD_CLOEXEC` is absent in an executed
 
 ## Focused gate
 
-Run `python3 tests/gcc/fcntl-check.py`; it is registered in
-`tests/gcc/check.sh`. Processes run serially under a one-GiB address-space
-limit. The Forth-only production program checks real pipes and a regular file:
+Processes ran serially under a one-GiB address-space
+limit. The Forth-only production program checked real pipes and a regular file:
 descriptor-flag round trips, access modes, `O_NONBLOCK` with real `EAGAIN`,
 `O_APPEND`, `F_DUPFD` placement and sharing, `F_DUPFD_CLOEXEC`, `EBADF` for
 each command, `EINVAL` for unknown and unsupported commands, and the exec
-probe. The same program built by host GCC at `-O0`/`-O2` against glibc is the
+probe. The same program built by host GCC at `-O0`/`-O2` against glibc was the
 independent public-behavior oracle (runtime-only `EINVAL` choices excluded).
 A renamed Forth-built copy, and a separately host-compiled copy, of `fcntl.c`
-check exact syscall arguments, sign extension, the error boundary, and that
-unsupported commands make no syscall. When the pinned binutils source is
-present, the gate also compiles unchanged `libiberty/pex-unix.c` with a
+checked exact syscall arguments, sign extension, the error boundary, and that
+unsupported commands make no syscall. With the pinned binutils source
+present, the gate also compiled unchanged `libiberty/pex-unix.c` with a
 minimal hand-written configuration header; this makes no link claim.

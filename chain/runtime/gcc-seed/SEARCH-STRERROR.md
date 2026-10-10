@@ -1,10 +1,5 @@
 # Source-built bsearch and strerror
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 ## Why they exist
 
 The first linked Forth-built `cc1` crashed on every variable-length array.
@@ -41,8 +36,8 @@ overwrites, as ISO C permits. The returned text must not be modified.
 
 ## Verification
 
-`tests/gcc/search-error-check.py` compiles `tests/gcc/search-error.c` with
+A fixture was compiled with
 the production Forth driver and runtime, and again with host GCC and host
-libc as an oracle. The outputs must be identical: element sizes 1, 3, 8 and
+libc as an oracle. The outputs were identical: element sizes 1, 3, 8 and
 24 bytes, array lengths 0 through 41, every present and absent key, extreme
 comparator results, and every declared error number plus unknown values.

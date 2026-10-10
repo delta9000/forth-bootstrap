@@ -1,10 +1,5 @@
 # Binutils runtime: file metadata, rewind, temporary names, wide and calendar helpers
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 Original binutils 2.30 `gas`, `ld`, `ar`, `nm`, `objdump`, `readelf` and
 `objcopy` need these interfaces beyond the GCC driver set. The stage-B census
 found two compile failures (undeclared `S_IWUSR` in `binutils/rename.c` and
@@ -94,12 +89,11 @@ not fit with its terminating zero returns 0 with an empty string, as C allows.
 
 ## Gate
 
-`python3 tests/gcc/binutils-runtime-check.py`, registered in
-`tests/gcc/check.sh`, builds `tests/gcc/binutils-runtime-check.c` with the
-Forth driver and with host GCC/glibc at `-O0` and `-O2`, and runs each in a
+A fixture was built with the
+Forth driver and with host GCC/glibc at `-O0` and `-O2`, and each was run in a
 fresh directory holding a file, a subdirectory and a symbolic link, with
-`TZ=UTC0`. The outputs must be identical apart from two `runtime-only`
-`mbstowcs` errno lines, which must show `EILSEQ`. It covers every permission
+`TZ=UTC0`. The outputs were identical apart from two `runtime-only`
+`mbstowcs` errno lines, which showed `EILSEQ`. It covered every permission
 macro value; umask round trips and its effect on `mkdir`; `mkdir`/`rmdir`
 success and `EEXIST`, `ENOENT`, `ENOTDIR`, `ENOTEMPTY`; `chmod` (including
 set-user-ID through the link) and `chown` with unchanged and own IDs;
@@ -109,12 +103,12 @@ NULL times; `rewind` after EOF, after `ungetc` and after a write error;
 binutils `sscanf`/`fscanf` conversions;
 `towlower` and `mbstowcs` boundaries; and `gmtime`, `ctime` and `strftime`
 for sixteen timestamps from year 1 to 9999 plus short buffers and gas's exact
-listing format. The same script runs the [atof gate](DECIMAL-INPUT.md) and
-lints the changed runtime sources with host GCC against the runtime headers.
+listing format. The same check ran the [atof gate](DECIMAL-INPUT.md) and
+linted the changed runtime sources with host GCC against the runtime headers.
 
 ## Consumer build
 
-A fresh `gcc-direct/binutils.py` run (new configure, so `HAVE_GOOD_UTIME_H`
+A fresh binutils build (new configure, so `HAVE_GOOD_UTIME_H`
 is found) compiles every gas, ld and binutils source, including `rename.c`,
 `objcopy.c` and `nm.c` (the last needed a compiler fix, chapter 34), and
 links `elfedit` and `sysinfo`. Every other tool link still stops at the

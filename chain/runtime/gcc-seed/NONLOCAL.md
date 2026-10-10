@@ -1,10 +1,5 @@
 # Ordinary C90 nonlocal return
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 The original Flex 2.5.11 source needs ordinary `setjmp` and `longjmp`.
 `include/setjmp.h` declares a private Linux AMD64 LP64 `jmp_buf`: an array of
 eight `long` cells, 64 bytes with eight-byte alignment. It is not compatible
@@ -55,19 +50,18 @@ References used to establish the contract:
 - [C90 Defect Report 008](https://www.open-std.org/JTC1/SC22/wg14/www/docs/dr_008.html): the rule for modified non-volatile automatic objects
 - [WG14 N1570, section 7.13](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf): public nonlocal-jump contract and permitted contexts, retained from C90
 
-Run `python3 tests/gcc/nonlocal-runtime-check.py` for the production proof.
-It builds the C fixture, retained returns-twice fixture, runtime objects,
-archive and final executable with Forth. It checks initial and resumed returns,
+The production proof built the C fixture, retained returns-twice fixture, runtime objects,
+archive and final executable with Forth. It checked initial and resumed returns,
 zero-to-one conversion, negative values, INT_MIN, INT_MAX, 0x12345678, bounded
 buffer writes, 25 simultaneous recursive targets, nested function-pointer
 callbacks, both comparison operand orders, loops, repeated stack reuse, and
 re-entry after switch cleanup in a still-live frame. A retained JSON report
-records the complete compiler source identity and artifact/input hashes.
+recorded the complete compiler source identity and artifact/input hashes.
 
-Add `--oracle` for separate C90 host builds at `-O0` and `-O2`: mixed
+Separate C90 host builds at `-O0` and `-O2`: mixed
 Forth/host callbacks, optimizing host callers against the Forth-built runtime,
 and host-libc reference runs. Host-only assembly deliberately changes every
 preserved integer register before longjmp, checks all 64 bits after resumption,
 checks exact caller RSP/alignment, and poisons the unused upper argument bits.
-The existing `sysv-setjmp-check.sh` remains an independent host-libc compiler
+An existing check remains an independent host-libc compiler
 ABI oracle. Its success alone never demonstrates a source-built runtime.

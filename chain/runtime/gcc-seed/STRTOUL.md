@@ -1,10 +1,5 @@
 # Source-built unsigned conversion
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 Original oyacc 6.6 `reader.c` calls `strtoul` for octal/hexadecimal character
 escapes and decimal token numbers. The implementation in `strtoul.c` is
 original project source under the repository license and is compiled by the
@@ -27,15 +22,15 @@ leave the end pointer at the original input. Successful conversions preserve
 errno. Inputs must identify readable, terminated C strings as for the normal
 C library interface.
 
-`python3 tests/gcc/strtoul-check.py` runs independently derived value/end/errno
-cases over all 35 explicit bases, including both letter cases, LP64 boundaries,
+Independently derived value/end/errno
+cases were compared with glibc's strtoul over all 35 explicit bases, including both letter cases, LP64 boundaries,
 negative values, continued scanning after overflow, octal/hexadecimal prefix
 edges, all C whitespace, high bytes, invalid bases, and a null end pointer.
-The test emits a fixture from these input cases; it never supplies production
-conversion tables. The executable, parser, runtime, and linker are Forth-built.
+The test emitted a fixture from these input cases and never supplied production
+conversion tables. The executable, parser, runtime, and linker were Forth-built.
 A separately built host C90 version using host headers/libc at `-O0` and `-O2`
-is an optional differential oracle. Its outputs are never bootstrap inputs.
-Reports and input/output hashes are retained under a unique build directory.
+served as an optional differential oracle. Its outputs are never bootstrap inputs.
+Reports and input/output hashes were retained under a unique build directory.
 
 ## Signed conversion
 
@@ -49,6 +44,6 @@ and signed or unsigned result conversion. It shares every parsing rule above.
 The signed magnitude limit is `LONG_MAX`,
 or `LONG_MAX + 1` for a negative result, so `LONG_MIN` converts exactly;
 overflow consumes the complete valid digit sequence and returns `LONG_MAX`
-or `LONG_MIN` with `ERANGE`. `python3 tests/gcc/strtol-check.py` compares
-value, end offset and errno with host libc over boundary, prefix, whitespace,
+or `LONG_MIN` with `ERANGE`. Value, end offset and errno
+were compared with host libc over boundary, prefix, whitespace,
 sign, base and overflow cases.

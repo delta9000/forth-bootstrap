@@ -1,10 +1,5 @@
 # Exact floating printf conversions
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 gawk prints every non-integer value through `%.6g` (its default `OFMT` and
 `CONVFMT`), coreutils `seq` and `printf` use `%f` and `%g`, and many
 configure scripts and test suites print measured values. The printf family
@@ -87,11 +82,11 @@ function).
 
 ## Tests
 
-`tests/gcc/printf-float-check.py` builds `tests/gcc/printf-float-check.c`
+A fixture was built
 twice: with the Forth compiler against this runtime (production) and with
-host GCC against glibc (expected-output oracle only). Each section prints
-one line per case; the two outputs must be byte-identical. At scale 1 it
-compares 1,502,212 lines:
+host GCC against glibc (expected-output oracle only). Each section printed
+one line per case; the two outputs had to be byte-identical. At scale 1 it
+compared 1,502,212 lines:
 
 - 800,000 random binary64 bit patterns (every exponent, subnormals, short
   significands) with random flags, widths, precisions 0..60 and all eight
@@ -107,6 +102,6 @@ compares 1,502,212 lines:
   5,000-column fields, `snprintf`/`vsnprintf` truncation at sizes 0..11,
   and each of `printf`, `fprintf`, `sprintf`, `vsprintf`.
 
-`--scale N` multiplies the random sections; a scale-8 run compared
-10,907,782 lines with no difference. `stdio-oracle-check.py` adds floating
-cases to its host-libc comparison of the Forth-built `stdio.o`.
+A scale-8 run, which multiplies the random sections, compared
+10,907,782 lines with no difference. Floating
+cases were added to the host-libc comparison of the Forth-built `stdio.o`.

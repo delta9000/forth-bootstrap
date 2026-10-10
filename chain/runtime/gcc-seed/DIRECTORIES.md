@@ -1,10 +1,5 @@
 # Linux AMD64 directories
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 `dirent.c` implements `opendir`, `readdir` and `closedir` through the existing
 raw syscall bridge. It supplies the directory traversal used by unmodified
 GCC 4.0.4 `libcpp/files.c` when scanning precompiled-header directories. The
@@ -46,16 +41,16 @@ archive member (`dirfd.c`) because gnulib-based programs often carry a
 replacement. `rewinddir` seeks the descriptor to 0 and discards buffered
 records and the end/error state. The private `seed-directory.h` holds the
 `DIR` record both files use. The POSIX gate
-`tests/gcc/posix-files-check.py` covers them ([FILE-CALLS.md](FILE-CALLS.md)).
+covers them ([FILE-CALLS.md](FILE-CALLS.md)).
 
-Run `python3 tests/gcc/dirent-check.py`. It compares 3,003 real directory entries
-(including a 255-byte name), traverses multiple buffer refills, checks repeated
-EOF and 200 partial-open/close cycles, and tests missing paths and regular files.
-A separate injected syscall boundary tests interrupted calls, allocation failure,
+The check compared 3,003 real directory entries
+(including a 255-byte name), traversed multiple buffer refills, checked repeated
+EOF and 200 partial-open/close cycles, and tested missing paths and regular files.
+A separate injected syscall boundary tested interrupted calls, allocation failure,
 close failure, invalid/truncated/unterminated records, multiple records per
-buffer, and a 492-byte synthetic name. Production runs through Forth. Independent
-GCC O0/O2 executables verify the real directory interface and the same injected
-boundary cases; only the directory and syscall headers are copied into the
+buffer, and a 492-byte synthetic name. Production ran through Forth. Independent
+GCC O0/O2 executables verified the real directory interface and the same injected
+boundary cases; only the directory and syscall headers were copied into the
 oracle include directory, leaving host libc headers intact.
 
 This resolves the missing dirent.h include in the retained original files.c

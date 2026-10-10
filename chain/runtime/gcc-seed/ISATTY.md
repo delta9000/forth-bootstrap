@@ -11,8 +11,8 @@ The kernel ABI is pinned to these Linux v6.12 primary sources:
 - https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/asm-generic/ioctls.h
 - https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/asm-generic/termbits.h
 
-isatty-check.py executes against a real pseudo-terminal master and slave,
+The runtime was exercised against a real pseudo-terminal master and slave,
 both ends of a pipe, an ordinary file and an invalid descriptor. Independent
-host C90 O0/O2 executables agree on results and errno. A separate Forth-built
-syscall double validates all arguments, writes the complete 36-byte result
-and checks success, EINTR, ENOTTY and EBADF. It is never linked into production.
+host C90 O0/O2 executables agreed on results and errno. A separate Forth-built
+syscall double validated all arguments, wrote the complete 36-byte result
+and checked success, EINTR, ENOTTY and EBADF. The double was never linked into production.

@@ -1,10 +1,5 @@
 # Byte-string rejection span
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 The original GCC 4.0.4 `libcpp/pch.c` macro-restoration loop calls
 `ustrcspn(data->defns[i], "( \n")` to find a saved macro's name boundary.
 Its `libcpp/internal.h` inline wrapper calls the standard `strcspn`.
@@ -29,15 +24,15 @@ single-threaded Linux AMD64 LP64 runtime. The existing `string.c`, seed,
 Forth compiler and linker remain unchanged. The direct driver discovers the
 new runtime source and builds it with the Forth compiler automatically.
 
-Run `python3 tests/gcc/strcspn-check.py`. The focused gate constructs an
-independent Python byte-set oracle and binary vectors, then checks a static
-Forth-only production executable. Every pair of byte values is covered,
+The focused gate constructed an
+independent Python byte-set oracle and binary vectors, then checked a static
+Forth-only production executable. Every pair of byte values was covered,
 including NUL and high-bit bytes, with additional empty, duplicate, reordered,
 long/repeated, randomized, early-stop, aliased-argument and original-consumer
 delimiter cases.
-Readable pages surrounded by inaccessible pages check both input and reject
+Readable pages surrounded by inaccessible pages checked both input and reject
 strings at their first and last readable bytes in all four edge combinations.
-Only valid, terminated strings are passed to any implementation.
+Only valid, terminated strings were passed to any implementation.
 
 Separate host GCC `-O0` and `-O2` runs check host libc, host-compiled runtime
 source, and host callers of the Forth-built function object. Strict public

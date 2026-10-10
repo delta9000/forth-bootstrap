@@ -1,10 +1,5 @@
 # Strings, integers, random numbers and line input
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 The remaining C89/POSIX string and number functions the plumbing tools call,
 all in the fixed ASCII C locale. Each function that a program commonly
 supplies itself (gnulib and libiberty replacements) is a separate archive
@@ -82,8 +77,8 @@ working builtin `alloca` fails, which selects that path.
 
 ## Gate
 
-`python3 tests/gcc/posix-strings-check.py` builds one fixture with the
-Forth compiler and with host GCC/glibc (`-O0`, `-O2`) and requires identical
+One fixture was built with the
+Forth compiler and with host GCC/glibc (`-O0`, `-O2`) and required identical
 output: case-insensitive comparisons of ten words (including bytes above
 127) at three lengths and `strcoll`, the BSD functions and `ffs` edges,
 `strn*`, `stp*`, `strtok`/`strtok_r`, `strxfrm`, 19 numeric strings in four

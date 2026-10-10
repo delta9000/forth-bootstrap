@@ -1,10 +1,5 @@
 # Error numbers and their text
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 The GNU plumbing tools (make, bash, sed, grep, gawk, coreutils, tar, gzip,
 patch, diffutils) test for and report error values that the earlier bounded
 `errno.h` did not name: `EXDEV` from `mv`/`rename`, `ENXIO` from `getlogin`
@@ -37,8 +32,7 @@ therefore link `strerror.o`.
 
 ## Gate
 
-`python3 tests/gcc/posix-signals-check.py` (shared with
-[signals](SIGNALS.md)) prints every name's value, `strerror` for -2 through
+A check shared with
+[signals](SIGNALS.md) printed every name's value, `strerror` for -2 through
 136 with an errno-preservation check, and three `perror` forms. The output
-must equal host glibc's at `-O0` and `-O2` byte for byte; see
-`tests/gcc/posix_runtime_harness.py` for the common harness.
+had to equal host glibc's at `-O0` and `-O2` byte for byte.

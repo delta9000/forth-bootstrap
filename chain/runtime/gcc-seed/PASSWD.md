@@ -1,10 +1,5 @@
 # User and group databases and the login name
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 `ls -l`, `id`, `chown`, `tar`, `make` (`~user`), `bash` and `whoami` look up
 users and groups. The runtime reads the two classic files directly; there is
 no NSS, NIS, LDAP or systemd lookup.
@@ -58,15 +53,15 @@ returns a static copy, or NULL with that error in errno.
 
 ## Gate
 
-`python3 tests/gcc/posix-users-check.py` runs each build in a private user
-and mount namespace (`unshare -rm`) where `tests/gcc/posix-users/passwd`,
+Each build was run in a private user
+and mount namespace (`unshare -rm`) where fixture `passwd`,
 `group` and an `nsswitch.conf` limited to `files` are bind-mounted over
-`/etc`, so the host glibc oracle (`-O0`, `-O2`) reads exactly the same data.
-The files contain comments, blank and indented lines, malformed and
+`/etc`, so the host glibc oracle (`-O0`, `-O2`) read exactly the same data.
+The files contained comments, blank and indented lines, malformed and
 oversized IDs, short lines, a `-` entry, an extra-colon shell, empty fields,
 a 32-bit ID above 2^31, a duplicate name and a final line without a
-newline; groups include empty, trailing-comma and absent member lists. The
-fixture enumerates both databases, restarts scans, interleaves a lookup with
-a scan, looks up by name and ID (present, missing, duplicate, malformed) and
-calls `getlogin`/`getlogin_r`. Output must be identical. Without
+newline; groups included empty, trailing-comma and absent member lists. The
+fixture enumerated both databases, restarted scans, interleaved a lookup with
+a scan, looked up by name and ID (present, missing, duplicate, malformed) and
+called `getlogin`/`getlogin_r`. Output was identical. Without
 unprivileged namespaces the gate reports SKIP.

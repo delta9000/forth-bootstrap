@@ -1,10 +1,5 @@
 # Wall clock, time zones and calendar runtime
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 Original GCC 4.0.4 `libcpp/macro.c` needs `time(NULL)`, `localtime(&tt)` and
 six standard `struct tm` fields for its cached `__DATE__` and `__TIME__` text.
 Original binutils 2.30 adds `gmtime`, `ctime` and `strftime`
@@ -167,9 +162,8 @@ answers or reuse an old configuration.
 
 ## Verification
 
-`python3 tests/gcc/calendar-tz-check.py` is the differential gate. The
-fixture `tests/gcc/calendar-tz-check.c` is built by the Forth compiler and,
-as an oracle only, by host GCC against glibc. Both run under 53 TZ values
+The differential gate used a fixture built by the Forth compiler and,
+as an oracle only, by host GCC against glibc. Both ran under 53 TZ values
 (the forms above, US, European, southern, half-hour and odd-second zones,
 `J` and `n` rules, negative and >24 h transition times, extreme offsets,
 the UTC fallbacks) and must print identical bytes: tzname, timezone and
@@ -189,8 +183,7 @@ opening a zoneinfo or `posixrules` file; for the UTC fallbacks it gets the
 TZ string that means UTC to glibc. The expected glibc is 2.43; other versions
 may choose differently inside `mktime` gaps.
 
-`TZ=UTC0 python3 tests/gcc/calendar-check.py --gcc-source PATH` keeps the
-earlier serial checks with the unchanged pinned GCC
+The earlier serial checks were kept, run with `TZ=UTC0` against the unchanged pinned GCC
 944765863eec87a9f37e297994fd2af960397138 tree: an independent Python
 calendar over the full int-year range, ABI offsets, real clock observation
 windows, errno and syscall faults, the UTC fallback and POSIX zone spot

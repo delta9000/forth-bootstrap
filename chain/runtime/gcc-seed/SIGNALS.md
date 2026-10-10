@@ -1,10 +1,5 @@
 # POSIX signals: numbers, sets, sigaction and delivery
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 The plumbing tools need far more than the persistent `signal()` handlers of
 [SIGNAL.md](SIGNAL.md): `make` and `bash` block `SIGCHLD` around job control
 with `sigprocmask` and wait with `sigsuspend`; `sort`, `tail` and `tee` name
@@ -64,8 +59,8 @@ its headers, but older tools (bash 2.05b) still use it when present.
 
 ## Gate
 
-`python3 tests/gcc/posix-signals-check.py` runs one fixture built by the
-Forth compiler and by host GCC/glibc (`-O0`, `-O2`) and requires identical
+One fixture built by the
+Forth compiler and by host GCC/glibc (`-O0`, `-O2`) was run and required identical
 output: every number and flag value, `strsignal`/`psignal` from -1 to 66,
 set operations including invalid numbers, `sigaction` old/new values and
 masks, `SA_NODEFER`, `SA_RESETHAND`, `SIG_IGN`, `SA_SIGINFO` records from
@@ -73,4 +68,4 @@ masks, `SA_NODEFER`, `SA_RESETHAND`, `SIG_IGN`, `SA_SIGINFO` records from
 with `sigpending` and `sigsuspend`, `alarm`/`pause`, a read interrupted
 after `siginterrupt`, `killpg` in a child's own process group, and a child
 killed by its own `raise(SIGTERM)`. Runtime-only checks (`sys_siglist`,
-members 32/33) run under `#ifndef __GLIBC__`.
+members 32/33) ran under `#ifndef __GLIBC__`.

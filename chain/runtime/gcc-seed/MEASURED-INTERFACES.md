@@ -1,10 +1,5 @@
 # Four measured original-GCC runtime interfaces
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 The preliminary historical a535 inventory contains 206 successful cc1 objects,
 not a complete cohort. `prefix.o` references `access`, `toplev.o` references
 `getpid`, `rtlanal.o` and `builtins.o` reference `strpbrk`, and `builtins.o`
@@ -55,15 +50,15 @@ bounds over an optimized lookup table.
 
 ## Separate evidence
 
-Run `python3 tests/gcc/measured-runtime-check.py`. It builds static Forth-only
-production executables and separately uses host libc/source at O0/O2 and
+The check built static Forth-only
+production executables and separately used host libc/source at O0/O2 and
 bidirectional caller/callee objects as independent oracles. Exhaustive byte
 pairs, embedded NUL tails, duplicates, long strings, overlaps, pointer/offset
-answers and guard-page boundaries are checked against Python set membership.
-Own temporary permission fixtures cover all valid flag combinations, invalid
+answers and guard-page boundaries were checked against Python set membership.
+Own temporary permission fixtures covered all valid flag combinations, invalid
 bits, symlinks, loops, missing/non-directory paths and unchanged file bytes.
-Read-only guarded path tails, EFAULT and ENAMETOOLONG cover the kernel copy
-boundary. Test-only syscall doubles check all 4095 errno values, full-width
+Read-only guarded path tails, EFAULT and ENAMETOOLONG covered the kernel copy
+boundary. Test-only syscall doubles checked all 4095 errno values, full-width
 arguments, signed mode promotion, PID result widths and non-caching.
 
 Every subprocess is serial, bounded to 1 GiB and a 300-second timeout, with

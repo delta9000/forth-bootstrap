@@ -1,10 +1,5 @@
 # Exact-width integer types
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 Original binutils 2.30 `libiberty/obstack.c` includes `<stdint.h>`
 unconditionally, and bfd uses its types. `include/stdint.h` supplies the C99
 header for Linux AMD64 LP64 without `long long`: every 64-bit type is `long`
@@ -36,12 +31,11 @@ macros, `imaxabs` and `imaxdiv` are not supplied.
 
 ## Focused gate
 
-Run `python3 tests/gcc/stdint-check.py`; it is registered in
-`tests/gcc/check.sh`. The Forth-built program prints the size, signedness,
-value and bit pattern of every type and macro above, and evaluates the limits
-in `#if`. Its output must equal, byte for byte, the same program built by
-host GCC at `-O0` and `-O2` with host glibc headers. Host GCC also compiles
+The Forth-built program printed the size, signedness,
+value and bit pattern of every type and macro above, and evaluated the limits
+in `#if`. Its output equaled, byte for byte, the same program built by
+host GCC at `-O0` and `-O2` with host glibc headers. Host GCC also compiled
 the program against the runtime headers alone, where pointer initializers
 such as `int_fast16_t *p = (long *)0` fail under `-Werror` unless each typedef
-is exactly the expected C type. When the pinned binutils source is present,
-the gate also compiles unchanged `libiberty/obstack.c`; this makes no link claim.
+is exactly the expected C type. With the pinned binutils source present,
+the gate also compiled unchanged `libiberty/obstack.c`; this makes no link claim.

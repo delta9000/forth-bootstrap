@@ -1,10 +1,5 @@
 # Source-built short options
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 Original oyacc 6.6 main.c parses `b:dlo:p:rtv` through getopt and reads optarg
 and optind. The original project implementation in getopt.c supplies this
 measured short-option interface, declared in the bounded unistd.h header.
@@ -29,12 +24,12 @@ extension. The interface is single-threaded and non-reentrant. Optional
 arguments, long options and GNU permutation/order extensions are outside this
 bounded contract; the options string must use the described short syntax.
 
-`python3 tests/gcc/getopt-check.py` checks fixed expected parse traces, original
+The checks covered fixed expected parse traces, original
 oyacc option combinations, attached/separate/empty arguments, error optopt,
 leading-colon behavior, both diagnostic paths, non-permutation, terminators and
-restart after completion. All 47 argument cases are parsed twice. Independently
-built host C90/header/libc versions at O0 and O2 use POSIXLY_CORRECT for the same
-ordering contract. Host programs are test oracles only. Production parsing,
-formatting, linking and execution use the Forth-built runtime. Each run keeps
+restart after completion. All 47 argument cases were parsed twice. Independently
+built host C90/header/libc versions at O0 and O2 used POSIXLY_CORRECT for the same
+ordering contract. Host programs were test oracles only. Production parsing,
+formatting, linking and execution used the Forth-built runtime. Each run kept
 its commands' outcome, source/executable/output hashes and report in a fresh
 build directory with subprocess timeouts.

@@ -29,14 +29,14 @@ FILE, and returns the original operation's errno. Linux close is never retried.
 Filename-null mode changes are not supported: the old file is closed and EINVAL
 is returned. Invalid mode syntax is rejected before changing the stream.
 
-stream-flex-check.py compares889 independently calculated binary line segments
-and actual reopen/seek/append/error cases with separate host C90 O0/O2 builds.
+A comparison of 889 independently calculated binary line segments
+and actual reopen/seek/append/error cases was made with separate host C90 O0/O2 builds.
 The filename-null choice and n<=0 errno are target-only. The companion fault
 suite checks six scenarios including syscall arguments, EINTR, seek overflow,
 nonseekable errors, failed open/dup2, and error-indicator ownership. Existing
-stdio production, syscall-fault,695-format host comparisons and456 wide-format
+stdio production, syscall-fault,695-format host comparisons and 456 wide-format
 checks all pass. Production objects and executables use only Forth tools.
 
 Language behavior references: ISO C committee draft N1570 sections7.21.5.4,
-7.21.7.2 and7.21.9.2:
+7.21.7.2 and 7.21.9.2:
 https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf

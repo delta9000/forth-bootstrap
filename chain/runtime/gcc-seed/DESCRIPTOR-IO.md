@@ -1,10 +1,5 @@
 # Public descriptor I/O on Linux AMD64
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 `descriptor-io.c` supplies `open`, `read`, `close`, and `lseek` to original
 source clients, including GCC libcpp. The public prototypes live in the
 existing `fcntl.h` and `unistd.h`; `sys/types.h` already defines signed
@@ -74,7 +69,7 @@ surface is implied.
 
 ## Focused gate
 
-Run `python3 tests/gcc/descriptor-io-check.py`. The gate is serial and limits
+The gate was serial and limited
 each subprocess to 1 GiB of virtual address space. Production executables and
 renamed fault-test runtime copies are preprocessed, compiled, and linked only
 by the Forth toolchain starting with the unchanged 1772-byte seed. Separate
@@ -94,12 +89,10 @@ I/O failure, wide offsets/counts, and both sides of the raw error boundary.
 The JSON report records the compiler identity, input hashes, artifact hashes,
 actual O_TMPFILE filesystem support, host optimizations, and memory bound.
 
-The focused gate is also registered in `tests/gcc/check.sh`. To additionally
-compile the unchanged complete original `files.c`, `pch.c`, and `makedepend.c`
-consumer translation units, supply `--gcc-source-root PATH` and
-`--gcc-libcpp-config PATH`, the latter naming a directory containing an
+The unchanged complete original `files.c`, `pch.c`, and `makedepend.c`
+consumer translation units were additionally compiled against an
 accepted original configure-generated `config.h`. Pinned source hashes and
-the configuration hash are checked and recorded. No source or configuration
-is changed, and output objects go only into this gate's private build directory.
-This optional source contract does not run fresh configure and does not
+the configuration hash were checked and recorded. No source or configuration
+was changed, and output objects went only into this gate's private build directory.
+This source contract did not run fresh configure and does not
 establish an original GCC program link or execution.

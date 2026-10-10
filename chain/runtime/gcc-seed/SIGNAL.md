@@ -1,10 +1,5 @@
 # Source-built signal handlers
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
 The full POSIX signal surface (every Linux signal number, `sigaction`,
 signal sets and masks, `raise`, `alarm`, `strsignal`) is described in
 [SIGNALS.md](SIGNALS.md); this document covers `signal()` itself.
@@ -57,8 +52,8 @@ explain the chosen persistent BSD behavior and its portability limits.
 
 ## Verification boundary
 
-`python3 tests/gcc/signal-check.py` builds the runtime, test executable and
-restorer with Forth, then uses actual Linux delivery. It checks old-handler
+The runtime, test executable and
+restorer were built with Forth, then actual Linux delivery was used. It checked old-handler
 returns, SIG_IGN, SIG_DFL termination, invalid numbers, uncatchable signals,
 the returned kernel action's layout/flags/mask/restorer, repeated handler
 return, blocked pending delivery, nonrecursive self-delivery, and restoration

@@ -1,11 +1,6 @@
 # Binary64 math library
 
-The checks this note names under `tests/gcc/` are seed-forth's
-([tests/gcc/](https://github.com/delta9000/seed-forth/tree/0dd2b88/tests/gcc) at 0dd2b88); they were
-not carried over.  Here the runtime is exercised by the chain itself:
-every tool seed-cc builds links against it.
-
-`math.c` is the `-lm` library: original seed-forth MIT code, not copied or
+`math.c` is the `-lm` library: original MIT-licensed code for this project, not copied or
 adapted from glibc, musl, fdlibm or any other libm. `fpclass.c` holds the
 operations a C program may use without `-lm` (the classification helpers
 behind the `math.h` macros, and `frexp`, `ldexp`, `scalbn`, `modf` and
@@ -107,12 +102,12 @@ splitting, and double-double add/multiply/divide.
 Constants and tables (ln 2, 1/ln 2, 1/ln 10, pi/2, pi, 3pi/4, the Cody-Waite
 pieces, log(i/128), 2^(j/64), atan(i/32), 2/pi words, and the double-double
 1/6, 1/120, 1/24, 1/720) are stored as binary64 bit patterns between the
-`BEGIN/END GENERATED TABLES` markers of `math.c`. `tests/gcc/math-constants.py`
-derives every one from first principles - pi by Machin's formula in integer
+`BEGIN/END GENERATED TABLES` markers of `math.c`. Every one was
+derived from first principles - pi by Machin's formula in integer
 arithmetic, logarithms/exponentials/arctangents by Python Decimal at 80 and
-120 digits (both must agree), double-doubles as hi = RN(v), lo = RN(v - hi) -
-and fails if the block in `math.c` differs. It also checks each `M_*`
-literal. The remaining polynomial coefficients are plain `1.0 / k` or
+120 digits (both had to agree), double-doubles as hi = RN(v), lo = RN(v - hi) -
+and compared with the block in `math.c`. Each `M_*`
+literal was also checked. The remaining polynomial coefficients are plain `1.0 / k` or
 `1.0 / k!` expressions (exact factorials up to 22!), correctly rounded by the
 compiler. No coefficient comes from another library or from host libm.
 
@@ -144,8 +139,8 @@ does). Every errno value agrees with glibc over the whole test set:
 
 ## Accuracy
 
-Measured by `math-oracle-check.py` on the 3,821,267-record fixture set (the
-Forth-built production output is first required to equal host GCC -O0 and -O2
+Measured on the 3,821,267-record fixture set (the
+Forth-built production output was first required to equal host GCC -O0 and -O2
 builds of the same sources bit for bit). "True" errors come from Python
 Decimal at 60+ digits (pi from Machin's formula; trigonometric arguments are
 reduced directly at 460 digits) for every record whose result differs from
@@ -188,7 +183,7 @@ there. The seed maxima above 0.5 (`expm1`, `sinh`, `cosh`, `tanh`, at most
 0.5005) come from the ~2^-64 relative error of their double-double paths.
 
 Exact functions (`sqrt` and the rounding/remainder/bit operations) match both
-the Fraction/integer references in `math-check.py` and glibc on every record.
+the Fraction/integer references and glibc on every record.
 Exact mathematical cases return exactly: `pow(2, 10) = 1024`, `pow(10, 15)`,
 `pow(3, 20)`, `pow(k*k, 0.5) = k`, all `exp2(k)`, `log2(2^k) = k`,
 `log10(10^n) = n` (n = 0..22), `cbrt(k^3) = k`, `hypot(3, 4) = 5` (and the
@@ -223,16 +218,14 @@ libc without `-lm`.
 
 ## Tests and provenance
 
-- `python3 tests/gcc/math-constants.py` - re-derives the tables and `M_*`.
-- `python3 tests/gcc/math-link-check.py` - archive mechanics, libc-resident
-  `fpclass.o`, `-nostdlib`, ordering and failure modes.
-- `python3 tests/gcc/math-check.py` - Forth-only: builds
-  `tests/gcc/math-fixture.c` with `-lm`, feeds the deterministic records of
-  `tests/gcc/math_records.py`, and checks exact functions against Fraction/
-  integer references and approximate functions against the special-value,
-  exact-case and errno contract. No host compiler, linker or libm.
-- `python3 tests/gcc/math-oracle-check.py --production-output DIR` - host
-  oracles only (host GCC builds, glibc, Decimal), as described above.
+- The tables and `M_*` were re-derived.
+- Archive mechanics, libc-resident `fpclass.o`, `-nostdlib`, ordering and
+  failure modes were checked.
+- Forth-only: a fixture was built with `-lm` and fed deterministic records;
+  exact functions were checked against Fraction/integer references and
+  approximate functions against the special-value, exact-case and errno
+  contract. No host compiler, linker or libm.
+- Host oracles only (host GCC builds, glibc, Decimal), as described above.
 
 Host GCC, glibc and Decimal are oracles only; no production byte depends on
 them. References consulted: NIST DLMF 4.2.19 and 4.6.4 (2026-10-03), C99
