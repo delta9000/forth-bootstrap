@@ -4,7 +4,7 @@
 \ Conventions:
 \   - All arithmetic constants use [lit] (the decimal literal compiler)
 \     because the seed has no interpret-mode number parser at all — [lit]
-\     is the only path; see Ch 20 for the parser.  Characters use char /
+\     is the only path (the seed's parse_decimal_code).  Characters use char /
 \     [char] (defined below), so no ASCII code needs a comment to explain it.
 \   - No seed address is typed in: sysvar cells are found from the seed's
 \     state and latest primitives, and primitive xts with ' (tick).
@@ -188,7 +188,7 @@
 \ flags-byte address.
 : immediate  latest @ [lit] 8 + [lit] 1 swap c! ;
 
-\ ===== the push body: constant (and create / variable in Ch 12) =====
+\ ===== the push body: constant (and create / variable, further below) =====
 \ constant is defined early so branch-xt/0branch-xt can use it: the
 \ control-flow combinators below need the xts of branch/0branch, and
 \ hard-coding them as numeric literals would break every time

@@ -8,7 +8,7 @@ pass() { echo "  PASS: $*"; }
 fail() { echo "  FAIL: $*"; exit 1; }
 
 # Forth source goes to seed-forth as-is: the seed's token reader skips
-# `\ ...` line comments and `( ... )` comments itself (Ch 17).
+# `\ ...` line comments and `( ... )` comments itself.
 
 # ----- Seed primitives -----
 

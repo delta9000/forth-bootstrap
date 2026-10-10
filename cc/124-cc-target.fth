@@ -1,6 +1,6 @@
 \ 124-cc-target.fth -- explicit predefined macros for the SysV C90-oriented mode.
 \ The legacy/native route keeps its existing macro policy. No GCC identity
-\ or C99/C11 language version is advertised. See book Ch 40 for the boundary.
+\ or C99/C11 language version is advertised.
 create cc-target-name-stdc       s, __STDC__
 create cc-target-name-hosted     s, __STDC_HOSTED__
 create cc-target-name-seed       s, __SEED_FORTH__

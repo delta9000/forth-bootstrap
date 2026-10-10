@@ -1,6 +1,6 @@
 \ 081-cc-object.fth — bounded ELF64/AMD64 relocatable object writer.
 \ Depends only on 010-lib, 020-cc-arena, 030-cc-io. No tool subprocesses.
-\ ELF layout follows the System V gABI and AMD64 psABI; see book Ch 35.
+\ ELF layout follows the System V gABI and AMD64 psABI.
 \ API symbol IDs are stable; ELF indexes are assigned locals-first at build.
 \ Errors: 244 section/range/alignment, 245 capacity, 246 symbol,
 \ 247 relocation, 248 file I/O. Generic output overflow remains error 21.
