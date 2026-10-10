@@ -7,7 +7,7 @@
 #       [--component gcc|libiberty|libcpp] [--forth-ar]
 #       [--with-binutils DIR] [--with-sysroot DIR]
 #
-# The bash port of configure.py.  DIR is an unpacked source tree, prepared by
+# The bash port of seed-forth's configure.py.  DIR is an unpacked source tree, prepared by
 # the caller (binutils.sh and stage-c.sh unpack the pinned archives and make
 # their documented adjustments); WORK may exist but must not hold a build/
 # directory yet.  configure.py's per-invocation probe capture and its frozen

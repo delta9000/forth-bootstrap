@@ -51,7 +51,7 @@
 : cc-ad-align [lit] 40 + @ ;
 : cc-ad-qualified [lit] 48 + @ ;
 
-\ The pinned M2/pnut route keeps the original data model unless opted in.
+\ The M2-Planet route (Stage A) keeps the original data model unless opted in.
 variable cc-target-lp64
 [lit] 0 cc-target-lp64 !
 

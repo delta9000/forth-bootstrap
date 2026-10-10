@@ -1,4 +1,4 @@
-/* seed-ar -- native replacement for tools/gcc-direct-ar.py.
+/* seed-ar -- native replacement for seed-forth's tools/gcc-direct-ar.py.
 
    Deterministic GNU ar archives built entirely by seed Forth
    (cc/141-archive.fth); this program only checks arguments, snapshots inputs

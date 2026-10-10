@@ -1,4 +1,4 @@
-/* seed-cc -- native replacement for tools/gcc-direct-cc.py.
+/* seed-cc -- native replacement for seed-forth's tools/gcc-direct-cc.py.
 
    A gcc-like command for the Forth C compiler.  Like the Python driver it
    only parses arguments, snapshots and hashes the compiler inputs, writes
@@ -6,7 +6,7 @@
    preprocessing, compilation, object writing, archiving and linking.  For
    every accepted command the seed receives byte-for-byte the stream the
    Python driver builds, so objects, archives, executables and -E output
-   are identical.  See tools/SEED-CC.md.
+   are identical.  See seed-forth's tools/SEED-CC.md.
 
    Compiled by the Forth C compiler only: cc/driver/seed-cc-start.fth builds it
    from the seed, after which seed-cc can rebuild itself. */

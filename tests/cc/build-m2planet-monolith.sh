@@ -32,7 +32,7 @@
 #     M2-Planet-built M2-Planet's (the stage0 route, or seed-forth's v2/v3).
 #     Default (unset) keeps the optimization on and matches the GCC-built
 #     reference instead.  seed-forth's tests/cc/stage0-check.sh proves
-#     both; see its REPRODUCIBLE.md, "Stage0 cross-check and STAGE0_COMPAT".
+#     both; see seed-forth's REPRODUCIBLE.md, "Stage0 cross-check and STAGE0_COMPAT".
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 

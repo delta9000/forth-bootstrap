@@ -5,7 +5,7 @@
 # Usage:
 #   chain/gcc-direct/binutils.sh WORK --oyacc OYACC --flex FLEX [-j JOBS]
 #
-# The bash port of binutils.py.  WORK must be new.  The pinned
+# The bash port of seed-forth's binutils.py.  WORK must be new.  The pinned
 # binutils-2.30.tar (chain/plumbing/chain.SOURCES) is unpacked into WORK/src, and
 # the parser and scanner C shipped in the release is deleted, so that the
 # original Makefiles must regenerate it from the .y and .l sources with the

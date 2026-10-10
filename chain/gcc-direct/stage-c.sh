@@ -5,7 +5,7 @@
 #   chain/gcc-direct/stage-c.sh WORK --binutils BINUTILS_WORK --oyacc OYACC \
 #       --flex FLEX [-j JOBS] [--resume]
 #
-# The bash port of stage-c.py, run by the chain's own bash and make.
+# The bash port of seed-forth's stage-c.py, run by the chain's own bash and make.
 # BINUTILS_WORK is a finished binutils.sh run; its as-new, ld-new, ar, nm-new,
 # objdump and readelf are checked against its stage-B report and copied into
 # WORK/toolchain (ranlib there is a two-line `ar s` script).  Steps:

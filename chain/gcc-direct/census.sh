@@ -5,7 +5,7 @@
 # Usage:
 #   chain/gcc-direct/census.sh WORK --oyacc OYACC --flex FLEX [-j JOBS] [--link]
 #
-# The bash port of census.py.  WORK holds `gcc`, `libiberty` and `libcpp`
+# The bash port of seed-forth's census.py.  WORK holds `gcc`, `libiberty` and `libcpp`
 # directories made by `configure.sh --work WORK/<component>`.  OYACC and FLEX
 # are the chain's parser generators; no host bison or flex is used.
 #

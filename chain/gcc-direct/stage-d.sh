@@ -6,7 +6,7 @@
 #   chain/gcc-direct/stage-d.sh WORK --stage-c STAGE_C_WORK --oyacc OYACC \
 #       --flex FLEX [-j JOBS]
 #
-# The bash port of stage-d.py, run by the chain's own bash and make.
+# The bash port of seed-forth's stage-d.py, run by the chain's own bash and make.
 # STAGE_C_WORK is a finished stage-c.sh run: its installed GCC (whose cc1 and
 # driver seed-cc compiled), its musl sysroot and its binutils (toolchain/).
 # GCC 4.0.4 (C only) is then built three times, as chain/gcc64/build-gcc4.sh does
