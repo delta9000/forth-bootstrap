@@ -1,69 +1,69 @@
-# The late tools, built by the direct route's GCC
+# The late tools, built by the stage-D GCC
 
-The QEMU route gets its modern userland in two steps. Ladder stage 9
-replays host-captured builds of ten packages (`tools/capture-build.py`: the
-host ran each `./configure` and `make` once, and the ladder replays the
-compiler calls with the captured `config.h` and other configure output as
-fixtures). Then [chain/ladder/stage10.sh](https://github.com/delta9000/seed-forth/blob/0dd2b88/ladder/stage10.sh) configures the
-rest with those ten. The host capture is the step this replaces.
-
-[chain/gcc-direct/late-tools.sh](../gcc-direct/late-tools.sh) builds all of them
-with nothing captured. Each package's own `./configure` runs under the
+[chain/gcc-direct/late-tools.sh](../gcc-direct/late-tools.sh) builds the
+modern userland the rest of the route needs: 17 packages, with nothing
+captured from a host.  Each package's own `./configure` runs under the
 plumbing bash 2.05b, its Makefile under the plumbing make 3.82, and its C
 goes through the stage-D GCC 4.0.4 with the stage-C musl 1.1.24 and
-binutils 2.30. The packages and pins are in [late.SOURCES](late.SOURCES):
+binutils 2.30.  The packages and pins are in [late.SOURCES](late.SOURCES):
 
-| ladder stage 9 (captured) | ladder stage 10 (configured) |
-|---|---|
-| gzip 1.13, bash 5.2.37, tar 1.35, sed 4.9, grep 3.11, gawk 5.3.1, coreutils 9.5, patch 2.7.6, xz 5.6.3 | make 4.4.1, bzip2 1.0.8, diffutils 3.10, findutils 4.10.0, m4 1.4.19, bison 3.8.2, flex 2.6.4, bc 1.07.1 |
+gzip 1.13, bash 5.2.37, tar 1.35, sed 4.9, grep 3.11, gawk 5.3.1,
+coreutils 9.5, patch 2.7.6, xz 5.6.3, make 4.4.1, bzip2 1.0.8, diffutils
+3.10, findutils 4.10.0, m4 1.4.19, bison 3.8.2, flex 2.6.4, bc 1.07.1.
 
-(stage 9's make 3.82 is not rebuilt: the plumbing stages already have it.)
-Configure arguments are the ones the capture or stage10.sh used. The only
-patch is stage 10's `bc-1.07.1/01-fix-libmath-sed.diff` (no `ed`); the
-diffutils patch is a tcc workaround GCC does not need.
+Two patches apply: `chain/patches/late/bc-1.07.1/01-fix-libmath-sed.diff`
+(the chain has no `ed`) and
+`chain/patches/late/diffutils-3.10/01-unparenthesize-ifdef-formats.diff`
+(drops the parentheses around a string initializer, which leaves the
+string the same and keeps diffutils' source identical to seed-forth's
+other route).  Under K1,
+[chain/ladder/stage10-direct.sh](../ladder/stage10-direct.sh) then installs
+the late tools as `/usr`, with bash 5.2 as `/bin/sh`, for gcc64's climb.
 
 ## Running it
 
 After [chain/gcc-direct/chain.sh](../gcc-direct/chain.sh), with the 17 archives
-in `build-out/distfiles`:
+in `build-out/distfiles` (`tools/fetch-archives.py` puts them there):
 
 ```sh
 build-out/plumbing/bin/bash chain/gcc-direct/late-tools.sh -j 8     # into build-out/late
-build-out/plumbing/bin/bash chain/gcc-direct/late-check.sh -j 8     # each package's make check
 ```
 
-On the host, `#!/bin/sh` scripts and `system()` still reach the host's
-`/bin/sh`, and config.guess runs `/usr/bin/uname` by absolute path. A host
-run traced 150-odd such calls. [tools/late-root.sh](https://github.com/delta9000/seed-forth/blob/0dd2b88/tools/late-root.sh)
-removes them: it copies a finished `chain/plumbing-root.sh` root (the one
-that started with `hex0-seed` as its only executable), checks that the copy
-holds no executable the chain run did not write, and runs late-tools.sh in
-it through bwrap under `strace -f -e trace=execve`; `CHECK=1` adds the test
-suites.
+Run this way on the host, `#!/bin/sh` scripts and `system()` still reach the
+host's `/bin/sh`, and config.guess runs `/usr/bin/uname` by absolute path.
+Under K1 (`kernel/k1/run-chain.sh --direct-linux`, through
+`kernel/k1/direct-full.sh`) there is no host: `/bin` is the plumbing tools,
+and the same script builds the packages as root, which tar and coreutils
+accept only with `FORCE_UNSAFE_CONFIGURE=1`, which late-tools.sh sets.
 
-```sh
-CHECK=1 JOBS=8 tools/late-root.sh build-out/plumbing-root build-out/late-root
-```
+## Result (2026-10-08, under K1)
 
-## Result (2026-10-07, korriban)
+All 17 packages built in 631 s; the report, with each package's configure
+and make times and the sha256 of all 159 installed programs, is
+[results/k1-2026-10-08/late-tools-report.txt](../../results/k1-2026-10-08/late-tools-report.txt).
+The hashes are the same as those of seed-forth's run of this route.
 
-In the root: all 17 packages built in 409 s (configure is most of it).
-76,974 successful `execve` calls; one is the host's `bwrap`, the rest are
-programs the chain wrote (the plumbing tools, the stage-D GCC, the stage-C
-binutils, configure's `conftest`s and the packages' own build programs). The
-262 failed lookups are config.guess probing other systems' `uname` variants,
-the bc build running its `fix-libmath_h` (no `#!` line, so bash runs it), and
-packages' tests of their own uninstalled programs.
+## Earlier: a traced host run and the test suites (2026-10-07, in seed-forth)
 
-Every installed program is a static x86-64 ELF whose `.comment` is
-`GCC: (GNU) 4.0.4`; all 17 answer `--version`.
+Before the route moved here, seed-forth's `tools/late-root.sh` ran
+late-tools.sh in a copy of a finished `chain/plumbing-root.sh` root (one
+that started with `hex0-seed` as its only executable), through bwrap under
+`strace -f -e trace=execve`, and ran each package's `make -k check` with
+its `late-check.sh`.  Neither script was carried over.
 
-## Test suites
+All 17 packages built in 409 s (configure is most of it).  76,974
+successful `execve` calls; one was the host's `bwrap`, the rest programs the
+chain wrote (the plumbing tools, the stage-D GCC, the stage-C binutils,
+configure's `conftest`s and the packages' own build programs).  The 262
+failed lookups were config.guess probing other systems' `uname` variants,
+the bc build running its `fix-libmath_h` (no `#!` line, so bash runs it),
+and packages' tests of their own uninstalled programs.  Every installed
+program was a static x86-64 ELF whose `.comment` is `GCC: (GNU) 4.0.4`;
+all 17 answered `--version`.
 
-`late-check.sh` runs `make -k check` with the late tools first in `PATH`,
-bash 5.2 as `/bin/sh` and as make's `SHELL` and `CONFIG_SHELL` (as after
-stage 10; the suites' scripts use `unalias`, `<(...)` and `echo -e`, which
-the chain's bash 2.05b lacks). In the root:
+The test suites ran with the late tools first in `PATH` and bash 5.2 as
+`/bin/sh` and as make's `SHELL` and `CONFIG_SHELL` (the suites' scripts use
+`unalias`, `<(...)` and `echo -e`, which the chain's bash 2.05b lacks):
 
 | package | result |
 |---|---|
@@ -104,26 +104,7 @@ The attributions above come from reading each log; none of the failures was
 checked against a second compiler, so a GCC 4.0.4 miscompilation hiding
 behind one of them is not ruled out.
 
-## What differs from the captured build
-
-The captured `config.h` files in `chain/ladder/*/fixtures` against this run's:
-
-- **Compiler.** GCC 4.0.4 has VLAs (`HAVE_C_VARARRAYS`, no
-  `__STDC_NO_VLA__`) and `visibility` (`HAVE_VISIBILITY 1`), which tcc
-  lacks. It fails autoconf's `restrict` probe (`static or type qualifiers in
-  abstract declarator`, a GCC 4.0 limit), so `restrict` is defined empty
-  where tcc took `__restrict__`.
-- **bash `HAVE_SYS_ERRLIST`.** Its link probe only reads `sys_errlist`, and
-  at `-O2` GCC drops the read, so the probe links against musl, which has no
-  `sys_errlist`. bash only uses it without `strerror`, which musl has, so the
-  built bash is unaffected.
-- **The environment.** tar has no `REMOTE_SHELL` (the host had
-  `/usr/bin/rsh`); bash's `DEFAULT_MAIL_DIRECTORY` is `unknown` (no
-  `/var/mail`); coreutils and tar find a fully working `getcwd` for long
-  names in the root.
-- Every other line of the captured `config.h` files matches.
-
-Three fixes were needed to get there, all in late-tools.sh:
+## Three fixes in late-tools.sh
 
 1. **The build triple.** config.guess tells musl from glibc by whether
    `<stdarg.h>` defines musl's `__DEFINED_va_list`; GCC's own `stdarg.h` is
@@ -132,23 +113,25 @@ Three fixes were needed to get there, all in late-tools.sh:
    failed in grep, sed, findutils, diffutils and coreutils). The script
    passes `--build=x86_64-pc-linux-musl`.
 2. **Script paths.** configure records the shell and tools it ran with.
-   Inside the root `/bin/sh` is the plumbing bash, so the script names it
-   `/bin/sh`, and the 33 installed scripts that begin `#!/bin/sh` say so
-   instead of naming a path into `build-out/plumbing`.
-   zgrep and updatedb also keep the `grep` and `sort` configure found; grep
-   2.4 lacks `--label` and coreutils 5.0's sort lacks `-z`, so grep and sed
-   are built before gzip, and gzip and findutils are given the late grep
-   and sort.
-3. **`/dev`.** With only `/dev/null` in the root, bash configured without
-   `/dev/fd` and `/dev/stdin`; late-root.sh gives bwrap a minimal `/dev`.
+   Where `/bin/sh` is the plumbing bash (under K1, or in a traced root), the
+   script names it `/bin/sh`, so installed scripts that begin `#!/bin/sh`
+   say so instead of naming a path into `build-out/plumbing`.  zgrep and
+   updatedb also keep the `grep` and `sort` configure found; grep 2.4 lacks
+   `--label` and coreutils 5.0's sort lacks `-z`, so grep and sed are built
+   before gzip, and gzip and findutils are given the late grep and sort.
+3. **`/dev`.** With only `/dev/null` in a root, bash configures without
+   `/dev/fd` and `/dev/stdin`; the root needs a minimal `/dev` (K1
+   provides one).
 
-## Not done (and done since)
+## Not done
 
-- Stage 10's shims (`hostname`, `getconf`, `which`, `awk` and `install`
-  links) are for gcc64's scripts and are left to whatever runs next.
-- No second run compared for reproducibility; the absolute prefix
-  (`/build-out/late/usr`) is compiled into several programs, so a different
-  output directory gives different bytes.
-- Under K1 (`kernel/k1/run-chain.sh --direct-linux`, see kernel/k1/README.md) the same
-  script builds them as root, which tar and coreutils accept only with
-  `FORCE_UNSAFE_CONFIGURE=1`, which late-tools.sh sets.
+- No second run compared for reproducibility on the host; the absolute
+  prefix (`/build-out/late/usr`) is compiled into several programs, so a
+  different output directory gives different bytes.  Under K1 the prefix
+  is the same each run, and the 159 program hashes match seed-forth's run.
+- seed-forth's TinyCC route built some of these packages from configure
+  output captured on a host; this route configures every one.  How the
+  resulting `config.h` files differ (GCC 4.0.4 has VLAs and `visibility`,
+  fails autoconf's `restrict` probe, and bash's `HAVE_SYS_ERRLIST` probe
+  links) is recorded in seed-forth's
+  [chain/plumbing/LATE.md](https://github.com/delta9000/seed-forth/blob/0dd2b88/plumbing/LATE.md).

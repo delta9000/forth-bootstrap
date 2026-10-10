@@ -13,13 +13,8 @@ linker, and K0 then starts it.
 sh kernel/k1/tests/direct-build-check.sh           # the same, audited (see Tests)
 kernel/k1/run-chain.sh --direct-smoke              # K0 -> K1 -> seed-cc, seed-ar, kaem under K1 (3 GiB, a minute)
 kernel/k1/run-chain.sh --direct                    # ... then the plumbing stages to bash 2.05b (8 GiB)
-kernel/k1/run-chain.sh --direct-linux              # ... then on to Linux and kexec (24 GiB, about 80 minutes)
+kernel/k1/run-chain.sh --direct-linux              # ... then on to Linux and kexec (24 GiB, 1 h 38 min)
 ```
-
-seed-forth's other route built K1 with TinyCC from an assembler source,
-`k1.S`, and tested it with a tcc-musl `ktest`; those files (`k1.S`,
-`tcc-musl.sh`, `run.sh`, `mkimg.py`, `tests/ktest.c`) are in seed-forth at
-0dd2b88, not here.
 
 ## How seed Forth builds K1
 
@@ -38,7 +33,7 @@ that runs besides that runner:
   it as an object on the compiler's object writer (`cc/081-cc-object.fth`).
   The C files have no inline assembly (each privileged instruction is a
   small function in `k1-asm.fth`);
-- the Forth linker (`cc/140-cc-link.fth`, book chapter 37) links them at
+- the Forth linker (`cc/140-cc-link.fth`) links them at
   0x200000 (`kernel/k1/boot/link.fth`).
 
 K0 lacks `stat`, `fstat`, `munmap` and `getpid`, which the object writer
@@ -95,13 +90,18 @@ programs with an empty environment, so `mkdisk.py --jobs` writes it into
 the recipe); `K1_MEM` sets the guest RAM and `K1_DISKS` the image
 directory.  K1 keeps the whole build file system in guest RAM; 24 GiB is
 what the full run has used, not a measured minimum.  `K1_RAM_FILE` backs
-guest RAM with a sparse file instead; on an SSD a full run writes
-terabytes through it, so leave it unset.
+guest RAM with a sparse file instead, for a host without that much free
+memory; on an SSD a full run writes terabytes through it.
+
+K1 has one CPU, so `JOBS=2` only keeps it busy while another job waits on
+I/O; the run takes longer than the same chain on a many-core host.
 
 Result (2026-10-08, `JOBS=2 K1_MEM=24G`, QEMU with KVM): 1 h 38 min from
 hex0 to the Linux greeting; stage D at its fixed point under K1 (54 files,
 0 differ); all 31 `chain/gcc64/HASHES` pins as pinned; the bzImage
-1,278,976 bytes, CRC-32 `0014e6cc`, sha256 `881e96ad05da8e18...`.
+1,278,976 bytes, CRC-32 `0014e6cc`, sha256 `881e96ad05da8e18...`.  The
+run's reports and serial log are in
+[results/k1-2026-10-08/](../../results/k1-2026-10-08/).
 
 ## Boot
 
@@ -242,3 +242,7 @@ each is a place K1 differs from Linux.
   smoke recipe and `tests/direct-smoke.c`'s 26 checks, among them a demand
   page fault taken with DF set, which fails on a K1 without the `cld`.
 - `kernel/k1/run-chain.sh --direct-linux`: the full run, above.
+
+seed-forth's TinyCC route built K1 with TinyCC from an assembler source,
+`k1.S`, and tested it with a tcc-musl `ktest`; those files are in
+[seed-forth](https://github.com/delta9000/seed-forth) at 0dd2b88.

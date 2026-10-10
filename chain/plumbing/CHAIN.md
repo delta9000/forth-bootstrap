@@ -3,9 +3,10 @@
 The plumbing stages ([README.md](README.md)) build make, bash, sed, grep,
 gawk, coreutils, tar, gzip, patch, diffutils, oyacc and flex from the seed.
 The GCC chain that follows (binutils 2.30, then stage C: GCC 4.0.4, libgcc
-and musl 1.1.24, then stage D: GCC rebuilt three times to a fixed point) used
-to be driven by Python recipes under a host shell and host make. These bash
-scripts replace them and run on those tools alone:
+and musl 1.1.24, then stage D: GCC rebuilt three times to a fixed point) runs
+on those tools alone, through these bash scripts.  In seed-forth the same
+stages were first driven by Python recipes under a host shell and host make;
+the scripts here are ports of them:
 
 | Script | Port of | Does |
 |---|---|---|
@@ -19,13 +20,15 @@ scripts replace them and run on those tools alone:
 
 They are written for the bash 2.05b that [bash.kaem](bash.kaem) builds, which
 has no arrays, brace expansion or `pipefail`, and call only programs the
-plumbing stages install, plus seed-cc and seed-ar. The Python recipes stay in
-`chain/gcc-direct/` as the reference they were checked against.
+plumbing stages install, plus seed-cc and seed-ar. The Python recipes they
+were checked against stayed in seed-forth
+([gcc-direct/](https://github.com/delta9000/seed-forth/blob/0dd2b88/gcc-direct/)).
 
 ## Running it
 
 After `stage1.kaem`, `stage2.kaem`, `lexers.kaem` and `bash.kaem`, with the
-three archives of [chain.SOURCES](chain.SOURCES) in place:
+three archives of [chain.SOURCES](chain.SOURCES) in place
+(`tools/fetch-archives.py` puts them there):
 
 ```sh
 build-out/plumbing/bin/bash chain/gcc-direct/chain.sh -j 6
@@ -41,7 +44,7 @@ about 22 and stage D about 9.
 root that starts with stage0-posix's `hex0-seed` as its only executable,
 tracing every `execve`.
 
-## Differences from the Python recipes
+## Differences from seed-forth's Python recipes
 
 - **Inputs.** Each script unpacks the pinned archive itself (tar 1.12, gzip)
   instead of checking a pre-unpacked tree file by file. The chain cannot read
@@ -100,7 +103,7 @@ GCC's install step also runs `perl` for man pages, which make tolerates
 failing; the chain has no perl, so no man pages are generated (the Python run
 used the host's perl there).
 
-## Result (2026-10-07)
+## Result (2026-10-07, in seed-forth)
 
 `chain/gcc-direct/chain.sh -j 6` with `PATH` holding only `build-out/plumbing/bin`:
 
@@ -109,9 +112,15 @@ used the host's perl there).
   2 blocked host-tool attempts, both configure probes.
 - stage D: stage 2 == stage 3 == stage 4, 54 installed files, 0 differ.
 
-## The traced run (2026-10-07)
+## The traced runs
 
-`chain/plumbing-root.sh` copied the repository's 4,028 tracked files and the
+This repository's run, 2026-10-08: 18 minutes for all four entries, 967 s
+of it the GCC chain; 63,048 successful `execve` calls, 2,581 distinct paths,
+249 failed lookups; stage D at its fixed point.  Its reports are in
+[results/host-2026-10-08/](../../results/host-2026-10-08/).
+
+The first traced run, in seed-forth on 2026-10-07, before the chain moved
+here: `chain/plumbing-root.sh` copied that repository's 4,028 tracked files and the
 pinned archives into `build-out/plumbing-root`, cleared every execute bit
 except `hex0-seed`'s (the script checks that the root's only executable file
 is `hex0-seed`), and entered the root four times through bwrap under
@@ -141,5 +150,4 @@ scripts searching `PATH` past the guard directories.
 
 [LATE.md](LATE.md): the stage-D GCC builds the QEMU route's late tools
 (make 4.4.1, bash 5.2, coreutils 9.5, bison, flex and the rest) with their
-own configure scripts under these tools, replacing ladder stage 9's
-host-captured builds.
+own configure scripts under these tools.

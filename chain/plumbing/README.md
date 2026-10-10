@@ -1,18 +1,18 @@
 # Plumbing: the build tools, from the seed
 
-Stages A to D build GCC with no host compiler, but configure scripts and
-Makefiles still need a shell, make, sed, awk, grep and the file utilities.
-This directory builds those tools from their pinned upstream tarballs with
-the project's own C compiler, driven by [kaem](../../vendor/mescc-tools/Kaem)
-scripts. No host program runs: not a shell, not a host compiler. Status and
-history are in [chain/gcc-direct/PLUMBING.md](https://github.com/delta9000/seed-forth/blob/0dd2b88/gcc-direct/PLUMBING.md). The GCC
-chain that runs on these tools (binutils, stage C, stage D) is described in
-[CHAIN.md](CHAIN.md).
+The GCC chain (binutils, stage C, stage D; [CHAIN.md](CHAIN.md)) builds GCC
+with no host compiler, but configure scripts and Makefiles still need a
+shell, make, sed, awk, grep and the file utilities.  This directory builds
+those tools from their pinned upstream tarballs with seed-cc, driven by
+[kaem](../../vendor/mescc-tools/Kaem) scripts.  No host program runs: not a
+shell, not a host compiler.  How these stages were developed is recorded in
+seed-forth's [PLUMBING.md](https://github.com/delta9000/seed-forth/blob/0dd2b88/gcc-direct/PLUMBING.md).
 
 ## Running it
 
-From the repository root, after `./seed/build.sh`, with the tarballs listed in
-[SOURCES](SOURCES) in `build-out/plumbing-inputs/`:
+From the repository root, after `./seed/build.sh` and
+`python3 tools/fetch-archives.py` (which puts the tarballs listed in
+[SOURCES](SOURCES) in `build-out/plumbing-inputs/`):
 
 ```sh
 ./seed-forth < cc/driver/seed-cc-start.fth          # build-out/seed-cc/{seed-cc,seed-ar}
@@ -122,15 +122,16 @@ GCC during discovery, and host GNU tools where versions agree.
 | patch | 20-case transcript identical to patch 2.5.9 built by GCC |
 | diffutils | 50-case transcript (`diff` formats and options, `cmp`, `diff3`, `sdiff`) identical to diffutils 2.7 built by GCC |
 
-[tests/plumbing/stage2-check.sh](https://github.com/delta9000/seed-forth/blob/0dd2b88/tests/plumbing/stage2-check.sh) is the
-repeatable part: an opt-in check (about ten minutes; not in `check-all.sh`)
-that builds stages 1 and 2 from a clean `build-out/plumbing`, traces every
-`execve` with strace and requires each to be kaem, `seed-cc`/`seed-ar`, the
-seed they run, or a program the stages built (in particular, no shell), then
-runs the fixed cases in
-[tests/plumbing/stage2-cases.sh](https://github.com/delta9000/seed-forth/blob/0dd2b88/tests/plumbing/stage2-cases.sh) with
-`PATH` holding only `build-out/plumbing/bin`, and checks that our `gzip` and
-`tar` read every input tarball as the stage0 tools do.
+These comparisons were made in seed-forth, whose
+[tests/plumbing/stage2-check.sh](https://github.com/delta9000/seed-forth/blob/0dd2b88/tests/plumbing/stage2-check.sh)
+repeats them: it builds stages 1 and 2 from a clean `build-out/plumbing`,
+requires every `execve` to be kaem, seed-cc/seed-ar, the seed they run, or
+a program the stages built, then runs the fixed cases in
+[tests/plumbing/stage2-cases.sh](https://github.com/delta9000/seed-forth/blob/0dd2b88/tests/plumbing/stage2-cases.sh)
+with `PATH` holding only `build-out/plumbing/bin`.  Those scripts were not
+carried over.  Here, `chain/plumbing-root.sh` runs these stages in a root
+whose only starting executable is `hex0-seed` and traces every `execve`
+([results/host-2026-10-08/](../../results/host-2026-10-08/)).
 
 ## Parser generators without host plumbing
 
@@ -151,14 +152,14 @@ build-out/plumbing/bin/kaem --verbose --strict --file chain/plumbing/lexers.kaem
 ```
 
 The initial `mkdir` above prepares the kaem output directory; after stage 1,
-all stage commands use built tools. First cache stage-1 archives as described
-in [the plumbing status](https://github.com/delta9000/seed-forth/blob/0dd2b88/gcc-direct/PLUMBING.md), and the three lexer
-archives in `build-out/lexer-inputs/archives/` as described in the
-[recorded recipe](https://github.com/delta9000/seed-forth/blob/0dd2b88/gcc-direct/README.md#recorded-parser-generator-recipe).
+all stage commands use built tools.  `tools/fetch-archives.py` puts the
+stage-1 archives in `build-out/plumbing-inputs/` and the three lexer
+archives in `build-out/lexer-inputs/archives/`.
 [lexers.SOURCES](lexers.SOURCES) pins the exact archives and repository
 reference files from [sources.json](../gcc-direct/lexer-inputs/sources.json).
 The native stage uses the repository's pinned reference files directly;
-the Python reference needs a copy of `recipe-reference/` in its inputs tree.
+seed-forth's Python reference recipe needed a copy of `recipe-reference/`
+in its inputs tree.
 
 Outputs are `build-out/plumbing/bin/{oyacc,lex,flex}`. Ordinary lex form
 files remain in `build-out/plumbing/src/heirloom-devtools-070527/lex/`;
@@ -173,7 +174,8 @@ and installed tools are independent.
 
 ### Source preparation and configuration
 
-The preparation reproduces [lexers.py](https://github.com/delta9000/seed-forth/blob/0dd2b88/gcc-direct/lexers.py) and
+The preparation reproduces seed-forth's Python reference,
+[lexers.py](https://github.com/delta9000/seed-forth/blob/0dd2b88/gcc-direct/lexers.py) and
 [prepare-lexer-sources.py](https://github.com/delta9000/seed-forth/blob/0dd2b88/gcc-direct/prepare-lexer-sources.py): unpack
 pinned originals, apply unchanged `scan_l.patch` then `yyin.patch`, copy
 unchanged `scan.lex.l`, remove shipped `parse.c`, `parse.h`, `scan.c` and
@@ -205,15 +207,11 @@ Heirloom uses `unix=1`, as in the original recipe. GNU make 3.82 must retain
 its default `SHELL`: changing it disables the direct-command fast path.
 There are no shell metacharacters in expanded recipe lines.
 
-### Recorded equivalence (2026-10-06)
+### Recorded equivalence (2026-10-06, in seed-forth)
 
-Both builds completed in this checkout, using the current Forth compiler:
-
-```sh
-cp -r chain/gcc-direct/lexer-inputs/recipe-reference build-out/lexer-inputs/
-python3 chain/gcc-direct/lexers.py build-out/lexer-inputs build-out/lexers-python
-python3 tests/gcc/plumbing-lexers-check.py build-out/lexers-python
-```
+The native stage and seed-forth's Python reference recipe were both run and
+compared with seed-forth's `tests/gcc/plumbing-lexers-check.py`; the Python
+recipe and the check stayed in seed-forth.
 
 The comparison checks prepared sources, all six generated C intermediates
 (including `skel.c`), `parse.h`, ASCII input, `libl.a`, and fixed configuration
@@ -246,31 +244,8 @@ so `#line` filename spelling agrees. Generated C SHA-256 values:
 | flex-scanner | `4cb3e1ce267d106449d734cec1a48d2b4213522f1f781c2591a918e028bd2a53` |
 | heirloom-bootstrap-scanner | `48a6e083b06fcdd5c57c97c6be9ed02e7d3f5a72d6023c7b0d50bc1a9ec7e52a` |
 
-The check retains its copied inputs, generated files, input/output hashes and
-commands in `build-out/plumbing/lexer-equivalence/report.json`; `--work DIR`
-selects another fresh evidence directory. It requires the project's GCC and
-binutils source caches under `build-out/direct-gcc-inputs/gcc-source/` and
-`build-out/stage-b-inputs/binutils-source/`.
-
-A fresh complete stage passed the execution audit, including every prepared
-and generated hash check and `flex -V` reporting 2.5.11:
-
-```sh
-python3 tests/gcc/plumbing-lexers-audit.py
-```
-
-This Linux x86-64 audit uses Landlock to deny executable access outside
-`seed-forth`, `build-out/seed-cc/`, `build-out/plumbing/`, and `/tmp` (the
-native driver's private copies of the verified seed). It first requires
-`/bin/sh` execution to fail with permission denied, then executes kaem with
-the inherited restriction. Source reads remain unrestricted. The audit
-requires the same fresh package directories as a normal stage run. It is a
-verification harness, not a dependency of `lexers.kaem`. Wide/EUC lex
-variants and a complete GCC bootstrap are outside this stage's evidence.
-
-Final requested checks ran once, in seed-forth: its `tools/check-links.py` passed (zero problems).
-`./check-all.sh` reported 15 PASS, 1 FAIL, 0 SKIP. Its sole failure was the
-unrelated i386 pnut reference helper `build-out/pnut/m2-pnut`, terminated with
-"Bad system call" during `06a-pnut` in this restricted execution environment.
-The amd64 pnut, direct TinyCC and handoff checks passed, as did all earlier
-compiler, source/book and bootstrap checks. No pnut sources were changed.
+A fresh complete stage also passed seed-forth's execution audit
+(`tests/gcc/plumbing-lexers-audit.py`, which denies executable access
+outside `seed-forth`, `build-out/seed-cc/`, `build-out/plumbing/` and
+`/tmp`), including every prepared and generated hash check and `flex -V`
+reporting 2.5.11.  Wide/EUC lex variants are outside this stage's evidence.

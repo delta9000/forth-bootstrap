@@ -34,18 +34,18 @@ else stayed in seed-forth with its results:
 
 seed-forth's literate book, which teaches the seed, the Forth and the C
 compiler chapter by chapter, is not in this repository either: it is a
-separate project, forth-bootstrap-book, being rewritten in four parts.
+separate project, forth-bootstrap-book, rewritten in four parts.
 Its `file=` blocks quote this repository's `seed/`, `forth/` and `cc/`
 sources byte for byte, and its checks run against a checkout of this
 repository.
 
-Some files here still describe themselves in seed-forth's terms
-(`kernel/k1/README.md`, `chain/plumbing/*.md`): the route they describe
-is this one, and the TinyCC parts they mention are in seed-forth.
+Where this repository's notes report a result from before the move
+(`chain/plumbing/*.md`), they say so and link the seed-forth files
+involved.
 
 ## How seed-forth was built: models and strategies
 
-*Formerly `AI_STRATEGIES.md` in seed-forth and in this repository, kept as written: it describes how seed-forth was built, so its file names are seed-forth's.*
+*Formerly `AI_STRATEGIES.md` in seed-forth and in this repository, kept as written apart from notes marking what stayed in seed-forth: it describes how seed-forth was built, so its file names (`bootstrap.sh`, `verify.sh`, `REPRODUCIBLE.md`, the book and its tools) are seed-forth's.*
 
 Notes on how the hex0 → seed-forth → Forth C compiler → M2-Planet self-host chain got built, and which AI tools mattered.
 
@@ -75,7 +75,7 @@ Harnesses, briefly:
 
 ### The thing that actually settled it
 
-The chain is verified end-to-end by a script that rebuilds the compiler with itself and checks that the output stops changing:
+In seed-forth, the chain was verified end-to-end by a script (`bootstrap.sh`, which stayed there) that rebuilds the compiler with itself and checks that the output stops changing:
 
 1. seed-forth compiles the M2-Planet monolith → v1, an ELF compiler binary.
 2. v1 and a GCC-built reference both self-compile M2-Planet; their .M1 outputs must be byte-identical. Two different compilers, same output on the same input.
@@ -84,7 +84,7 @@ The chain is verified end-to-end by a script that rebuilds the compiler with its
 5. v3 self-compiles M2-Planet; its output must equal v2's. Fixed-point closure.
 6. Every M2-Planet test source produces byte-identical assembly from v1 versus the GCC reference.
 
-If any byte drifts, the script fails. `REPRODUCIBLE.md` froze the checksums on the day it closed.
+If any byte drifts, the script fails. seed-forth's `REPRODUCIBLE.md` froze the checksums on the day it closed.  In this repository, Stage A (`tests/cc/stage-a-check.sh`) is step 2's comparison; the v2/v3 self-host steps are not here.
 
 "It compiles" doesn't mean much for a bootstrap. The signals that count are parity (your compiler agrees with the reference on the same input) and fixed-point closure (your compiler agrees with itself across rebuilds). Both are byte-level. Neither can be faked by a model writing plausible-looking code.
 
