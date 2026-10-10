@@ -5,6 +5,7 @@
 # Usage:
 #   chain/gcc-direct/stage-d.sh WORK --stage-c STAGE_C_WORK --oyacc OYACC \
 #       --flex FLEX [-j JOBS]
+#   (JOBS defaults to 8)
 #
 # The bash port of seed-forth's stage-d.py, run by the chain's own bash and make.
 # STAGE_C_WORK is a finished stage-c.sh run: its installed GCC (whose cc1 and

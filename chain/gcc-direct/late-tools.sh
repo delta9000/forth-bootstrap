@@ -4,6 +4,7 @@
 # Usage (from the repository root, after chain/gcc-direct/chain.sh):
 #   build-out/plumbing/bin/bash chain/gcc-direct/late-tools.sh [-j JOBS]
 #       [--chain DIR] [--distfiles DIR] [OUT]
+#   (JOBS defaults to 6)
 #
 # make 4.4.1, bash 5.2, coreutils 9.5, sed, grep, gawk, tar, gzip, xz,
 # patch and the rest, pinned in chain/plumbing/late.SOURCES, with nothing

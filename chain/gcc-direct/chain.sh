@@ -4,6 +4,7 @@
 # Usage (from the repository root, after chain/plumbing/stage1.kaem, stage2.kaem,
 # lexers.kaem and bash.kaem):
 #   build-out/plumbing/bin/bash chain/gcc-direct/chain.sh [-j JOBS] [OUT]
+#   (JOBS defaults to 6)
 #
 # Runs binutils.sh, stage-c.sh and stage-d.sh in order with the chain's
 # oyacc and flex, into OUT (default build-out/chain): OUT/binutils,

@@ -4,6 +4,7 @@
 # Usage:
 #   chain/gcc-direct/stage-c.sh WORK --binutils BINUTILS_WORK --oyacc OYACC \
 #       --flex FLEX [-j JOBS] [--resume]
+#   (JOBS defaults to 6, 1 to 8)
 #
 # The bash port of seed-forth's stage-c.py, run by the chain's own bash and make.
 # BINUTILS_WORK is a finished binutils.sh run; its as-new, ld-new, ar, nm-new,

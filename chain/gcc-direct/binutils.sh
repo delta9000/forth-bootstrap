@@ -4,6 +4,7 @@
 #
 # Usage:
 #   chain/gcc-direct/binutils.sh WORK --oyacc OYACC --flex FLEX [-j JOBS]
+#   (JOBS defaults to 6)
 #
 # The bash port of seed-forth's binutils.py.  WORK must be new.  The pinned
 # binutils-2.30.tar (chain/plumbing/chain.SOURCES) is unpacked into WORK/src, and
