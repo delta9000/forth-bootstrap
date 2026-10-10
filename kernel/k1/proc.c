@@ -1,8 +1,8 @@
 /* proc.c -- processes, the scheduler, fork/exec/exit/wait, signals.
  *
- * Scheduling is cooperative: a process runs until it blocks in a syscall
- * (wait4, a pipe, a vfork child) or exits; there are no interrupts.
- * Each process has a 16 KiB kernel stack; syscall_entry builds its user
+ * A process runs until it blocks in a syscall (wait4, a pipe, a vfork
+ * child), exits, or is preempted by the timer tick while in user mode.
+ * Each process has a 32 KiB kernel stack; syscall_entry builds its user
  * register frame at the top, and swtch saves kernel callee-saved state. */
 
 #include "k1.h"
@@ -44,9 +44,9 @@ static void switch_to(struct proc *p)
     swtch(&old->ksp, p->ksp);
 }
 
-/* Deliver SIGALRM for every ITIMER_REAL that is due.  K1 has no timer
- * interrupt: this runs on each system call and each pass of the scheduler,
- * which is enough for programs that wait in the kernel for their alarm. */
+/* Deliver SIGALRM for every ITIMER_REAL that is due.  This runs on each
+ * system call, each pass of the scheduler and each timer tick taken in
+ * user mode (main.c's user_tick), so a spinning program gets its alarm. */
 void check_timers(void)
 {
     struct proc *p;
