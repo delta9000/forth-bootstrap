@@ -181,10 +181,10 @@ int main(int argc, char **argv)
     char **payload_names;
     int ninputs = argc - 3 > 0 ? argc - 3 : 0;
     long status;
-    st_prog = "gcc-direct-ar";
+    st_prog = "seed-ar";
     st_os_status = 2;
     if (argc == 2 && strcmp(argv[1], "--version") == 0) {
-        st_puts(1, "gcc-direct-ar: Forth indexed archive adapter 1\n");
+        st_puts(1, "seed-ar: Forth indexed archive adapter 1\n");
         return 0;
     }
     if (argc < 3)
@@ -285,7 +285,7 @@ int main(int argc, char **argv)
         nmembers = nmembers + nnew;
     } else if (create) {
         if (!has_c)
-            st_puts(2, st_cat3("gcc-direct-ar: creating ", argv[2], "\n"));
+            st_puts(2, st_cat3("seed-ar: creating ", argv[2], "\n"));
         members = (struct member *)st_alloc((unsigned long)(ninputs + 1) * sizeof(struct member));
         for (i = 0; i < ninputs; i = i + 1) {
             members[i].name = (char *)st_pname(payload_names[i]);
