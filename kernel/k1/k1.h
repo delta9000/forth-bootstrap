@@ -191,7 +191,7 @@ struct proc {
     u32 umask;
     struct sigact sa[NSIG];
     u64 sigmask, sigpend;
-    u8 *kstack;                 /* 4 pages */
+    u8 *kstack;                 /* KSTACK bytes, 8 pages */
     u64 ksp;                    /* saved by swtch */
     struct tframe *tf;
     u64 fsbase, clear_tid;

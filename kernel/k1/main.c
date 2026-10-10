@@ -296,7 +296,7 @@ static void tables_init(void)
     wrmsr(0xC0000081, 0x10UL << 32 | 0x23UL << 48);  /* base 0x23: RPL 3 in SS too */
     wrmsr(0xC0000082, (u64)syscall_entry);
     wrmsr(0xC0000084, 0x47700);                 /* clear TF DF IF IOPL AC NT */
-    /* mask both 8259 PICs: K1 runs with interrupts off */
+    /* mask both 8259 PICs until timer_init unmasks IRQ 0 */
     outb(0x21, 0xFF);
     outb(0xA1, 0xFF);
 }
