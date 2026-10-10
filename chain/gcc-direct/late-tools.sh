@@ -50,8 +50,8 @@ require_tool gcc "$CC"
 require_tool as "$TOOLS/as"
 
 PATH=$BIN:$TOOLS:$P/bin
-# configure runs under the plumbing bash either way.  Inside the chain root
-# (tools/late-root.sh) /bin/sh is that bash, so name it /bin/sh, as configure
+# configure runs under the plumbing bash either way.  Under K1
+# (kernel/k1/direct-full.sh) /bin/sh is that bash, so name it /bin/sh, as configure
 # would on its own: the scripts the packages install (zgrep, xzdiff, egrep ...)
 # then start with #!/bin/sh rather than a path into build-out/plumbing.
 if cmp -s /bin/sh "$BIN/bash"; then CONFIG_SHELL=/bin/sh; else CONFIG_SHELL=$BIN/bash; fi
