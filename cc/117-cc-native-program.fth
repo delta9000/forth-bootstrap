@@ -1,4 +1,4 @@
-\ 117-cc-native-program.fth — program and private stack ABI for direct TinyCC.
+\ 117-cc-native-program.fth — program and private stack ABI for native mode.
 \ All linked code is generated together. No system libc or host object is used.
 variable cc-native-param-count
 variable cc-native-frame-patch

@@ -1,7 +1,7 @@
 \ 115-cc-native.fth — opt-in LP64 bootstrap declaration parser.
 \ The legacy M2-compatible parser remains the default. Native mode uses
 \ LP64 object layout and a private, all-stack call ABI within its image.
-\ TinyCC built by this compiler emits its own standard target ABI.
+\ That ABI is private: it binds only code compiled together into one image.
 
 : cc-npick ( x_n ... x_0 n -- x_n ... x_0 x_n )
   dup 0= if, drop dup exit, then,
