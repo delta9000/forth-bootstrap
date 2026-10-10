@@ -132,7 +132,7 @@ An x86-64 Linux host.  By step below; times are from the recorded runs
 ## Running it
 
 ```sh
-git clone <this repository> forth-bootstrap && cd forth-bootstrap
+git clone https://github.com/delta9000/forth-bootstrap.git && cd forth-bootstrap
 git submodule update --init --recursive
 ./check-all.sh                     # the seven quick checks, under a minute
 ```
