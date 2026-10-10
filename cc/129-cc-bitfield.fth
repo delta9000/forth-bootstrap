@@ -12,7 +12,7 @@ create cc-bf-error-prefix s, bitfield: bl c,
 ' cc-bf-record-bytes is cc-sd-record-bytes
 
 \ The final SysV field cell retains the second fixed array dimension.
-\ Bitfield slots stay at48/56; anonymous promotion copies the entire record.
+\ Bitfield slots stay at 48/56; anonymous promotion copies the entire record.
 : cc-bf-array-inner ( rec -- n )
   cc-target-sysv @ if, [lit] 64 + @ else, cc-sf-array-inner-default then, ;
 : cc-bf-set-array-inner ( n rec -- )
