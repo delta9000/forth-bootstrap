@@ -15,7 +15,8 @@
 # K1_MEM the guest RAM; K1_RAM_FILE (avoid on an SSD: terabytes of writes
 # over a full run) names a new build-out file for shared,
 # non-preallocated RAM backing (K1_RAM_RESERVE defaults to 8G); QEMU names
-# the emulator (default qemu-system-x86_64).
+# the emulator (default qemu-system-x86_64); HEX0 names another hex0
+# assembler for K0 (the guest's own hex0-seed still comes from vendor/).
 set -eu
 cd "$(dirname "$0")/../.."
 usage="usage: $0 [--direct-smoke | --direct | --direct-linux]"
@@ -27,7 +28,7 @@ case $mode in
     --direct-linux) D=${K1_DISKS:-build-out/k1-direct-linux}; memory=${K1_MEM:-24G}; expected=85 ;;
     *) echo "$usage" >&2; exit 2 ;;
 esac
-HEX0=vendor/stage0-posix/bootstrap-seeds/POSIX/AMD64/hex0-seed
+HEX0=${HEX0:-vendor/stage0-posix/bootstrap-seeds/POSIX/AMD64/hex0-seed}
 mkdir -p build-out/k1 "$D"
 "$HEX0" kernel/k0/k0.hex0 build-out/k1/k0.bin
 python3 kernel/k1/mkboot.py build-out/k1/boot.img
