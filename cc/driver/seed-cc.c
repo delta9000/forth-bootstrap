@@ -1076,7 +1076,7 @@ int main(int argc, char **argv)
     int stdin_seen = 0;
     struct names destinations, protected_paths, names, includes, objects, results;
     char *work;
-    st_prog = "seed-forth-cc";
+    st_prog = "seed-cc";
     st_os_status = 1;
     parse(argc, argv, &o);
     if (o.query == QUERY_VERSION) {
