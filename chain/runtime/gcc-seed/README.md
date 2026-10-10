@@ -74,6 +74,9 @@ The same `sort.c` supplies `bsearch`, and `strerror.c` supplies `strerror`.
 Original GCC `tree-eh.c` and `tree-dump.c` call them; libiberty can provide
 both, but only a declaration makes their pointer results visible to callers.
 See [bsearch and strerror](SEARCH-STRERROR.md).
+[Four measured original-GCC runtime interfaces](MEASURED-INTERFACES.md)
+covers `access`, `getpid`, `strpbrk` and `strspn`, which cc1's objects
+reference.
 
 The source-built `ctype.c` supplies the seven functions used by original
 oyacc 6.6: `isalpha`, `isalnum`, `isdigit`, `isprint`, `isspace`, `isupper`, and
