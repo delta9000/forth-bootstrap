@@ -1,4 +1,4 @@
-# fix-libmath_h edits libmath.h with ed, which the ladder does not build.
+# fix-libmath_h edits libmath.h with ed, which the chain does not build.
 # The same edits with sed: quote each line, open the initializer on line 1,
 # drop the last line, and close the initializer on the new last line.
 --- a/bc/fix-libmath_h	2026-09-30 22:30:51.896463843 -0400
