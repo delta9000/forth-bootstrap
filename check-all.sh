@@ -6,10 +6,12 @@
 #       1,772-byte seed-forth
 #   02  ./test.sh: the seed primitives, forth/010-lib.fth and the first
 #       compiler layers
-#   03  tools/check-pins.py: every archive pin agrees with MANIFEST.sha256
-#   04  Stage A (tests/cc/stage-a-check.sh): the Forth compiler's M1 for
+#   03  tests/asm/hi-check.sh: forth/130-asm.fth assembles and links a small
+#       M1 program; it prints "hi", exits 42 and is 160 bytes
+#   04  tools/check-pins.py: every archive pin agrees with MANIFEST.sha256
+#   05  Stage A (tests/cc/stage-a-check.sh): the Forth compiler's M1 for
 #       M2-Planet equals a GCC-built M2-Planet's (needs gcc; SKIP without)
-#   05  kernel/k1/tests/direct-build-check.sh: seed Forth builds K1 with no
+#   06  kernel/k1/tests/direct-build-check.sh: seed Forth builds K1 with no
 #       other program running, its objects equal seed-cc's, and
 #       k1-asm.fth's bytes equal GNU as on its comments (needs strace and
 #       as; SKIP without)
@@ -57,27 +59,28 @@ have() { command -v "$1" >/dev/null 2>&1; }
 
 run "01-seed" bash -c 'seed/build.sh && [ "$(wc -c < seed-forth)" -eq 1772 ]'
 run "02-test" ./test.sh
+run "03-asm" tests/asm/hi-check.sh
 if have python3; then
-    run "03-pins" python3 tools/check-pins.py
+    run "04-pins" python3 tools/check-pins.py
 else
-    skip "03-pins" "missing: python3"
+    skip "04-pins" "missing: python3"
 fi
 if have gcc; then
-    run "04-stage-a" tests/cc/stage-a-check.sh
+    run "05-stage-a" tests/cc/stage-a-check.sh
 else
-    skip "04-stage-a" "missing: gcc"
+    skip "05-stage-a" "missing: gcc"
 fi
 if have strace && have as && have python3; then
-    run "05-k1-build" sh kernel/k1/tests/direct-build-check.sh
+    run "06-k1-build" sh kernel/k1/tests/direct-build-check.sh
 else
-    skip "05-k1-build" "missing: strace, as or python3"
+    skip "06-k1-build" "missing: strace, as or python3"
 fi
 if [ "${CHECK_CHAIN:-0}" = 1 ]; then
-    run "06-chain" sh chain/plumbing-root.sh
+    run "07-chain" sh chain/plumbing-root.sh
 fi
 case ${CHECK_K1:-} in
-    smoke) run "07-k1-smoke" kernel/k1/run-chain.sh --direct-smoke ;;
-    linux) run "07-k1-linux" kernel/k1/run-chain.sh --direct-linux ;;
+    smoke) run "08-k1-smoke" kernel/k1/run-chain.sh --direct-smoke ;;
+    linux) run "08-k1-linux" kernel/k1/run-chain.sh --direct-linux ;;
     '') ;;
     *) echo "check-all: CHECK_K1 is smoke or linux" >&2; exit 2 ;;
 esac
