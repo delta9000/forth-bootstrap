@@ -10,8 +10,8 @@
 # metacharacters, so make runs every compiler, archiver and copy directly.
 # No shell exists at this stage and none is run.
 #
-# The sources are pristine except for coreutils, which gets two reviewed
-# patches applied by the patch built here (see chain/plumbing/README.md).
+# The sources are pristine except for coreutils, which gets one reviewed
+# patch applied by the patch built here (see chain/plumbing/README.md).
 #
 # Installed into build-out/plumbing/bin: sed; gzip, gunzip, zcat; patch;
 # cmp, diff, diff3, sdiff; grep, egrep, fgrep; gawk, awk; tar; and the
