@@ -29,7 +29,7 @@ and stages 6-10 2,334 s.
 
 | File | What |
 |---|---|
-| `serial.log` | the guest's console, from K0 handing over to K1 to the Linux init's greeting |
+| `serial.log` | the guest's console, from K0 handing over to K1 to the Linux init's greeting (K0's hand-over line then read `k0: K1 built by seed Forth (no TinyCC); handing over`; it now ends at "Forth") |
 | `binutils-report.txt`, `stage-c-report.txt`, `stage-d-report.txt` | the GCC chain's reports, written under K1 |
 | `late-tools-report.txt` | the late tools: each package's configure and make times, and the sha256 of every installed program |
 | `gcc64-hashes.txt` | the sha256 of each gcc64 output; all 31 entries of `chain/gcc64/HASHES` match |
