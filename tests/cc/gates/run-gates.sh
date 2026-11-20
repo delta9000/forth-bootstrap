@@ -59,6 +59,20 @@ gates=(
 not_run=(
   "M1.c|not standalone; M2-Planet's cc.c is covered by tests/cc/stage-a-check.sh"
 )
+# Die gates: programs the compiler must reject.  "<fixture>|<expected
+# compiler exit>|<expected last stderr line>"; the line is cc-die's
+# "cc: line N: error C" (cc/020-cc-arena.fth), and no /tmp/cc-out may be
+# written.  A few of seed-forth's die gates at 0dd2b88, one per code.
+die_gates=(
+  "die-30-include-missing.c|30|cc: line 2: error 30"
+  "die-39-if-unterminated.c|39|cc: line 7: error 39"
+  "die-40-error-directive.c|40|cc: line 5: error 40"
+  "die-50-struct-fields.c|50|cc: line 19: error 50"
+  "die-113-inc-not-lvalue.c|113|cc: line 4: error 113"
+  "die-162-frame-full.c|162|cc: line 7: error 162"
+  "die-206-fn-undefined.c|206|cc: line 8: error 206"
+  "die-207-no-main.c|207|cc: line 5: error 207"
+)
 
 D=tests/cc/gates
 WORK=build-out/gates
@@ -110,6 +124,21 @@ for g in "${gates[@]}"; do
         fail "$file: expected stdout '$want_out', got '$got_out'"
     else
         pass "$file -> $rc"
+    fi
+done
+
+for g in "${die_gates[@]}"; do
+    IFS='|' read -r file want want_err <<< "$g"
+    compile "$D/$file"
+    got_err=$(tail -n 1 "$WORK/err")
+    if [ "$crc" != "$want" ]; then
+        fail "$file: expected compiler exit $want, got $crc ($got_err)"
+    elif [ "$got_err" != "$want_err" ]; then
+        fail "$file: expected '$want_err', got '$got_err'"
+    elif [ -f "$OUT" ]; then
+        fail "$file: died but still wrote $OUT"
+    else
+        pass "$file -> $crc ($got_err)"
     fi
 done
 
