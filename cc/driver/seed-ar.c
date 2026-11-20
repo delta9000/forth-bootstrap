@@ -14,7 +14,7 @@
    such member in place, every other input is appended, and the whole
    archive (index included) is then rewritten by Forth.  Members carry no
    dates, so `u` (replace only newer files) always replaces, like GNU ar in
-   its deterministic mode.  See tools/SEED-CC.md. */
+   its deterministic mode.  See cc/README.md. */
 #include "seed-tool.h"
 
 static char *root;

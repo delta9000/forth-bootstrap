@@ -1,6 +1,6 @@
 /* seed-tool.h -- shared code for the native seed-forth driver programs
    cc/driver/seed-cc.c and cc/driver/seed-ar.c.  Both are compiled by the Forth C
-   compiler against chain/runtime/gcc-seed (see tools/SEED-CC.md); no host
+   compiler against chain/runtime/gcc-seed (see cc/README.md); no host
    compiler builds them.
 
    This header holds static definitions, so each program is one translation
