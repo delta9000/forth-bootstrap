@@ -14,7 +14,7 @@ The terms in the tree below are defined under Names.
 ```
 hex0-seed (229 bytes)
  └─ seed-forth (seed/000-seed.hex0, 1,772 bytes)
-     └─ Forth library and M1 assembler (forth/)
+     └─ Forth library (forth/010-lib.fth)
          └─ C compiler in Forth (cc/020-141) ── seed-cc, seed-ar (cc/driver/)
              └─ kaem, mescc-tools-extra, make 3.82, sed, grep, gawk, coreutils,
                 tar, gzip, patch, diffutils, oyacc, lex, flex 2.5.11, bash 2.05b
@@ -37,7 +37,8 @@ The tools and formats:
   a file byte for byte.  The seed and K0 are written in it.
 - **M1, hex2**: stage0-posix's assembler-level formats.  M1 is macro
   assembly (named opcodes and labels); hex2 is hex with label references.
-  `forth/130-asm.fth` assembles and links them.
+  `forth/130-asm.fth` assembles and links them; it is a check
+  (`./check-all.sh` step 03), not a step of the route.
 - **kaem**: stage0-posix's minimal shell for build scripts (`*.kaem`),
   one command per line.  It runs the plumbing stages before any real shell
   exists.
@@ -98,7 +99,7 @@ Each directory has a README that says where to start.
 | Directory | What is in it |
 |---|---|
 | `seed/` | `000-seed.hex0`, the annotated hex of the Forth; `build.sh` |
-| `forth/` | `010-lib.fth`, the Forth library on the seed's 32 primitives; `130-asm.fth`, an M1 assembler and hex2 linker; the library's test |
+| `forth/` | `010-lib.fth`, the Forth library on the seed's 32 primitives; `130-asm.fth`, an M1 assembler and hex2 linker used only by check step 03; the library's test |
 | `cc/` | the C compiler in Forth, loaded in numeric order (`020-cc-arena.fth` to `141-archive.fth`); its tests; `driver/`, seed-cc and seed-ar |
 | `kernel/` | `k0/` (K0 in hex0, with its NASM source), `k1/` (K1 in C and `k1-asm.fth`, its recipes, disk writers and tests), `tools/` (the recipe runner and the files that build K1) |
 | `chain/` | `runtime/gcc-seed` (seed-cc's C library), `plumbing/` (the first tools, as kaem scripts), `gcc-direct/` (binutils, stage C, stage D, the late tools), `ladder/` and `gcc64/` (the climb to GCC 10.5.0 and Linux), `patches/`, `plumbing-root.sh` |
@@ -206,8 +207,7 @@ it: not on an SSD.
 ## Reading order
 
 - **seed/, forth/:** `seed/000-seed.hex0` (the seed's 32 primitives, one
-  instruction per annotated line), then `forth/010-lib.fth`, then
-  `forth/130-asm.fth` (the M1 assembler and hex2 linker).
+  instruction per annotated line), then `forth/010-lib.fth`.
 - **cc/:** the compiler in load order: `cc/020-cc-arena.fth` to
   `cc/120-cc-main.fth` (arena, preprocessor, lexer, types, code
   generation, expressions, declarations, statements, functions, main),

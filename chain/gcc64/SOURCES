@@ -19,8 +19,8 @@
 # The first URL is the upstream one live-bootstrap uses (b1ceced7,
 # steps/*/sources) whenever our file is byte-identical to live-bootstrap's.
 # The Ubuntu archive URL after it is the one actually used to build the
-# canonical run: this sandbox's egress policy blocks kernel.org, gnu.org,
-# sourceware.org and musl.libc.org.  Where Ubuntu ships the upstream tarball
+# canonical run, whose build host could not reach kernel.org, gnu.org,
+# sourceware.org or musl.libc.org.  Where Ubuntu ships the upstream tarball
 # unchanged ("= lb" below) the sha256 equals live-bootstrap's.
 #
 # = lb musl-1.1.24.tar.gz

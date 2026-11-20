@@ -23,15 +23,15 @@ change: U+0160 (Š) in Andrius Štikonas's copyright attribution becomes ASCII S
 Heirloom's wide I/O under LC_ALL=C rejects that UTF-8 character. Only the
 attribution comment changes; scanner rules do not. The recipe verifies that
 there is exactly one such letter and that the resulting bytes are ASCII,
-and records both hashes and this rationale in report.json.
+and `chain/plumbing/lexers.PREPARED` and `lexers.GENERATED` pin
+scan.lex.l and scan-ascii.l.
 
 The two patch payloads are unchanged and applied with --fuzz=0. The historical
 scan_l.patch applies with a minus-one-line offset; patch output is recorded.
-The skeleton is derived from original flex.skl by original mkskel.sh and
-checked against an independent Python escaping transform. No shipped parser
-or scanner C is used as an input.
+The skeleton is derived from original flex.skl by `lexer-prepare skeleton`,
+which performs mkskel.sh's escaping; skel.c is pinned in lexers.PREPARED.
+No shipped parser or scanner C is used as an input.
 
-Preparation and build logic were transcribed from the Python reference
-scripts used while this stage was developed (2026-10-03). The source archives retain their
-own notices and licenses. Heirloom's ordinary scanner library contains only
-allprint, libmain, reject, yyless and yywrap; wide/EUC variants are untested.
+The source archives retain their own notices and licenses. Heirloom's
+ordinary scanner library contains only allprint, libmain, reject, yyless
+and yywrap; wide/EUC variants are untested.
