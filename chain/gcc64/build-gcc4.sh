@@ -2,14 +2,14 @@
 # build-gcc4.sh CC PREFIX NAME [DESTDIR] -- gcc-4.0.4 (C only) the way
 # live-bootstrap's steps/gcc-4.0.4/pass1.sh does it (libiberty, libcpp, gcc
 # configured one by one, no fixincludes), for x86_64 against $W/sysroot.
-# Parser generators: host bison and $W/tools/bin/flex, unless GCC4_YACC/GCC4_LEX
-# name others (the bridge from the direct route passes its Forth-built oyacc and
-# flex 2.5.11; GCC4_BYACC=1 then makes gcc/system.h accept Berkeley-yacc output).
+# Parser generators: GCC4_YACC and GCC4_LEX, which run-gcc64.sh's bridge_env sets
+# to the Forth-built oyacc and flex 2.5.11; GCC4_BYACC=1 then makes gcc/system.h
+# accept Berkeley-yacc output.
 set -euo pipefail
 W=${GCC64_W:?run via chain/gcc64/run-gcc64.sh} DIST=${GCC64_CACHE:?} PATCHES=${GCC64_PATCHES:?}
 CC=$1 P=$2 NAME=$3 DEST=${4:-}
 T=x86_64-unknown-linux-gnu S=$W/sysroot
-YACC=${GCC4_YACC:-bison} LEX=${GCC4_LEX:-$W/tools/bin/flex}
+YACC=${GCC4_YACC:?run via chain/gcc64/run-gcc64.sh} LEX=${GCC4_LEX:?run via chain/gcc64/run-gcc64.sh}
 SRC=$W/src/gcc-4.0.4-work   # same path every time: the build dir ends up in the binaries
 rm -rf "$SRC" "$SRC.tmp"; mkdir -p "$SRC.tmp"
 tar -xf "$DIST/gcc-4.0.4-git-944765863e.tar" -C "$SRC.tmp" \
@@ -31,7 +31,7 @@ if [ "${GCC4_BYACC:-0}" = 1 ]; then   # as chain/gcc-direct/stage-d.sh: exempt Y
     sed -i 's/^#if !defined(FLEX_SCANNER) \&\& !defined(YYBISON)$/& \&\& !defined(YYBYACC)/' gcc/system.h
     grep -qxF "$old && !defined(YYBYACC)" gcc/system.h || { echo "build-gcc4: system.h edit failed" >&2; exit 1; }
 fi
-case $CC in *tcc) CFL="-D HAVE_ALLOCA_H" ;; *) CFL="-O2" ;; esac
+CFL=-O2
 mkdir build; cd build
 for dir in libiberty libcpp gcc; do
     mkdir $dir
@@ -42,7 +42,6 @@ for dir in libiberty libcpp gcc; do
         --with-sysroot="$S" --with-as="$W/bu/bin/as" --with-ld="$W/bu/bin/ld" --program-transform-name=)
 done
 cd ..
-case $CC in *tcc) sed -i 's/C_alloca/alloca/g' libiberty/alloca.c include/libiberty.h ;; esac  # tcc
 ln -s . build/build-$T
 mkdir -p build/gcc/include
 ln -s ../../../gcc/gsyslimits.h build/gcc/include/syslimits.h
