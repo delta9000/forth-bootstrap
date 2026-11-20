@@ -28,7 +28,7 @@ typedef struct seed_directory DIR;
 DIR *opendir(const char *path);
 struct dirent *readdir(DIR *directory);
 int closedir(DIR *directory);
-/* Restarts the stream from the first entry; see ../DIRECTORIES.md. */
+/* Restarts the stream from the first entry; see ../README.md. */
 void rewinddir(DIR *directory);
 /* The descriptor the stream reads; closedir closes it. */
 int dirfd(DIR *directory);

@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_CTYPE_H
 #define SEED_GCC_CTYPE_H
-/* Original seed-forth interface; see LICENSE. Fixed ASCII C locale.
+/* Original interface; see LICENSE. Fixed ASCII C locale.
    The supported argument domain is EOF (-1) or an unsigned-char value.
    isascii additionally accepts every int. This measured surface serves
    original oyacc/Heirloom/Flex sources and their ANSI-header probe. */
@@ -18,6 +18,6 @@ int islower(int value);
 int isxdigit(int value);
 int tolower(int value);
 int toupper(int value);
-/* Space or tab; see ../STRINGS-POSIX.md. */
+/* Space or tab; see ../README.md. */
 int isblank(int value);
 #endif

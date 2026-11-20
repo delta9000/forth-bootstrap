@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and PROCFS.md.
+/* Original implementation; see LICENSE and README.md.
    Linux AMD64 gettimeofday through the raw syscall (no vDSO). */
 #include <sys/time.h>
 #include <errno.h>

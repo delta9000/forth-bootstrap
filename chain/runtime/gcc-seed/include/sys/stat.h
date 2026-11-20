@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_SYS_STAT_H
 #define SEED_GCC_SYS_STAT_H
-/* Original seed-forth declarations; see LICENSE and ../../CONFIGURE.md.
+/* Original declarations; see LICENSE and ../../README.md.
    Field widths, offsets and padding match the Linux AMD64 stat syscall ABI.
    Signed seconds expose pre-epoch times; kernel words have identical bits.
    Times are POSIX struct timespec members; st_atime etc. name their seconds
@@ -45,7 +45,7 @@ struct stat {
 #define S_ISFIFO(mode) (((mode) & S_IFMT) == S_IFIFO)
 #define S_ISLNK(mode) (((mode) & S_IFMT) == S_IFLNK)
 #define S_ISSOCK(mode) (((mode) & S_IFMT) == S_IFSOCK)
-/* Permission bits; see ../../FILE-METADATA.md. */
+/* Permission bits; see ../../README.md. */
 #define S_ISUID 04000
 #define S_ISGID 02000
 #define S_ISVTX 01000
@@ -75,7 +75,7 @@ int lstat(const char *path, struct stat *status);
 int chmod(const char *path, mode_t mode);
 int mkdir(const char *path, mode_t mode);
 mode_t umask(mode_t mask);
-/* Single Linux calls; see ../../FILE-CALLS.md. mkfifo is mknod with
+/* Single Linux calls; see ../../README.md. mkfifo is mknod with
    S_IFIFO; mknod passes DEVICE in the 64-bit encoding of makedev. */
 int fchmod(int descriptor, mode_t mode);
 int mknod(const char *path, mode_t mode, dev_t device);

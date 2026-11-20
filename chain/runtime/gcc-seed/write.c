@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. POSIX write on Linux AMD64. */
+/* Original implementation; see LICENSE. POSIX write on Linux AMD64. */
 #include <unistd.h>
 #include <errno.h>
 #include <seed-syscall.h>

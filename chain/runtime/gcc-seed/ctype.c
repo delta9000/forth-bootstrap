@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. Fixed ASCII C locale. */
+/* Original implementation; see LICENSE. Fixed ASCII C locale. */
 #include <ctype.h>
 int isupper(int value) { return value >= 'A' && value <= 'Z'; }
 int islower(int value) { return value >= 'a' && value <= 'z'; }

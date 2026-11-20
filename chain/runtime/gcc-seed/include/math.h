@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_MATH_H
 #define SEED_GCC_MATH_H
-/* Original seed-forth binary64 math interface; see ../MATH.md.
+/* Original binary64 math interface; see ../README.md.
  * Functions marked [libc] live in fpclass.c (default runtime archive, like
  * glibc's libc copies); every other function needs an explicit -lm. */
 
@@ -80,7 +80,7 @@ double fmax(double x, double y);
 double fdim(double x, double y);
 double sqrt(double x);
 
-/* Approximations [-lm]; see MATH.md for measured accuracy. */
+/* Approximations [-lm]; see ../README.md. */
 double exp(double x);
 double exp2(double x);
 double expm1(double x);

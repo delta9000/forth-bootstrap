@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and PASSWD.md.
+/* Original implementation; see LICENSE and README.md.
    Reading the colon-separated user and group databases. */
 #include <stdlib.h>
 #include <string.h>

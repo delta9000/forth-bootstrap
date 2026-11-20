@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_FLOAT_H
 #define SEED_GCC_FLOAT_H
-/* Original seed-forth target metadata; see LICENSE.
+/* Original target metadata; see LICENSE.
    AMD64 binary32, binary64, and padded x87 extended80 formats. Metadata does
    not enable unsupported float/long-double value operations. There is no
    floating-environment API; addition rounding is reported indeterminable. */

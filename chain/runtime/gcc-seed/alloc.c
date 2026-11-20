@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; distributed under ../../../LICENSE. */
+/* Original implementation; distributed under ../../../LICENSE. */
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>

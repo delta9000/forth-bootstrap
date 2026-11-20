@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and SYSINFO.md. */
+/* Original implementation; see LICENSE and README.md. */
 #include <sys/utsname.h>
 #include <unistd.h>
 #include <string.h>

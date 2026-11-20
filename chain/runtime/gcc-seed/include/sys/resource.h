@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_SYS_RESOURCE_H
 #define SEED_GCC_SYS_RESOURCE_H
-/* Original seed-forth interface; see LICENSE and ../../SYSINFO.md.
+/* Original interface; see LICENSE and ../../README.md.
    Linux AMD64 resource limits, usage and scheduling priority. */
 #include <sys/types.h>
 #include <sys/time.h>

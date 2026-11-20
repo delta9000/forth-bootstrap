@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_SYS_UTSNAME_H
 #define SEED_GCC_SYS_UTSNAME_H
-/* Original seed-forth interface; see LICENSE and ../../SYSINFO.md.
+/* Original interface; see LICENSE and ../../README.md.
    The Linux new_utsname record: six 65-byte NUL-terminated fields. */
 #define _UTSNAME_LENGTH 65
 struct utsname {

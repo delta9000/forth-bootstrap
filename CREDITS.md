@@ -14,6 +14,7 @@ elsewhere and keeps its own license.
 | kaem, compiled by seed-cc as the first shell | `vendor/mescc-tools/Kaem` | [mescc-tools](https://github.com/oriansj/mescc-tools) | GPL-3.0-or-later |
 | M2-Planet, compiled by the Forth compiler for Stage A (and its headers, copied into `tests/cc/` for the compiler's include fallback) | `vendor/M2-Planet`, `tests/cc/*.h` | [M2-Planet](https://github.com/oriansj/M2-Planet) | GPL-3.0-or-later |
 | Patches for gcc-4.7.4, gcc-10.5.0, musl-1.1.24 and bash-2.05b, each with a provenance header | `chain/patches/gcc64/`, `chain/plumbing/bash-2.05b/missing-defines.patch` | [live-bootstrap](https://github.com/fosslinux/live-bootstrap) b1ceced7, `steps/*/patches` | each patch's SPDX header (the patched project's license) |
+| `qsort` (smoothsort), unchanged except one marked replacement of musl's internal `a_ctz_l` | `chain/runtime/gcc-seed/qsort.c` | musl 1.1.24 `src/stdlib/qsort.c`, sha256 `a520c44672ba94435de6d0cbc926786f3ff5fdda8ef35a361108dec2ea6875f4` | MIT (copyright 2011 Valentin Ochs; notice kept in the file) |
 | flex 2.5.11's `scan.lex.l` and two patches | `chain/gcc-direct/lexer-inputs/recipe-reference/` | live-bootstrap b1ceced7, `steps/flex-2.5.11` (`chain/gcc-direct/lexer-inputs/PROVENANCE.md`) | BSD-2-Clause (`LICENSES/BSD-2-Clause.txt` there) |
 | Test programs `tests/gcc64/libc-test.c`, `cxx-test.cc` and the other patches in `chain/patches/` and `chain/plumbing/` | as named | written for seed-forth | MIT, unless a header says otherwise |
 

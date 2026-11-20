@@ -7,7 +7,7 @@ typedef unsigned int wint_t;
 #define WEOF ((wint_t)-1)
 wint_t getwc(FILE *stream);
 long wcstol(const wchar_t *text, wchar_t **end, int base);
-/* Restartable conversions in the stateless ASCII C locale; see ../WIDE.md.
+/* Restartable conversions in the stateless ASCII C locale; see ../README.md.
    Bytes above 127 and wide values above 127 fail with EILSEQ. */
 typedef struct {
     int __seed_count;

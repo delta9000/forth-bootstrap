@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and PROCESS-POSIX.md.
+/* Original implementation; see LICENSE and README.md.
    popen/pclose: a pipe to or from "sh -c COMMAND". */
 #include <stdio.h>
 #include <stdlib.h>

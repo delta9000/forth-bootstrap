@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and CALENDAR.md.
+/* Original implementation; see LICENSE and README.md.
    C-locale strftime with the GNU flags, widths and conversions, matching
    glibc's output for any field values. Fields are used as given, without
    normalization; %z, %Z use the current TZ (see calendar.c). */

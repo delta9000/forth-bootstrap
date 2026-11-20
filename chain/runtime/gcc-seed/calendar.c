@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and CALENDAR.md.
+/* Original implementation; see LICENSE and README.md.
    Linux AMD64 LP64. Wall clock, proleptic Gregorian conversion, POSIX TZ
    rules, localtime/gmtime/mktime/timegm, asctime/ctime and difftime.
    strftime lives in strftime.c and reads the zone through

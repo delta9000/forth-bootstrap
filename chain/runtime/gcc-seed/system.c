@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and PROCESS-POSIX.md.
+/* Original implementation; see LICENSE and README.md.
    POSIX system(): one "sh -c" child, waited for synchronously. */
 #include <stdlib.h>
 #include <unistd.h>

@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and FILE-CALLS.md. */
+/* Original implementation; see LICENSE and README.md. */
 #include <fcntl.h>
 
 int creat(const char *path, mode_t mode)

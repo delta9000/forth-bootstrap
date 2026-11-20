@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and ENVIRONMENT.md.
+/* Original implementation; see LICENSE and README.md.
    setenv copies NAME=VALUE into new storage and installs it with putenv;
    replaced strings are not freed (callers may still hold getenv results). */
 #include <stdlib.h>

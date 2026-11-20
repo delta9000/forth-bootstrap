@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_DBFILE_H
 #define SEED_GCC_DBFILE_H
-/* Private helpers for /etc/passwd and /etc/group; see ../PASSWD.md. */
+/* Private helpers for /etc/passwd and /etc/group; see ../README.md. */
 /* The whole file in a malloc'd NUL-terminated buffer, or NULL with errno. */
 char *__seed_load_file(const char *path);
 /* The next line at *CURSOR without leading blanks, NUL-terminated in place;

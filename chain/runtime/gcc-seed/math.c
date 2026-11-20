@@ -1,9 +1,9 @@
-/* Original seed-forth implementation, MIT license (see LICENSE).
+/* Original implementation, MIT license (see LICENSE).
  * The -lm binary64 library: exact rounding/remainder operations, a
  * correctly rounded integer square root, and double-double evaluations of
  * the elementary functions that are rounded once at the end. No code or
  * coefficient is taken from another libm; every table is derived by
- * an exact-arithmetic generator script and every algorithm is described in MATH.md.
+ * an exact-arithmetic generator script and every algorithm is described in README.md.
  * Assumes IEEE binary64, LP64 unsigned long, round-to-nearest/ties-even,
  * gradual underflow, and no contraction or excess precision.
  */
@@ -23,7 +23,7 @@ union seed_math_bits { double number; unsigned long bits; };
 /* 2^54, an exact normalizing factor for every subnormal */
 #define SEED_TWO54 18014398509481984.0
 
-/* BEGIN GENERATED TABLES (exact rational arithmetic; see MATH.md) */
+/* BEGIN GENERATED TABLES (exact rational arithmetic; see README.md) */
 #define SEED_LN2_H 0x3fe62e42fefa39efUL /* 0.6931471805599453 */
 #define SEED_LN2_L 0x3c7abc9e3b39803fUL /* 2.3190468138462996e-17 */
 #define SEED_INVLN2_H 0x3ff71547652b82feUL /* 1.4426950408889634 */

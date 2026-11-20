@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. Process environment view. */
+/* Original implementation; see LICENSE. Process environment view. */
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>

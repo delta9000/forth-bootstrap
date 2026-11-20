@@ -10,7 +10,7 @@
 #define LC_ALL 6
 char *setlocale(int category, const char *locale);
 /* Numeric and monetary conventions of the C locale: "." and empty strings,
-   CHAR_MAX (unavailable) for every numeric member. See ../ENVIRONMENT.md. */
+   CHAR_MAX (unavailable) for every numeric member. See ../README.md. */
 struct lconv {
     char *decimal_point;
     char *thousands_sep;

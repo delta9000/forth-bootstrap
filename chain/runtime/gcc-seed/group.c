@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and PASSWD.md.
+/* Original implementation; see LICENSE and README.md.
    /etc/group lookups. Results share one static record. */
 #include <grp.h>
 #include <stdlib.h>

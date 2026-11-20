@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and IDENTITY.md.
+/* Original implementation; see LICENSE and README.md.
    Linux AMD64 user, group, process-group and session calls. */
 #include <unistd.h>
 #include <errno.h>

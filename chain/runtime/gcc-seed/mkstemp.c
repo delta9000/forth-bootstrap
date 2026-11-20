@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. Linux AMD64. */
+/* Original implementation; see LICENSE. Linux AMD64. */
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>

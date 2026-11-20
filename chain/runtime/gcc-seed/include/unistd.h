@@ -1,7 +1,7 @@
 #ifndef SEED_GCC_UNISTD_H
 #define SEED_GCC_UNISTD_H
 #include <sys/types.h>
-/* Original seed-forth bounded interface; only implemented calls appear here. */
+/* Original bounded interface; only implemented calls appear here. */
 extern char **environ;
 extern char *optarg;
 extern int optind;
@@ -33,15 +33,15 @@ pid_t getpid(void);
 /* Caller buffer only; NULL/zero size fail EINVAL; kernel long-path bound. */
 char *getcwd(char *buffer, size_t size);
 int unlink(const char *path);
-/* Single kernel calls; see ../DRIVER-RUNTIME.md. */
+/* Single kernel calls; see ../README.md. */
 int chdir(const char *path);
 int link(const char *existing, const char *name);
-/* Single kernel calls; see ../FILE-METADATA.md. chown follows a final
+/* Single kernel calls; see ../README.md. chown follows a final
    symbolic link; (uid_t)-1 or (gid_t)-1 leaves that ID unchanged. */
 int chown(const char *path, uid_t owner, gid_t group);
 int rmdir(const char *path);
 void _exit(int status);
-/* Process API; see ../PROCESS-API.md. vfork is an ordinary fork. execv and
+/* Process API; see ../README.md. vfork is an ordinary fork. execv and
    execvp pass the current environ; execvp searches PATH (default
    /bin:/usr/bin) and does not retry ENOEXEC files with a shell. */
 int pipe(int descriptors[2]);
@@ -54,7 +54,7 @@ int execv(const char *path, char *const arguments[]);
 int execvp(const char *file, char *const arguments[]);
 /* Returns unslept whole seconds (a partial second rounds up) after EINTR. */
 unsigned int sleep(unsigned int seconds);
-/* POSIX identification; values match Linux glibc. See ../SYSINFO.md. */
+/* POSIX identification; values match Linux glibc. See ../README.md. */
 #define _POSIX_VERSION 200809L
 #define _POSIX2_VERSION 200809L
 #define _POSIX_JOB_CONTROL 1
@@ -62,10 +62,10 @@ unsigned int sleep(unsigned int seconds);
 #define _POSIX_NO_TRUNC 1
 #define _POSIX_CHOWN_RESTRICTED 0
 #define _POSIX_VDISABLE '\0'
-/* Alarm and pause; see ../SIGNALS.md. alarm cannot fail. */
+/* Alarm and pause; see ../README.md. alarm cannot fail. */
 unsigned int alarm(unsigned int seconds);
 int pause(void);
-/* Identity and sessions; see ../IDENTITY.md. The get* calls cannot fail. */
+/* Identity and sessions; see ../README.md. The get* calls cannot fail. */
 uid_t getuid(void);
 uid_t geteuid(void);
 gid_t getgid(void);
@@ -87,7 +87,7 @@ int nice(int increment);
 /* Login name of the session's audit login uid; NULL (ENXIO) without one. */
 char *getlogin(void);
 int getlogin_r(char *buffer, size_t size);
-/* System information; see ../SYSINFO.md. Only the names below exist. */
+/* System information; see ../README.md. Only the names below exist. */
 int gethostname(char *name, size_t size);
 int getpagesize(void);
 int getdtablesize(void);
@@ -139,7 +139,7 @@ long fpathconf(int descriptor, int name);
 #define _PC_FILESIZEBITS 13
 #define _PC_SYMLINK_MAX 19
 #define _PC_2_SYMLINKS 20
-/* File calls, one Linux syscall each; see ../FILE-CALLS.md. */
+/* File calls, one Linux syscall each; see ../README.md. */
 int symlink(const char *target, const char *path);
 /* No terminating NUL is written; the result is the byte count. */
 ssize_t readlink(const char *path, char *buffer, size_t size);
@@ -152,17 +152,17 @@ int fsync(int descriptor);
 int fdatasync(int descriptor);
 int chroot(const char *path);
 void sync(void);
-/* O_CLOEXEC is the only flag; see ../FILE-CALLS.md. */
+/* O_CLOEXEC is the only flag; see ../README.md. */
 int dup3(int descriptor, int target, int flags);
 int pipe2(int descriptors[2], int flags);
-/* Terminal names and foreground process groups; see ../TERMIOS.md. */
+/* Terminal names and foreground process groups; see ../README.md. */
 char *ttyname(int descriptor);
 int ttyname_r(int descriptor, char *buffer, size_t size);
 pid_t tcgetpgrp(int descriptor);
 int tcsetpgrp(int descriptor, pid_t group);
-/* Sleeping; see ../SYSINFO.md. */
+/* Sleeping; see ../README.md. */
 int usleep(useconds_t microseconds);
-/* Argument-list exec forms; see ../PROCESS-POSIX.md. At most 4095
+/* Argument-list exec forms; see ../README.md. At most 4095
    arguments; execle reads the environment after the terminating NULL. */
 int execl(const char *path, const char *argument, ...);
 int execlp(const char *file, const char *argument, ...);

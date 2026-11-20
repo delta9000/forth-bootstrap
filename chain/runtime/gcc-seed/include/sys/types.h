@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_SYS_TYPES_H
 #define SEED_GCC_SYS_TYPES_H
-/* Original seed-forth ABI declarations; see LICENSE and ../../CONFIGURE.md.
+/* Original ABI declarations; see LICENSE and ../../README.md.
    Linux AMD64 LP64 only. These types do not imply other POSIX interfaces. */
 #include <stddef.h>
 typedef long ssize_t;

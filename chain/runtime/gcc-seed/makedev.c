@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and FILE-CALLS.md. */
+/* Original implementation; see LICENSE and README.md. */
 #include <sys/types.h>
 
 unsigned long __seed_makedev(unsigned int high, unsigned int low)

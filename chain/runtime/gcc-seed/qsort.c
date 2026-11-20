@@ -1,8 +1,8 @@
-/* musl 1.1.24 src/stdlib/qsort.c (its sha256 is recorded in SORT.md),
-   unchanged except where marked "seed-forth adaptation".  Using musl's own
+/* musl 1.1.24 src/stdlib/qsort.c (its sha256 is recorded in CREDITS.md),
+   unchanged except where marked "forth-bootstrap adaptation".  Using musl's own
    algorithm makes equal elements land where musl's qsort puts them, so a
    GCC whose cc1 runs on this runtime makes the same choices as one linked
-   against musl; see SORT.md. */
+   against musl; see README.md. */
 
 /* Copyright (C) 2011 by Valentin Ochs
  *
@@ -34,7 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* seed-forth adaptation: musl's internal atomic.h supplies a_ctz_l, which on
+/* forth-bootstrap adaptation: musl's internal atomic.h supplies a_ctz_l, which on
    x86_64 is the bsf instruction.  This portable loop returns the same count
    for every nonzero argument; smoothsort only asks about nonzero values. */
 static int ntz(size_t x)

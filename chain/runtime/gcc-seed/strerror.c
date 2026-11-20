@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and ERRNO.md.
+/* Original implementation; see LICENSE and README.md.
    Error text for every Linux AMD64 errno value (C locale wording). */
 #include <string.h>
 #include <stdio.h>

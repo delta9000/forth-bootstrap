@@ -4,7 +4,7 @@
 int *__errno_location(void);
 #define errno (*__errno_location())
 /* The complete Linux AMD64 user-visible error numbers (asm-generic values),
-   with glibc's aliases EWOULDBLOCK, EDEADLOCK and ENOTSUP. See ../ERRNO.md. */
+   with glibc's aliases EWOULDBLOCK, EDEADLOCK and ENOTSUP. See ../README.md. */
 #define EPERM 1
 #define ENOENT 2
 #define ESRCH 3

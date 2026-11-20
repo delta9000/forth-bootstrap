@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and DECIMAL-INPUT.md.
+/* Original implementation; see LICENSE and README.md.
    Correctly rounded strtod, strtof, strtold and atof: C99 decimal and
    hexadecimal syntax, infinities and NaNs, end pointer and ERANGE. */
 #include <stdlib.h>

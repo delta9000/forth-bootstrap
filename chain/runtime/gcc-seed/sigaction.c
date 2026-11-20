@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and SIGNALS.md.
+/* Original implementation; see LICENSE and README.md.
    POSIX signal dispositions and masks over Linux AMD64 rt_sig* calls. */
 #include <signal.h>
 #include <errno.h>

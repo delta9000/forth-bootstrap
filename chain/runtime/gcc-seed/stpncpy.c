@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and STRINGS-POSIX.md. */
+/* Original implementation; see LICENSE and README.md. */
 #include <string.h>
 
 char *stpncpy(char *destination, const char *source, size_t count)

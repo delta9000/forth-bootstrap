@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_GRP_H
 #define SEED_GCC_GRP_H
-/* Original seed-forth interface; see LICENSE and ../PASSWD.md.
+/* Original interface; see LICENSE and ../README.md.
    Entries come from /etc/group only (no NSS). Results point into one
    static record that the next call of any of these functions overwrites. */
 #include <sys/types.h>

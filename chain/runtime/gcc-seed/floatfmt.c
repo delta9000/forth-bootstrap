@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and PRINTF-FLOAT.md.
+/* Original implementation; see LICENSE and README.md.
    Exact printf conversions %e %E %f %F %g %G %a %A of binary64 and x87
    extended80 values. A finite value M*2^E is expanded to every one of its
    decimal digits with base-10^9 integers, then rounded once on those exact

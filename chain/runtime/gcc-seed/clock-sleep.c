@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and SYSINFO.md.
+/* Original implementation; see LICENSE and README.md.
    POSIX clocks, nanosleep, usleep and settimeofday. */
 #include <time.h>
 #include <sys/time.h>

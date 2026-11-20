@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and PASSWD.md.
+/* Original implementation; see LICENSE and README.md.
    The login name of the session: the kernel's audit login uid mapped
    through /etc/passwd (glibc's first method; there is no utmp fallback). */
 #include <unistd.h>

@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and STRINGS-POSIX.md. */
+/* Original implementation; see LICENSE and README.md. */
 #include <strings.h>
 
 int strncasecmp(const char *left, const char *right, size_t count)

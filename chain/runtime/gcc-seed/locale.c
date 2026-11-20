@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. C/POSIX locale only. */
+/* Original implementation; see LICENSE. C/POSIX locale only. */
 #include <locale.h>
 #include <stdlib.h>
 #include <string.h>

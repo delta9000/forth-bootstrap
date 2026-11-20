@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. Fixed ASCII C locale.
+/* Original implementation; see LICENSE. Fixed ASCII C locale.
  * The defined-input contract matches atol. Overflow saturates with ERANGE,
  * the same explicit extension used by the bounded atoi implementation. */
 #include <stdlib.h>

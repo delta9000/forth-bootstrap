@@ -23,7 +23,7 @@
 #define LLONG_MIN (-9223372036854775807LL - 1LL)
 #define LLONG_MAX 9223372036854775807LL
 #define ULLONG_MAX 18446744073709551615ULL
-/* Linux kernel and glibc limits; see ../SYSINFO.md. Values that vary at
+/* Linux kernel and glibc limits; see ../README.md. Values that vary at
    run time (open files, argument bytes) are left to sysconf. */
 #define PATH_MAX 4096
 #define NAME_MAX 255

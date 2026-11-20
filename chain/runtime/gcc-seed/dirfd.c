@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and DIRECTORIES.md. */
+/* Original implementation; see LICENSE and README.md. */
 #include <dirent.h>
 #include <errno.h>
 #include <seed-directory.h>

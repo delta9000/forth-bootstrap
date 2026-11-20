@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and FCNTL.md.
+/* Original implementation; see LICENSE and README.md.
    Bounded Linux AMD64 fcntl: descriptor flags, status flags, duplication. */
 #include <fcntl.h>
 #include <stdarg.h>

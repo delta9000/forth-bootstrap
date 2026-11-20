@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. Single-threaded Linux. */
+/* Original implementation; see LICENSE. Single-threaded Linux. */
 #include <unistd.h>
 #include <errno.h>
 #include <seed-syscall.h>
