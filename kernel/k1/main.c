@@ -63,20 +63,7 @@ char *strcpy(char *d, const char *s)
     return r;
 }
 
-/* ---- varargs: tcc's stdarg.h for x86-64, or the Forth compiler's builtins ---- */
-#ifdef __TINYC__
-typedef struct {
-    unsigned int gp_offset, fp_offset;
-    union { unsigned int overflow_offset; char *overflow_arg_area; };
-    char *reg_save_area;
-} __va_list_struct;
-typedef __va_list_struct va_list[1];
-void __va_start(__va_list_struct *ap, void *fp);
-void *__va_arg(__va_list_struct *ap, int arg_type, int size, int align);
-#define va_start(ap, last) __va_start(ap, __builtin_frame_address(0))
-#define va_arg(ap, type) \
-    (*(type *)(__va_arg(ap, __builtin_va_arg_types(type), sizeof(type), __alignof__(type))))
-#else                           /* as runtime/gcc-seed/include/stdarg.h */
+/* ---- varargs: the Forth compiler's builtins, as runtime/gcc-seed/include/stdarg.h ---- */
 typedef struct __seed_va_list_tag {
     unsigned int gp_offset;
     unsigned int fp_offset;
@@ -85,7 +72,6 @@ typedef struct __seed_va_list_tag {
 } va_list[1];
 #define va_start(ap, last) __builtin_va_start((ap), last)
 #define va_arg(ap, type) __builtin_va_arg((ap), type)
-#endif
 
 /* Ports, MSRs, the TSC and the console (rep outsb to COM1) are in k1-asm.fth. */
 
