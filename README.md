@@ -132,12 +132,13 @@ An x86-64 Linux host.  By step below; times are from the recorded runs
 ```sh
 git clone https://github.com/delta9000/forth-bootstrap.git && cd forth-bootstrap
 git submodule update --init --recursive
-./check-all.sh                     # the seven quick checks, under a minute
+./check-all.sh                     # the quick checks, under a minute
 ```
 
 `check-all.sh` runs: the seed build, `./test.sh`, the M1 assembler
 (`tests/asm/hi-check.sh`), seed-cc rebuilding itself
-(`tests/cc/seed-cc-rebuild-check.sh`), the archive pins, Stage A, and K1's
+(`tests/cc/seed-cc-rebuild-check.sh`), the compiler's gate fixtures
+(`tests/cc/gates/run-gates.sh`), the archive pins, Stage A, and K1's
 build check.  The steps below run them one at a time, and then the long
 runs.
 
@@ -153,6 +154,7 @@ tests/asm/hi-check.sh              # 130-asm.fth assembles a small M1 program; i
 
 ```sh
 tests/cc/seed-cc-rebuild-check.sh  # seed Forth builds seed-cc and seed-ar; seed-cc rebuilds both, byte for byte
+tests/cc/gates/run-gates.sh        # the Forth compiler compiles the G and M gate fixtures; each exits as expected
 tests/cc/stage-a-check.sh          # the Forth compiler's M1 for M2-Planet equals a GCC-built M2-Planet's
 ```
 
