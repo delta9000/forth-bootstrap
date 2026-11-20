@@ -14,13 +14,13 @@
 #
 # Env overrides:
 #   M2_PLANET   - path to M2-Planet checkout  (default vendor/M2-Planet)
-#   BUILDROOT   - artifact directory          (default /tmp/seed-bootstrap)
+#   BUILDROOT   - artifact directory          (default build-out/stage-a)
 
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
 M2_PLANET=${M2_PLANET:-vendor/M2-Planet}
-BUILDROOT=${BUILDROOT:-/tmp/seed-bootstrap}
+BUILDROOT=${BUILDROOT:-build-out/stage-a}
 
 mkdir -p "$BUILDROOT"
 
@@ -47,8 +47,8 @@ cp "$BUILDROOT/gcc-ref/m2-ref" "$BUILDROOT/m2-ref"
 
 # --- Build cc-out-v1 (seed-forth compiles M2-Planet monolith) ---
 # CC_OUT: the compiler goes straight to $BUILDROOT, and seed-forth gets a
-# private /tmp (unshare -rm) when the kernel allows it,
-# so this never reads or clobbers a shared /tmp/cc-out.
+# private /tmp (unshare -rm) when the kernel allows it, so this reads or
+# clobbers the shared /tmp/cc-out only where namespaces are unavailable.
 rm -f "$BUILDROOT/cc-out-v1" "$BUILDROOT"/self-*-amd64.M1
 CC_OUT="$BUILDROOT/cc-out-v1" ./tests/cc/build-m2planet-monolith.sh >/dev/null \
     || fail "monolith build failed"
