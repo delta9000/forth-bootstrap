@@ -102,6 +102,14 @@ otherwise, `stderr` unbuffered. `exit` runs the exit handlers newest first,
 flushes every output stream, then makes the exit system call. `_exit`,
 `_Exit` and `abort` flush nothing.
 
+**Nonlocal jumps.** Flex 2.5.11 needs `setjmp` and `longjmp`, which the
+compiler's Forth runtime emits. `jmp_buf` is eight `long`s: the six preserved
+registers, the caller's RSP and the continuation RIP. Only the C90 `setjmp`
+contexts are supported: the whole controlling expression of `if`, `switch`
+or a loop, alone, negated by `!` or compared with an integer constant; or a
+whole expression statement. The function that called `setjmp` must still be
+active when `longjmp` runs.
+
 **One locale.** The C/POSIX locale with ASCII is the only one; every wide or
 multibyte function treats bytes 0-127 as characters and rejects the rest
 with `EILSEQ`.
