@@ -17,6 +17,10 @@
 #       other program running, its objects equal seed-cc's, and
 #       k1-asm.fth's bytes equal GNU as on its comments (needs strace and
 #       as; SKIP without)
+#   08  tests/seed/asm-check.py: seed/000-seed.hex0's bytes equal GNU as on
+#       its comments, its ELF and dictionary fields equal what their
+#       comments state, and its branch notes and addresses add up (needs as;
+#       SKIP without)
 #
 # Long steps, opt in:
 #   CHECK_CHAIN=1   chain/plumbing-root.sh: hex0-seed to the GCC 4.0.4 fixed
@@ -78,12 +82,17 @@ if have strace && have as && have python3; then
 else
     skip "07-k1-build" "missing: strace, as or python3"
 fi
+if have as && have python3; then
+    run "08-seed-asm" python3 tests/seed/asm-check.py
+else
+    skip "08-seed-asm" "missing: as or python3"
+fi
 if [ "${CHECK_CHAIN:-0}" = 1 ]; then
-    run "08-chain" sh chain/plumbing-root.sh
+    run "09-chain" sh chain/plumbing-root.sh
 fi
 case ${CHECK_K1:-} in
-    smoke) run "09-k1-smoke" kernel/k1/run-chain.sh --direct-smoke ;;
-    linux) run "09-k1-linux" kernel/k1/run-chain.sh --direct-linux ;;
+    smoke) run "10-k1-smoke" kernel/k1/run-chain.sh --direct-smoke ;;
+    linux) run "10-k1-linux" kernel/k1/run-chain.sh --direct-linux ;;
     '') ;;
     *) echo "check-all: CHECK_K1 is smoke or linux" >&2; exit 2 ;;
 esac

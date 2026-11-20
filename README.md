@@ -90,7 +90,7 @@ The stages:
 | QEMU, KVM and the CPU | run K0, which starts everything else | the K1 run |
 | the host's Linux kernel, `bwrap`, `strace` | the host run's system calls, and a root whose only executable is `hex0-seed` | the host run (`chain/plumbing-root.sh`) |
 | host `python3`, `sh`, `tar` | copy files into disk images and into the host run's root; check results.  They never compile, unpack, patch or configure anything | both |
-| host `gcc`, GNU `as`, `nasm` | build references to compare against: Stage A's M2-Planet, `asm-check.py`'s object, `kernel/k0/check.sh`'s K0.  None of their output is used | checks only |
+| host `gcc`, GNU `as`, `nasm` | build references to compare against: Stage A's M2-Planet, the objects of `kernel/k1/tests/asm-check.py` and `tests/seed/asm-check.py`, `kernel/k0/check.sh`'s K0.  None of their output is used | checks only |
 
 ## The parts
 
@@ -103,7 +103,7 @@ Each directory has a README that says where to start.
 | `cc/` | the C compiler in Forth, loaded in numeric order (`020-cc-arena.fth` to `141-archive.fth`); its tests; `driver/`, seed-cc and seed-ar |
 | `kernel/` | `k0/` (K0 in hex0, with its NASM source), `k1/` (K1 in C and `k1-asm.fth`, its recipes, disk writers and tests), `tools/` (the recipe runner and the files that build K1) |
 | `chain/` | `runtime/gcc-seed` (seed-cc's C library), `plumbing/` (the first tools, as kaem scripts), `gcc-direct/` (binutils, stage C, stage D, the late tools), `ladder/` and `gcc64/` (the climb to GCC 10.5.0 and Linux), `patches/`, `plumbing-root.sh` |
-| `tests/` | Stage A and the M2-Planet headers the compiler falls back to; the assembler and seed-cc checks; the chain's test programs |
+| `tests/` | Stage A and the M2-Planet headers the compiler falls back to; the assembler and seed-cc checks; `seed/asm-check.py`, the seed's comments against GNU as; the chain's test programs |
 | `tools/` | `fetch-archives.py`, `check-pins.py` |
 | `results/` | reports from the recorded runs |
 | `vendor/` | stage0-posix, mescc-tools and M2-Planet, as submodules |
@@ -119,7 +119,7 @@ An x86-64 Linux host.  By step below; times are from the recorded runs
 | Step | Needs | Time | Disk |
 |---|---|---|---|
 | clone | `git` (the three submodules come from GitHub) | a minute | 60 MB |
-| 1-2 | `bash`, coreutils, `python3`; `gcc` for Stage A's reference only | seconds | a few MB |
+| 1-2 | `bash`, coreutils, `python3`; `gcc` for Stage A's reference and GNU `as` for the seed's comment check only | seconds | a few MB |
 | archives | `curl`, `git`, `xz` (`tools/fetch-archives.py`) | depends on the network | 1.1 GB |
 | 3 | `bwrap` (bubblewrap) and `strace`, unprivileged user namespaces | 18 minutes on 24 threads; longer with fewer | 1.6 GB |
 | 4 | `strace` and GNU `as` (binutils) for the build check; `qemu-system-x86_64` | under a minute | small |
@@ -132,14 +132,15 @@ An x86-64 Linux host.  By step below; times are from the recorded runs
 ```sh
 git clone https://github.com/delta9000/forth-bootstrap.git && cd forth-bootstrap
 git submodule update --init --recursive
-./check-all.sh                     # the seven quick checks, under a minute
+./check-all.sh                     # the eight quick checks, under a minute
 ```
 
 `check-all.sh` runs: the seed build, `./test.sh`, the M1 assembler
 (`tests/asm/hi-check.sh`), seed-cc rebuilding itself
-(`tests/cc/seed-cc-rebuild-check.sh`), the archive pins, Stage A, and K1's
-build check.  The steps below run them one at a time, and then the long
-runs.
+(`tests/cc/seed-cc-rebuild-check.sh`), the archive pins, Stage A, K1's
+build check, and the seed's comments against GNU as
+(`tests/seed/asm-check.py`).  The steps below run them one at a time, and
+then the long runs.
 
 **1. The seed and the Forth** (seconds):
 
@@ -147,6 +148,7 @@ runs.
 seed/build.sh                      # seed-forth, 1,772 bytes
 ./test.sh                          # seed primitives, 010-lib.fth, the first compiler layers
 tests/asm/hi-check.sh              # 130-asm.fth assembles a small M1 program; it prints "hi"
+python3 tests/seed/asm-check.py    # 000-seed.hex0's bytes equal GNU as on its comments (needs as)
 ```
 
 **2. The C compiler** (seconds; Stage A needs gcc for the reference):
