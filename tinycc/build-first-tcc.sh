@@ -11,17 +11,17 @@
 # tinycc/tcc-compile.fth and the C source on stdin.  No host compiler,
 # preprocessor, assembler or linker takes part.  Host tools do the source
 # preparation only: sha256sum checks the archives, tar and gzip unpack them,
-# python3 -I tinycc/simple-patch.py and patch apply the patches.
+# python3 -I tinycc/simple-patch.py applies live-bootstrap's simple-patches.
 #
 # The source tree, build-out/tcc-sources/:
 #   tcc-0.9.26-1147-gee75a10c/  tinycc-inputs/tcc-0.9.26.tar.gz with what
 #       live-bootstrap's steps/tcc-0.9.26/pass1.kaem does before it runs
 #       MesCC: its two simple-patches to tcctools.c (from the pinned
-#       live-bootstrap tree) and an empty config.h; then
-#       tinycc/patches/tcc-0.9.26/*.diff, for the Forth compiler
+#       live-bootstrap tree) and an empty config.h.  Nothing else.
 #   libc64/  pnut's portable_libc/ (tinycc-inputs/pnut-<commit>.tar.gz) as
 #       published, compiled into the same image.  seed-forth's six libc
 #       patches are for its x86_64 boot stages and are not needed here.
+#   libc-sscanf.c  tinycc/libc-sscanf.c, the sscanf pnut's libc lacks
 #   direct-input.c  tinycc/direct-input.c
 #
 # The result's sha256 is pinned in tests/pins/tinycc.sha256 and checked at
@@ -58,15 +58,12 @@ for p in remove-fileopen addback-fileopen; do
         "$OUT/simple-patches/$p.before" "$OUT/simple-patches/$p.after"
 done
 : > "$SRC/$TCC_PKG/config.h"
-for p in tinycc/patches/tcc-0.9.26/*.diff; do
-    patch --quiet --forward --no-backup-if-mismatch -F0 -p1 -d "$SRC/$TCC_PKG" < "$p"
-done
 
 # portable libc
 tar -xzf "$IN/$PNUT.tar.gz" -C "$SRC" --no-same-owner --strip-components=1 "$PNUT/portable_libc"
 mv "$SRC/portable_libc" "$SRC/libc64"
 
-cp tinycc/direct-input.c "$SRC/direct-input.c"
+cp tinycc/direct-input.c tinycc/libc-sscanf.c "$SRC/"
 
 # Compile.  Native mode loads 020 to 119 except 081 (seed-forth's
 # tools/tcc-start.fth list); 120's main is not loaded.

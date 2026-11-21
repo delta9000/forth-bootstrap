@@ -15,7 +15,8 @@
    live-bootstrap's d9116def....
 
    The host side is x86_64 Linux: pnut's portable libc is compiled into the
-   same image, PNUT_CC selects its configuration without inline assembly,
+   same image, with tinycc/libc-sscanf.c for the sscanf it declares but does
+   not define, PNUT_CC selects its configuration without inline assembly,
    and the Forth compiler's native runtime supplies the system calls.  The
    target is i386.
 
@@ -50,4 +51,5 @@
 #define CONFIG_TCCDIR "/usr/lib/mes/tcc"
 #define __intptr_t_defined 1
 #include "libc64/libc.c"
+#include "libc-sscanf.c"
 #include "tcc-0.9.26-1147-gee75a10c/tcc.c"

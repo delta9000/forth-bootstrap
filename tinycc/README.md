@@ -8,8 +8,8 @@ live-bootstrap's `steps/tcc-0.9.26`, where that compiler stands in for
 ## The first tcc
 
 `tinycc/build-first-tcc.sh` writes `build-out/tinycc/tcc-first`, an x86_64
-static ELF of 790,384 bytes with sha256
-`7b2efd95a84f1d7c83369db586ffc113a8931c7c417b6d7854f7e577b42f4d97`.  The
+static ELF of 792,624 bytes with sha256
+`3c11f52b2937bdfbd7e9197cdfe79cc57e84058a9b9c4067602e1f6279649bca`.  The
 pin is in `tests/pins/tinycc.sha256`.  Two checkouts at different paths
 built the same bytes.
 
@@ -25,9 +25,11 @@ The source it compiles:
 - the fork from live-bootstrap's tarball, with what `pass1.kaem` does to it
   before MesCC runs: two `tcctools.c` simple-patches and an empty
   `config.h`;
-- one patch of ours, `patches/tcc-0.9.26/01-tinyc-version.diff`.  It writes
-  in the version numbers because the libc has no `sscanf`;
-- pnut's `portable_libc`, unchanged, in the same translation unit;
+- no patch of ours;
+- pnut's `portable_libc`, unchanged, in the same translation unit, and
+  after it `libc-sscanf.c`: the `sscanf` that pnut's `stdio.h` declares
+  but does not define, enough for tcc's one call,
+  `sscanf(TCC_VERSION, "%d.%d.%d", ...)` in `libtcc.c`;
 - tcc-mes's defines for x86 (`direct-input.c`), so the compiler looks for
   headers and libraries where tcc-mes does.
 
@@ -42,7 +44,7 @@ the two MesCC commands replaced by copying the first tcc to `tcc-mes`
 
 | file | live-bootstrap (MesCC) | this route |
 |---|---|---|
-| `/usr/bin/tcc-mes` | `2b15c85f…` | `7b2efd95…` (pinned) |
+| `/usr/bin/tcc-mes` | `2b15c85f…` | `3c11f52b…` (pinned) |
 | `/usr/bin/tcc-boot0` | `ea464b2f…` | `4e3e525a…` (pinned) |
 | `/usr/bin/tcc-boot1` | `d9116def…` | same |
 | `/usr/bin/tcc` | `b9dce87d…` | same |
