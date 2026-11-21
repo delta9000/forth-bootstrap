@@ -9,7 +9,8 @@ Files already in place with the right sha256 are kept.  With PATH
 arguments, only those MANIFEST paths are fetched.
 
 Sources: the upstream release URLs below (GNU packages from the GNU
-mirror network, then mirrors.kernel.org, then ftp.gnu.org); chain/gcc64/SOURCES's URLs (and
+mirror network, then mirrors.kernel.org, then ftp.gnu.org; the TinyCC
+route's from live-bootstrap's sources files and GitHub); chain/gcc64/SOURCES's URLs (and
 its git export of GCC 4.0.4) for the archives it pins; three files are
 derived rather than downloaded: build-out/stage-b-inputs/binutils-2.30.tar
 is `xz -dc` of binutils-2.30.tar.xz (the chain's tools read no xz), and the
@@ -60,6 +61,13 @@ URLS = {
     "zlib-1.3.1.tar.gz": "https://zlib.net/fossils/zlib-1.3.1.tar.gz",
     "elfutils-0.192.tar.bz2": "https://sourceware.org/elfutils/ftp/0.192/elfutils-0.192.tar.bz2",
     "linux-7.2.8.tar.xz": "https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.2.8.tar.xz",
+    # the TinyCC route (tinycc/SOURCES): the fork and Mes at live-bootstrap's
+    # steps/tcc-0.9.26/sources and steps/mes-0.28/sources URLs, and
+    # live-bootstrap as GitHub's archive of the pinned commit
+    "tcc-0.9.26.tar.gz": "https://lilypond.org/janneke/tcc/tcc-0.9.26-1147-gee75a10c.tar.gz",
+    "mes-0.28.tar.gz": f"{GNU}/mes/mes-0.28.tar.gz",
+    "live-bootstrap-a49273cbb5c381b851198bc1e53c294702f4f7c9.tar.gz":
+        "https://github.com/fosslinux/live-bootstrap/archive/a49273cbb5c381b851198bc1e53c294702f4f7c9.tar.gz",
 }
 COPIES = {  # MANIFEST path: the MANIFEST path it is a copy of
     "build-out/direct-gcc-inputs/gcc-4.0.4-git-944765863e.tar": "build-out/distfiles/gcc-4.0.4-git-944765863e.tar",

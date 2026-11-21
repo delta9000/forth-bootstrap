@@ -1,0 +1,98 @@
+		op = buff[156];
+		/* forth-bootstrap: a POSIX ustar header ("ustar" NUL at 257) splits a
+		 * long path into prefix (345, 155 bytes) and name (0, 100 bytes);
+		 * either can fill its field with no NUL.  path is prefix/name, or
+		 * name alone when the prefix is empty or the header is not POSIX. */
+		char* path = calloc(257, sizeof(char));
+		int path_len = 0;
+		int field_i;
+		if((0 != buff[345]) && (0 == strcmp(buff + 257, "ustar")))
+		{
+			for(field_i = 0; (field_i < 155) && (0 != buff[345 + field_i]); field_i = field_i + 1)
+			{
+				path[path_len] = buff[345 + field_i];
+				path_len = path_len + 1;
+			}
+			path[path_len] = '/';
+			path_len = path_len + 1;
+		}
+		for(field_i = 0; (field_i < 100) && (0 != buff[field_i]); field_i = field_i + 1)
+		{
+			path[path_len] = buff[field_i];
+			path_len = path_len + 1;
+		}
+		if('1' == op)
+		{
+			if(STRICT)
+			{
+				fputs("unable to create hardlinks\n", stderr);
+				exit(EXIT_FAILURE);
+			}
+			fputs(" Ignoring hardlink ", stdout);
+			puts(path);
+		}
+		else if('2' == op)
+		{
+			memcpy(target, buff + 157, 100);
+			target[100] = '\0';
+			if(VERBOSE)
+			{
+				fputs(" Extracting file ", stdout);
+				puts(path);
+			}
+			if(!FUZZING) {
+				symlink_ret = symlink(target, path);
+				if (symlink_ret != 0) {
+					fputs("Failed to create symlink\n", stderr);
+					if(STRICT) exit(EXIT_FAILURE);
+				}
+			}
+		}
+		else if('3' == op)
+		{
+			if(STRICT)
+			{
+				fputs("unable to create character devices\n", stderr);
+				exit(EXIT_FAILURE);
+			}
+			fputs(" Ignoring character device ", stdout);
+			puts(path);
+		}
+		else if('4' == op)
+		{
+			if(STRICT)
+			{
+				fputs("unable to create block devices\n", stderr);
+				exit(EXIT_FAILURE);
+			}
+			fputs(" Ignoring block device ", stdout);
+			puts(path);
+		}
+		else if('5' == op)
+		{
+			if(VERBOSE)
+			{
+				fputs(" Extracting dir ", stdout);
+				puts(path);
+			}
+			create_dir(path, parseoct(buff + 100, 8));
+			filesize = 0;
+		}
+		else if('6' == op)
+		{
+			if(STRICT)
+			{
+				fputs("unable to create FIFO\n", stderr);
+				exit(EXIT_FAILURE);
+			}
+			fputs(" Ignoring FIFO ", stdout);
+			puts(path);
+		}
+		else
+		{
+			if(VERBOSE)
+			{
+				fputs(" Extracting file ", stdout);
+				puts(path);
+			}
+			f = create_file(path);

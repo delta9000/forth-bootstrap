@@ -1,0 +1,76 @@
+		op = buff[156];
+		if('1' == op)
+		{
+			if(STRICT)
+			{
+				fputs("unable to create hardlinks\n", stderr);
+				exit(EXIT_FAILURE);
+			}
+			fputs(" Ignoring hardlink ", stdout);
+			puts(buff);
+		}
+		else if('2' == op)
+		{
+			memcpy(target, buff + 157, 100);
+			target[100] = '\0';
+			if(VERBOSE)
+			{
+				fputs(" Extracting file ", stdout);
+				puts(buff);
+			}
+			if(!FUZZING) {
+				symlink_ret = symlink(target, buff);
+				if (symlink_ret != 0) {
+					fputs("Failed to create symlink\n", stderr);
+					if(STRICT) exit(EXIT_FAILURE);
+				}
+			}
+		}
+		else if('3' == op)
+		{
+			if(STRICT)
+			{
+				fputs("unable to create character devices\n", stderr);
+				exit(EXIT_FAILURE);
+			}
+			fputs(" Ignoring character device ", stdout);
+			puts(buff);
+		}
+		else if('4' == op)
+		{
+			if(STRICT)
+			{
+				fputs("unable to create block devices\n", stderr);
+				exit(EXIT_FAILURE);
+			}
+			fputs(" Ignoring block device ", stdout);
+			puts(buff);
+		}
+		else if('5' == op)
+		{
+			if(VERBOSE)
+			{
+				fputs(" Extracting dir ", stdout);
+				puts(buff);
+			}
+			create_dir(buff, parseoct(buff + 100, 8));
+			filesize = 0;
+		}
+		else if('6' == op)
+		{
+			if(STRICT)
+			{
+				fputs("unable to create FIFO\n", stderr);
+				exit(EXIT_FAILURE);
+			}
+			fputs(" Ignoring FIFO ", stdout);
+			puts(buff);
+		}
+		else
+		{
+			if(VERBOSE)
+			{
+				fputs(" Extracting file ", stdout);
+				puts(buff);
+			}
+			f = create_file(buff);

@@ -39,6 +39,12 @@
 #   CHECK_K1=smoke  kernel/k1/run-chain.sh --direct-smoke under QEMU (under a minute)
 #   CHECK_K1=linux  kernel/k1/run-chain.sh --direct-linux: hex0 to Linux under
 #                   K1 (1 h 38 min with KVM; 24 GiB guest RAM)
+#   CHECK_TINYCC=1  tests/tinycc/junction-check.sh: seed Forth builds the
+#                   first tcc, and live-bootstrap's tcc-0.9.26 pass1.kaem
+#                   from it reaches their published tcc and libraries
+#                   (seconds; needs bwrap, the host kernel's i386 support,
+#                   the vendor/stage0-posix submodule and the archives of
+#                   tinycc/SOURCES; SKIP without the first two)
 #
 # Each step's output goes to $TMPDIR/check-all-NAME.log (default /tmp); the
 # console shows one OK, SKIP or FAIL line per step and the verdict.
@@ -100,6 +106,13 @@ fi
 run "10-outputs" sh tests/pins/check-outputs.sh
 if [ "${CHECK_CHAIN:-0}" = 1 ]; then
     run "11-chain" sh chain/plumbing-root.sh
+fi
+if [ "${CHECK_TINYCC:-0}" = 1 ]; then
+    if why=$(tests/tinycc/junction-check.sh --probe); then
+        run "13-tinycc-junction" tests/tinycc/junction-check.sh
+    else
+        skip "13-tinycc-junction" "$why"
+    fi
 fi
 case ${CHECK_K1:-} in
     smoke) run "12-k1-smoke" kernel/k1/run-chain.sh --direct-smoke ;;
