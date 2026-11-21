@@ -217,45 +217,48 @@ FF D3                                     ; call rbx
 FF E1                                     ; jmp rcx
 
 ;; ----- sctab @ 0x10A -----
-00                                        ; db 0
+;; One entry per syscall: its number (db), then its handler's offset
+;; from handlers (dw); syscall_entry scans for rax's low byte, and 0xFF
+;; ends the table.
+00                                        ; db 0  ; sys_read
 06 01                                     ; dw sys_read - handlers
-01                                        ; db 1
+01                                        ; db 1  ; sys_write
 34 01                                     ; dw sys_write - handlers
-02                                        ; db 2
+02                                        ; db 2  ; sys_open
 A5 00                                     ; dw sys_open - handlers
-03                                        ; db 3
+03                                        ; db 3  ; sys_close
 F3 00                                     ; dw sys_close - handlers
-06                                        ; db 6
+06                                        ; db 6  ; sys_lstat
 C3 01                                     ; dw sys_lstat - handlers
-08                                        ; db 8
+08                                        ; db 8  ; sys_lseek
 8E 01                                     ; dw sys_lseek - handlers
-09                                        ; db 9
+09                                        ; db 9  ; sys_mmap
 CA 02                                     ; dw sys_mmap - handlers
-0C                                        ; db 12
+0C                                        ; db 12  ; sys_brk
 E3 02                                     ; dw sys_brk - handlers
-21                                        ; db 33
+21                                        ; db 33  ; sys_dup2
 AE 01                                     ; dw sys_dup2 - handlers
-39                                        ; db 57
+39                                        ; db 57  ; sys_fork
 F9 02                                     ; dw sys_fork - handlers
-3B                                        ; db 59
+3B                                        ; db 59  ; sys_execve
 9D 03                                     ; dw sys_execve - handlers
-3C                                        ; db 60
+3C                                        ; db 60  ; sys_exit
 28 03                                     ; dw sys_exit - handlers
-3D                                        ; db 61
+3D                                        ; db 61  ; sys_wait4
 94 03                                     ; dw sys_wait4 - handlers
-4F                                        ; db 79
+4F                                        ; db 79  ; sys_getcwd
 E6 01                                     ; dw sys_getcwd - handlers
-50                                        ; db 80
+50                                        ; db 80  ; sys_chdir
 FA 01                                     ; dw sys_chdir - handlers
-52                                        ; db 82
+52                                        ; db 82  ; sys_rename
 1D 02                                     ; dw sys_rename - handlers
-53                                        ; db 83
+53                                        ; db 83  ; sys_mkdir
 43 02                                     ; dw sys_mkdir - handlers
-57                                        ; db 87
+57                                        ; db 87  ; sys_unlink
 AE 02                                     ; dw sys_unlink - handlers
-5A                                        ; db 90
+5A                                        ; db 90  ; no-op: always succeeds
 BB 02                                     ; dw ok - handlers
-F8                                        ; db 248
+F8                                        ; db 248  ; sys_disk
 53 02                                     ; dw sys_disk - handlers
 FF                                        ; db 0xFF
 
@@ -270,7 +273,7 @@ FF                                        ; db 0xFF
 ;; ----- canon @ 0x147 -----
 
 BF 00 00 00 30                            ; mov edi, PB
-80 3E 2F                                  ; cmp byte [rsi], 0x2F
+80 3E 2F                                  ; cmp byte [rsi], 0x2F  ; '/'
 74 1A                                     ; je .abs (rel8 = 0x16B - 0x151)
 56                                        ; push rsi
 8D B5 58 02 00 00                         ; lea esi, [rbp + P_CWD]
@@ -279,15 +282,15 @@ F3 A4                                     ; rep movsb
 5E                                        ; pop rsi
 81 FF 00 00 00 30                         ; cmp edi, PB
 74 0C                                     ; je .dots (rel8 = 0x172 - 0x166)
-B0 2F                                     ; mov al, 0x2F
+B0 2F                                     ; mov al, 0x2F  ; '/'
 AA                                        ; stosb
 EB 07                                     ; jmp .dots (rel8 = 0x172 - 0x16B)
 ;; .abs @ 0x16B
 FF C6                                     ; inc esi  ; ROOT "/" + "/x" gives "//x"
-80 3E 2F                                  ; cmp byte [rsi], 0x2F
+80 3E 2F                                  ; cmp byte [rsi], 0x2F  ; '/'
 74 F9                                     ; je .abs (rel8 = 0x16B - 0x172)
 ;; .dots @ 0x172
-66 81 3E 2E 2F                            ; cmp word [rsi], 0x2F2E
+66 81 3E 2E 2F                            ; cmp word [rsi], 0x2F2E  ; "./" (little-endian)
 75 04                                     ; jne .copy (rel8 = 0x17D - 0x179)
 66 AD                                     ; lodsw
 EB F5                                     ; jmp .dots (rel8 = 0x172 - 0x17D)
@@ -504,7 +507,7 @@ E9 D5 00 00 00                            ; jmp ok (rel32 = 0x402 - 0x32D)
 
 ;; ----- sys_getcwd @ 0x32D -----
 ;; rdi buf
-B0 2F                                     ; mov al, 0x2F
+B0 2F                                     ; mov al, 0x2F  ; '/'
 AA                                        ; stosb
 8D B5 58 02 00 00                         ; lea esi, [rbp + P_CWD]
 8B 4D 30                                  ; mov ecx, [rbp + P_CWDLEN]
