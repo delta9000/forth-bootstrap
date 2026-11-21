@@ -1195,3 +1195,69 @@ defer cc-emit-convert-right
 \ Logical (unsigned) right shift: shr rdi, cl = 48 D3 EF.
 : cc-emit-shr-rdi-cl
   x{ 48 d3 ef } ;                                 \ shr rdi, cl
+
+\ ===========================================================================
+\ Sequences of the native call ABI and of struct copies.
+\ ===========================================================================
+\ Their callers are in 100, 112, 116 and 118.  They are named here, with
+\ the other encoders, so that a second target can supply its own by
+\ redefining them after this file (cc/i386/090-emit.fth does).
+
+\ cc-emit-scale-rdi ( bytes -- )  rdi *= bytes: an index becomes an offset.
+: cc-emit-scale-rdi
+  dup [lit] 1 = if, drop exit, then,
+  dup [lit] 8 = if, drop cc-emit-shl-rdi-3 exit, then,
+  x{ 48 69 ff } cc-emit-4le ;                     \ imul rdi, rdi, imm32
+
+\ cc-emit-scale-rcx ( bytes -- )  The same for the right operand.
+: cc-emit-scale-rcx
+  dup [lit] 1 = if, drop exit, then,
+  x{ 48 69 c9 } cc-emit-4le ;                     \ imul rcx, rcx, imm32
+
+\ The native bootstrap image uses an internal all-stack call ABI.
+\ Arguments occupy eight-byte slots; arg 0 is nearest the return address.
+\ cc-native-swap-args ( off1 off2 -- )  Exchange the slots at two offsets
+\ from rsp.
+: cc-native-swap-args
+  >r
+  dup x{ 48 8b 84 24 } cc-emit-4le                \ mov rax, qword [rsp+off1]
+  r@ x{ 48 8b 8c 24 } cc-emit-4le                 \ mov rcx, qword [rsp+off2]
+  x{ 48 89 8c 24 } cc-emit-4le                    \ mov qword [rsp+off1], rcx
+  r> x{ 48 89 84 24 } cc-emit-4le ;               \ mov qword [rsp+off2], rax
+
+\ cc-native-drop-args ( n -- )  Release n argument slots after a call.
+: cc-native-drop-args
+  dup if,
+    x{ 48 81 c4 } [lit] 8 * cc-emit-4le           \ add rsp, n*8
+  else, drop then, ;
+
+\ cc-native-load-call-target ( n -- )  rax := the function address pushed
+\ before a call's n arguments.
+: cc-native-load-call-target
+  x{ 48 8b 84 24 } [lit] 8 * cc-emit-4le ;        \ mov rax, qword [rsp+n*8]
+
+\ mov rdi, rdx: 48 89 D7.  A postfix ++ or -- kept the old value in rdx.
+: cc-emit-mov-rdi-rdx
+  x{ 48 89 d7 } ;                                 \ mov rdi, rdx
+
+\ mov rsi, rdi: 48 89 FE.  rdi holds the source address of a copy.
+: cc-emit-mov-rsi-rdi
+  x{ 48 89 fe } ;                                 \ mov rsi, rdi
+
+\ cc-emit-rep-count ( n -- )  rcx := n, the byte count of the rep movsb or
+\ rep stosb that follows; rdi holds its destination.  cc-emit-rep-count-rcx
+\ is the same instruction in its REX.W spelling, which struct assignment
+\ (100) has always emitted; initializers (118) emit the short one.
+: cc-emit-rep-count
+  x{ b9 } cc-emit-4le ;                           \ mov ecx, imm32
+: cc-emit-rep-count-rcx
+  x{ 48 c7 c1 } cc-emit-4le ;                     \ mov rcx, imm32
+
+\ cmp rbx, rdi: 48 39 FB.  A switch label too wide for cmp rbx, imm32 is
+\ loaded into rdi first.
+: cc-emit-cmp-rbx-rdi
+  x{ 48 39 fb } ;                                 \ cmp rbx, rdi
+
+\ cc-out-patch-address ( vaddr offset -- )  Fill in the placeholder that
+\ cc-emit-movabs-rdi-imm64-placeholder or cc-emit-global-ref left at offset.
+: cc-out-patch-address  cc-out-patch-8le ;

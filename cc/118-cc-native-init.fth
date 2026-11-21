@@ -31,15 +31,11 @@ variable cc-ni-entry-patch
     nc-slot @ cc-emit-global-ref
   else, nc-slot @ cc-emit-lea-rdi-local then,
   dup if, cc-emit-add-rdi-imm32 else, drop then, ;
-: cc-ni-count-rcx ( n -- )
-  [lit] 185 cc-emit-byte cc-emit-4le ;
-: cc-ni-mov-rsi-rdi
-  [lit] 72 cc-emit-byte [lit] 137 cc-emit-byte [lit] 254 cc-emit-byte ;
 : cc-ni-copy-bytes ( n -- )
-  cc-ni-count-rcx [lit] 243 cc-emit-byte [lit] 164 cc-emit-byte ;
+  cc-emit-rep-count [lit] 243 cc-emit-byte [lit] 164 cc-emit-byte ;
 : cc-ni-zero-object
   [lit] 0 cc-ni-address
-  cc-nobject-size cc-ni-count-rcx
+  cc-nobject-size cc-emit-rep-count
   cc-emit-xor-rax-rax
   [lit] 243 cc-emit-byte [lit] 170 cc-emit-byte ;
 
@@ -144,7 +140,7 @@ defer cc-ni-value-fwd
   [lit] 0 cc-emit-byte
   1+ dup ni-array @ > if, drop ni-array @ then,
   r> cc-patch-rel32-to-here
-  swap cc-emit-movabs-rdi-imm64 cc-ni-mov-rsi-rdi
+  swap cc-emit-movabs-rdi-imm64 cc-emit-mov-rsi-rdi
   ni-offset @ cc-ni-address cc-ni-copy-bytes ;
 
 : cc-value-static-init-default drop ;
@@ -160,7 +156,7 @@ defer cc-value-static-init-fwd
     cc-last-expr-type @ ty-base ty-struct <>
     cc-last-expr-type @ ty-ptr [lit] 0 <> or
     cc-last-struct-desc @ ni-desc @ <> or if, [lit] 224 cc-die then,
-    cc-ni-mov-rsi-rdi
+    cc-emit-mov-rsi-rdi
     cc-emit-pop-rdi
     ni-type @ ni-desc @ cc-nsize cc-ni-copy-bytes
   else,

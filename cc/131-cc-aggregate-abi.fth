@@ -173,7 +173,7 @@ variable cc-ag-plan
 : cc-ag-store-xmm [lit] 17 cc-ag-xmm-local ;
 : cc-ag-load-xmm [lit] 16 cc-ag-xmm-local ;
 : cc-ag-copy-to-slot ( size slot -- )
-  cc-ni-mov-rsi-rdi cc-emit-lea-rdi-local cc-ni-copy-bytes ;
+  cc-emit-mov-rsi-rdi cc-emit-lea-rdi-local cc-ni-copy-bytes ;
 
 \ Each argument is frozen in the fixed frame when its expression finishes.
 \ Nested calls and alloca may move RSP without moving these object copies.
@@ -234,7 +234,7 @@ variable cc-ag-plan
   \ Stack copies precede register loads because REP MOVSB uses GP arguments.
   [lit] 0 begin, dup ag-count @ < while,
     dup ag-arg dup ag-register [lit] 0 < if,
-      dup ag-slot cc-emit-lea-rdi-local cc-ni-mov-rsi-rdi
+      dup ag-slot cc-emit-lea-rdi-local cc-emit-mov-rsi-rdi
       [lit] 72 cc-emit-byte [lit] 141 cc-emit-byte
       [lit] 188 cc-emit-byte [lit] 36 cc-emit-byte dup ag-offset cc-emit-4le
       dup ag-size cc-ni-copy-bytes
@@ -387,7 +387,7 @@ variable cc-ag-sret-slot
   cc-native-return-type @ cc-native-return-desc @ cc-ag-class
   dup [lit] 4 = if, drop [lit] 219 cc-emit-byte [lit] 47 cc-emit-byte exit, then, \ fld tbyte [rdi]
   dup 0= if,
-    drop cc-ni-mov-rsi-rdi cc-ag-sret-slot @ cc-emit-load-local
+    drop cc-emit-mov-rsi-rdi cc-ag-sret-slot @ cc-emit-load-local
     cc-emit-mov-rax-rdi
     cc-native-return-desc @ cc-sd-total-size cc-ni-copy-bytes
   else,
@@ -536,7 +536,7 @@ variable cc-ag-sret-slot
   ni-offset @ cc-ni-address cc-emit-push-rdi
   cc-putback-token cc-parse-assign
   cc-last-expr-type @ cc-last-struct-desc @ ni-type @ ni-desc @ cc-ld-mismatch
-  cc-ni-mov-rsi-rdi cc-emit-pop-rdi [lit] 16 cc-ni-copy-bytes
+  cc-emit-mov-rsi-rdi cc-emit-pop-rdi [lit] 16 cc-ni-copy-bytes
   cc-next-token-keep ;
 ' cc-ld-ni-scalar is cc-ni-scalar-fwd
 ' cc-ld-mismatch is cc-return-shape-fwd

@@ -510,7 +510,7 @@ variable cc-gdecl-ptr-depth
       cc-bss-flag - cc-bss-base-vaddr @ +           \ vaddr = bss base + offset
     then,
     over cc-gfixup-out-pos cell[] @                \ patch-offset
-    cc-out-patch-8le
+    cc-out-patch-address
     1+
   repeat, drop ;
 

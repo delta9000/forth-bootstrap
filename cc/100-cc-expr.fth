@@ -245,17 +245,6 @@ defer cc-opaque-scalar-fwd
   over ty-size [lit] 1 = cc-mark-deref
   cc-last-struct-desc ! cc-last-expr-type ! ;
 
-: cc-emit-scale-rdi                               ( bytes -- )
-  dup [lit] 1 = if, drop exit, then,
-  dup [lit] 8 = if, drop cc-emit-shl-rdi-3 exit, then,
-  [lit] 72 cc-emit-byte [lit] 105 cc-emit-byte [lit] 255 cc-emit-byte
-  cc-emit-4le ;                                   \ imul rdi,rdi,imm32
-
-: cc-emit-scale-rcx                               ( bytes -- )
-  dup [lit] 1 = if, drop exit, then,
-  [lit] 72 cc-emit-byte [lit] 105 cc-emit-byte [lit] 201 cc-emit-byte
-  cc-emit-4le ;                                   \ imul rcx,rcx,imm32
-
 \ cc-emit-materialize ( -- )  If rdi holds an address not yet loaded, load
 \ through it (one byte or eight) so rdi holds the value, and mark it a plain
 \ value.  The struct descriptor and type describe the value either way, so
@@ -485,19 +474,6 @@ variable cc-ff-result-record
   repeat,
   drop ;
 
-\ The native bootstrap image uses an internal all-stack call ABI.
-\ Arguments occupy eight-byte slots; arg 0 is nearest the return address.
-: cc-native-swap-args                            ( off1 off2 -- )
-  >r
-  dup [lit] 72 cc-emit-byte [lit] 139 cc-emit-byte
-  [lit] 132 cc-emit-byte [lit] 36 cc-emit-byte cc-emit-4le
-  r@ [lit] 72 cc-emit-byte [lit] 139 cc-emit-byte
-  [lit] 140 cc-emit-byte [lit] 36 cc-emit-byte cc-emit-4le
-  [lit] 72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit] 140 cc-emit-byte [lit] 36 cc-emit-byte cc-emit-4le
-  r> [lit] 72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit] 132 cc-emit-byte [lit] 36 cc-emit-byte cc-emit-4le ;
-
 : cc-native-reverse-args                         ( n -- )
   [lit] 0
   begin, over [lit] 2 / over > while,
@@ -505,17 +481,6 @@ variable cc-ff-result-record
     over 1- over - [lit] 8 * r> swap cc-native-swap-args
     1+
   repeat, 2drop ;
-
-: cc-native-drop-args                            ( n -- )
-  dup if,
-    [lit] 72 cc-emit-byte [lit] 129 cc-emit-byte [lit] 196 cc-emit-byte
-    [lit] 8 * cc-emit-4le
-  else, drop then, ;
-
-: cc-native-load-call-target                     ( n -- )
-  [lit] 72 cc-emit-byte [lit] 139 cc-emit-byte
-  [lit] 132 cc-emit-byte [lit] 36 cc-emit-byte
-  [lit] 8 * cc-emit-4le ;                         \ mov rax,[rsp+n*8]
 
 : cc-native-parse-args                           ( -- n )
   [lit] 0
@@ -1018,9 +983,7 @@ defer cc-change-value-fwd
   cc-change-postfix @ if, cc-emit-pop-rdx then,
   cc-emit-pop-rcx
   cc-change-type @ cc-change-field @ cc-field-store-fwd
-  cc-change-postfix @ if,
-    [lit] 72 cc-emit-byte [lit] 137 cc-emit-byte [lit] 215 cc-emit-byte
-  then,                                           \ mov rdi,rdx (old value)
+  cc-change-postfix @ if, cc-emit-mov-rdi-rdx then,  \ rdi := the old value
   cc-change-type @ cc-change-field @ cc-field-value-type-fwd
   cc-change-desc @ cc-mark-typed-value
   cc-change-qualified @ cc-last-expr-qualified ! ;
@@ -2286,10 +2249,9 @@ defer cc-aggregate-compound-fwd
       [lit] 120 cc-die
     then,
     cc-aggregate-assignment-fwd
-    [lit] 72 cc-emit-byte [lit] 137 cc-emit-byte [lit] 254 cc-emit-byte
+    cc-emit-mov-rsi-rdi
     cc-emit-pop-rdi cc-emit-push-rdi               \ rsi=source; rdi=destination
-    [lit] 72 cc-emit-byte [lit] 199 cc-emit-byte [lit] 193 cc-emit-byte
-    cc-assign-type @ cc-assign-desc @ cc-expr-type-size cc-emit-4le
+    cc-assign-type @ cc-assign-desc @ cc-expr-type-size cc-emit-rep-count-rcx
     [lit] 243 cc-emit-byte [lit] 164 cc-emit-byte  \ rep movsb
     cc-emit-pop-rdi
     cc-assign-type @ cc-assign-desc @ cc-mark-typed-value

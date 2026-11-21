@@ -262,7 +262,7 @@ defer cc-om-value-fwd
       [lit] 1 cc-obj-patch 1+
     repeat, 2drop drop
   else,
-    swap cc-om-reference cc-ni-mov-rsi-rdi
+    swap cc-om-reference cc-emit-mov-rsi-rdi
     ni-offset @ cc-ni-address cc-ni-copy-bytes
   then, ;
 ' cc-om-string-initializer is cc-ni-string-fwd

@@ -165,7 +165,7 @@ variable cc-for-step-end
   while,
     dup @                                         ( node off )
     cc-fixup-target-tmp @                         ( node off target )
-    swap cc-out-patch-8le                         ( node )
+    swap cc-out-patch-address                     ( node )
     [lit] 8 + @                                   ( next-node )
   repeat,
   drop ;
@@ -473,13 +473,12 @@ variable cc-switch-type           \ LP64: promoted controlling type
   cc-here-vaddr cc-switch-default-vaddr ! ;
 
 \ A label outside signed-32 range needs all 64 bits: load it into rdi,
-\ which is free during dispatch, and compare registers (48 39 FB is
-\ cmp rbx, rdi).  Every other label keeps the imm32 form.
+\ which is free during dispatch, and compare registers.  Every other
+\ label keeps the imm32 form.
 : cc-emit-switch-compare                          ( K -- )
   cc-target-lp64 @ if,
     dup [lit] 2147483648 + [lit] 4294967296 / if,
-      cc-emit-movabs-rdi-imm64
-      [lit] 72 cc-emit-byte [lit] 57 cc-emit-byte [lit] 251 cc-emit-byte
+      cc-emit-movabs-rdi-imm64 cc-emit-cmp-rbx-rdi
       exit,
     then,
   then,

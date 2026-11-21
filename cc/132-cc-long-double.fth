@@ -204,7 +204,7 @@
   cc-putback-token cc-parse-assign cc-emit-materialize
   cc-last-expr-type @ cc-last-struct-desc @ ni-type @ ni-desc @ cc-value-shape-fwd
   cc-last-expr-type @ ni-type @ cc-x87-convert
-  cc-ni-mov-rsi-rdi cc-emit-pop-rdi [lit] 16 cc-ni-copy-bytes
+  cc-emit-mov-rsi-rdi cc-emit-pop-rdi [lit] 16 cc-ni-copy-bytes
   cc-next-token-keep ;
 ' cc-x87-ni-scalar is cc-ni-scalar-fwd
 : cc-x87-literal
