@@ -342,8 +342,8 @@ the programs on the disk are still built on the host.
 **The disk.**  `tinycc/i386-one-boot-disk.py` writes it in the layout of
 live-bootstrap's `lib/generator.py`: builder-hex0's stage 1 (assembled by
 hex0-seed), its stage-2 hex0 source, zeros to sector 175, then:
-- the directories live-bootstrap's `seed.kaem` and disk have, and ours:
-  `/x86/bin`, `/external/distfiles`, `/first`;
+- the directories live-bootstrap's `seed.kaem` makes and its disk has
+  (`/x86/bin` and `/external/distfiles` among them), and ours, `/first`;
 - `/usr/bin/tcc-mes`, the i386 first tcc (`92d11438…`);
 - `/x86/bin/`, the second directory of `steps/env`'s PATH, with the eleven
   i386 tools of `tinycc/build-tools-i386.sh` and `kaem`;

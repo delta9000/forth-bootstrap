@@ -48,7 +48,9 @@ EXPORT = (["/usr/bin/tcc-mes", "/usr/bin/tcc-boot0", "/usr/bin/tcc-boot1", "/usr
            "/usr/lib/mes/crti.o", "/usr/lib/mes/crtn.o", "/usr/lib/mes/tcc/libtcc1.a"]
           + [f"/first/{os.path.basename(f)}" for f in FIRST]
           + ["/x86/bin/kaem", "/usr/bin/hex0-export"])
-# seed.kaem makes the first six; live-bootstrap's disk has the next three
+# seed.kaem's mkdir -p makes the first nine; the next seven are where
+# live-bootstrap's disk has its steps, distfiles and stage0's tools; /first
+# is ours
 DIRS = ["/usr", "/usr/bin", "/usr/lib", "/usr/lib/mes", "/usr/include", "/usr/include/mes",
         "/steps", "/tmp", "/dev",
         "/steps/mes-0.28", "/steps/tcc-0.9.26", "/steps/tcc-0.9.26/simple-patches",
@@ -113,7 +115,7 @@ def script():
     # would reach the other and change tcc-boot0's -D paths.
     names = {l.split("=")[0] for l in env}
     for l in theirs[len(env):]:
-        assert l.split("=")[0] not in names, f"reassigns a steps/env variable: {l}"
+        assert l.strip().split("=")[0] not in names, f"reassigns a steps/env variable: {l}"
     return "\n".join(out) + "\n"
 
 
