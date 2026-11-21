@@ -24,8 +24,7 @@ Verified, for instructions (everything after the program header):
   - Rewrites from the comments' NASM spelling to GNU as, and nothing else:
     "byte/word/qword [" becomes "byte/word/qword ptr ["; a label operand
     becomes its scoped symbol (below); "mov r64, imm" becomes "movabs r64,
-    imm" where the line's note says (movabs) and on the lines in MOVABS
-    below (comments that do not say so; reported every run).
+    imm" where the line's note says (movabs).
   - Labels: "----- NAME @ 0xNNN" headings name a routine at NNN, and
     ";; .x:" lines a label inside the last routine (symbol NAME.x).  The
     stated address must equal the offset of the next byte line.
@@ -36,11 +35,11 @@ Verified, for instructions (everything after the program header):
   - "(NAME header)" after an operand: the operand must be 0x400000 plus
     NAME's header address.  Any other literal operand inside the image
     (0x400000 to 0x400000 + file size) must be the address of a routine.
-  - The memory map (the ";;   0x41NNNN = ..." block) is parsed for the
+  - The memory map (the ";;   0x4NNNNN = ..." block) is parsed for the
     sysvar names STATE, LATEST, HERE, LAST_FOUND and their addresses (the
     page base plus 8 each, and the listed addresses must agree); the
     instructions use those names.  The "first push lands at" address must
-    be the data-stack base minus 8.  Every literal operand from 0x410000 up
+    be the data-stack base minus 8.  Every literal operand outside the image
     must be an address the map names.
 
 Verified, for data:
@@ -80,17 +79,11 @@ Not verified:
   - Which of several valid encodings a comment means, beyond the movabs
     rule above: the check accepts the one GNU as picks, so a comment is
     proved to name an instruction that encodes as the bytes.
-  - Literal operands below 0x410000 that are outside the image (the
-    initial HERE, 0x401000) are not in the memory map; they are listed.
 """
 import argparse, pathlib, re, struct, subprocess, sys, tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 BASE = 0x400000
-
-# Lines whose bytes are movabs (REX.W B8+r imm64) but whose comment does not
-# say "(movabs)".  Each is reported on every run.
-MOVABS = {64}
 
 EHDR = [("e_ident[0..3]", 4), ("e_ident[EI_CLASS]", 1), ("e_ident[EI_DATA]", 1),
         ("e_ident[EI_VERSION]", 1), ("e_ident[EI_OSABI]", 1),
@@ -156,10 +149,10 @@ def read_lines(path):
 
 
 def memory_map(rows, ck):
-    """Names and addresses from the ';;   0x41NNNN = ...' block."""
+    """Names and addresses from the ';;   0x4NNNNN = ...' block."""
     text = "\n".join(c for _, off, _, c in rows if off is None)
     regions = dict((int(a, 16), d.strip()) for a, d in
-                   re.findall(r"^;;\s+0x(41[0-9A-F]{4}) = (.*)$", text, re.M))
+                   re.findall(r"^;;\s+0x(4[0-9A-F]{5}) = (.*)$", text, re.M))
     names = {}
     lineno = next((r[0] for r in rows if r[1] is None and "data-stack base" in r[3]), 0)
     for addr, desc in regions.items():
@@ -336,25 +329,19 @@ def instruction(lineno, off, data, comment, routine, labels, sysvars, headers, s
         if BASE <= v < BASE + size and not hdr:
             ck.expect(v - BASE in [o for n, o in labels.items() if "." not in n], lineno, "address-note",
                       f"literal {v:#x} is inside the image but no routine starts there")
-        elif v >= 0x410000:
+        elif v >= BASE + size:
             ck.expect(v in MAPPED, lineno, "memory-map", f"literal {v:#x} is not in the memory map")
-        elif v >= BASE + size and v >= BASE:
-            UNMAPPED.append((lineno, v))
     text = mnemonic + (" " + ", ".join(ops) if ops else "")
     text = re.sub(r"\b(byte|word|dword|qword) \[", r"\1 ptr [", text)
     movabs = "(movabs)" in after
-    if movabs or lineno in MOVABS:
+    if movabs:
         if not re.fullmatch(r"mov r\w+, \S+", text):
             ck.fail(lineno, f"movabs applies to mov r64, imm only: {text}")
         text = "movabs" + text[3:]
-        if not movabs:
-            UNMARKED_MOVABS.append(lineno)
     return text
 
 
 MAPPED = set()
-UNMAPPED = []
-UNMARKED_MOVABS = []
 
 
 def dictionary_field(lineno, data, comment, state, headers, order, ck):
@@ -564,10 +551,6 @@ def main():
     if built.exists() and pathlib.Path(args.seed).resolve() == (ROOT / "seed/000-seed.hex0").resolve():
         ck.expect(built.read_bytes() == image, 0, "image", "this parse of the hex differs from ./seed-forth")
 
-    for lineno in UNMARKED_MOVABS:
-        print(f"seed asm-check: note: line {lineno} assembles as movabs; its comment does not say (movabs)")
-    for lineno, v in UNMAPPED:
-        print(f"seed asm-check: note: line {lineno}: {v:#x} is outside the image and not in the memory map")
     if ck.failures:
         for f in ck.failures:
             print(f"seed asm-check: FAIL {f}")

@@ -59,9 +59,9 @@ EC 06 00 00 00 00 00 00                   ; p_filesz = 1772 (the whole file)
 ;;   0x412800 = token buffer, TIB (read_word)
 ;;   0x413000 = sysvar page, 8 bytes each: STATE, LATEST, HERE, LAST_FOUND
 ;;              (0x413000, 0x413008, 0x413010, 0x413018)
-;;
+;;   0x401000 = first free byte, the initial HERE (code and data grow up)
 ;; ----- _start @ 0x078  entry point: set up the data stack -----
-48 BD 00 10 41 00 00 00 00 00             ; mov rbp, 0x411000
+48 BD 00 10 41 00 00 00 00 00             ; mov rbp, 0x411000  ; data-stack base (movabs)
 48 31 FF                                  ; xor rdi, rdi
 
 ;; ----- sysvar_init @ 0x085  STATE, LATEST, HERE, LAST_FOUND -----
