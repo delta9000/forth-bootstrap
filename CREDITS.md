@@ -37,6 +37,14 @@ programs built from them keep their upstream licenses.
 | zlib 1.3.1 | zlib |
 | elfutils 0.192 (libelf only) | LGPL-3.0-or-later or GPL-2.0-or-later |
 | Linux 7.2.8 | GPL-2.0 |
+| The TinyCC route (`tinycc/SOURCES`): janneke's TinyCC fork tcc-0.9.26-1147-gee75a10c; GNU Mes 0.28, whose libc (`tinycc/mes-libc.c` lists the files) is compiled into the first tcc; live-bootstrap a49273cb, whose simple-patch, checksum-transcriber, simple-patches and kaem text the route uses | TinyCC: LGPL-2.1-or-later; Mes: GPL-3.0-or-later; live-bootstrap: each file's SPDX header (simple-patch GPL-3.0-or-later, checksum-transcriber MIT) |
+
+`build-out/tinycc/tcc-first` is TinyCC and Mes libc compiled into one
+program, so it is under GPL-3.0-or-later as a whole.  The repository's
+own files that go into it, `tinycc/direct-input.c`, `tinycc/mes-libc.c`
+(a list of Mes's file names) and `tinycc/mes-libc-native.c` (written for
+this route: Mes's function names and signatures, our bodies; no Mes code
+is copied), are MIT.
 
 ## People and projects
 

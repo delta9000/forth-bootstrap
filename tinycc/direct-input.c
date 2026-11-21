@@ -14,24 +14,20 @@
    had it, the final tcc is the same but boot1 is e3576448..., not
    live-bootstrap's d9116def....
 
-   The host side is x86_64 Linux: pnut's portable libc is compiled into the
-   same image, with tinycc/libc-sscanf.c for the sscanf it declares but does
-   not define, PNUT_CC selects its configuration without inline assembly,
-   and the Forth compiler's native runtime supplies the system calls.  The
-   target is i386.
+   The host side is x86_64 Linux: Mes 0.28's libc is compiled into the
+   same image (tinycc/mes-libc.c, which includes it from the unpacked
+   mes-0.28 tarball with tinycc/mes-libc-native.c for its assembly), and
+   the Forth compiler's native runtime supplies one system-call primitive.
+   The target is i386.
 
-   getcwd: under PNUT_CC, portable libc's getcwd returns NULL, and with -g
-   tcc then records the directory of tcc.c as "/".
-   tinycc/libc-getcwd.after makes it call _getcwd, the Linux getcwd call
-   that cc/119-cc-native-runtime.fth emits when tinycc/tcc-compile.fth
-   sets cc-native-getcwd, so this tcc records
-   /steps/tcc-0.9.26/build/tcc-0.9.26-1147-gee75a10c/ as tcc-mes does,
-   and its tcc-boot0 equals the stand-ins' (c1696e57...). */
-#define PNUT_CC 1
-#define PNUT_EXE 1
-#define PNUT_EXE_64 1
-#define PNUT_X86_64 1
-#define PNUT_X86_64_LINUX 1
+   getcwd: with -g, tcc records the directory of tcc.c, through Mes's
+   getcwd, a real Linux getcwd here, so this tcc records
+   /steps/tcc-0.9.26/build/tcc-0.9.26-1147-gee75a10c/ as tcc-mes does.
+
+   Floating point: HAVE_FLOAT is not defined, as for tcc-mes, so tcc.c's
+   strtod and strtold calls for float literals are compiled out; only an
+   F-suffixed literal calls strtof, which traps (mes-libc-native.c), and
+   a hex float calls Mes's ldexp stub, which returns 0, as in tcc-mes. */
 #define __linux__ 1
 #define __x86_64__ 1
 #define BOOTSTRAP 1
@@ -49,7 +45,5 @@
 #define TCC_VERSION "0.9.26"
 #define ONE_SOURCE 1
 #define CONFIG_TCCDIR "/usr/lib/mes/tcc"
-#define __intptr_t_defined 1
-#include "pnut-abc34a5207b1373d0a4e3dcb3d3d6df6e22ae23d/portable_libc/libc.c"
-#include "libc-sscanf.c"
+#include "mes-libc.c"
 #include "tcc-0.9.26-1147-gee75a10c/tcc.c"

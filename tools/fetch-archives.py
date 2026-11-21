@@ -62,12 +62,10 @@ URLS = {
     "elfutils-0.192.tar.bz2": "https://sourceware.org/elfutils/ftp/0.192/elfutils-0.192.tar.bz2",
     "linux-7.2.8.tar.xz": "https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.2.8.tar.xz",
     # the TinyCC route (tinycc/SOURCES): the fork and Mes at live-bootstrap's
-    # steps/tcc-0.9.26/sources and steps/mes-0.28/sources URLs, pnut and
-    # live-bootstrap as GitHub archives of the pinned commits
+    # steps/tcc-0.9.26/sources and steps/mes-0.28/sources URLs, and
+    # live-bootstrap as GitHub's archive of the pinned commit
     "tcc-0.9.26.tar.gz": "https://lilypond.org/janneke/tcc/tcc-0.9.26-1147-gee75a10c.tar.gz",
     "mes-0.28.tar.gz": f"{GNU}/mes/mes-0.28.tar.gz",
-    "pnut-abc34a5207b1373d0a4e3dcb3d3d6df6e22ae23d.tar.gz":
-        "https://github.com/udem-dlteam/pnut/archive/abc34a5207b1373d0a4e3dcb3d3d6df6e22ae23d.tar.gz",
     "live-bootstrap-a49273cbb5c381b851198bc1e53c294702f4f7c9.tar.gz":
         "https://github.com/fosslinux/live-bootstrap/archive/a49273cbb5c381b851198bc1e53c294702f4f7c9.tar.gz",
 }

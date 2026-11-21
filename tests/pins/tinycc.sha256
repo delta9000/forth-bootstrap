@@ -2,7 +2,8 @@
 # live-bootstrap does not publish.  Not part of tests/pins/outputs.sha256
 # because only CHECK_TINYCC=1 builds the junction files.
 #   tinycc/tcc-first   build-out/tinycc/tcc-first, the first tcc, compiled by
-#                      seed Forth (tinycc/build-first-tcc.sh, 792,776 bytes);
+#                      seed Forth with Mes libc (tinycc/build-first-tcc.sh,
+#                      856,568 bytes);
 #                      the same in two checkouts at different paths
 #   tinycc/junction/usr/bin/tcc-boot0
 #                      build-out/tinycc/junction-root/usr/bin/tcc-boot0, what
@@ -18,7 +19,7 @@
 #                      the same in two checkouts at different paths
 # When a change is meant to alter one, update its line in the same commit
 # and say why.
-1a3a95abb749bd0d8877bb61121c86cda3aab0f97ff26ac56b546f3415d13fa8  tinycc/tcc-first
+d9e97270f8d39587b2ef57d675cf733aa239b11f288c75d6b2fcc4adf7019fec  tinycc/tcc-first
 c1696e57f25b77315a05d84b4e1a75002112cbd656156522c97be7ecd182c495  tinycc/junction/usr/bin/tcc-boot0
 7a1643c7de35691fe89bcd807bad786890b3fbe7f1858e3c9f3eb842000c2d60  tinycc/bin-boot/ungz
 019f164646d6ca38d9058957eb70489f996fb9c5d39fd214840fc18cb6d81fac  tinycc/bin-boot/untar

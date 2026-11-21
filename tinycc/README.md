@@ -8,8 +8,8 @@ live-bootstrap's `steps/tcc-0.9.26`, where that compiler stands in for
 ## The first tcc
 
 `tinycc/build-first-tcc.sh` writes `build-out/tinycc/tcc-first`, an x86_64
-static ELF of 792,776 bytes with sha256
-`1a3a95abb749bd0d8877bb61121c86cda3aab0f97ff26ac56b546f3415d13fa8`.  The
+static ELF of 856,568 bytes with sha256
+`d9e97270f8d39587b2ef57d675cf733aa239b11f288c75d6b2fcc4adf7019fec`.  The
 pin is in `tests/pins/tinycc.sha256`.  Two checkouts at different paths
 built the same bytes.
 
@@ -26,14 +26,28 @@ The source it compiles:
   before MesCC runs: two `tcctools.c` simple-patches and an empty
   `config.h`;
 - no patch of ours;
-- pnut's `portable_libc` in the same translation unit, with two additions
-  of ours: `libc-sscanf.c` after it, the `sscanf` that pnut's `stdio.h`
-  declares but does not define, enough for tcc's one call,
-  `sscanf(TCC_VERSION, "%d.%d.%d", ...)` in `libtcc.c`; and
-  `libc-getcwd.before`/`.after`, a simple-patch to `src/unistd.c`, so that
-  `getcwd` under `PNUT_CC` calls `_getcwd`, the Linux call
+- Mes 0.28's libc in the same translation unit, from the `mes-0.28`
+  tarball the junction already needs: `mes-libc.c` includes the files
+  live-bootstrap's `pass1.kaem` compiles into tcc-mes's `libc.a` (its
+  `unified-libc.c` list, with x86_64 for the architecture), in that order,
+  without seven.  Four are inline assembly (`syscall.c`, `_exit.c`,
+  `_write.c`, `setjmp.c` under `x86_64-mes-gcc`); two are the double
+  conversions under `strtod`, `atof` and printf's `%f` (`mes/abtod.c`,
+  `mes/dtoab.c`), and `math/ceil.c` is double arithmetic that nothing
+  calls.  Native mode keeps doubles as bit patterns and has no arithmetic
+  on them.  As `steps/mes-0.28` does, `include/arch/` gets copies of
+  `include/linux/x86_64`'s three headers, and `include/mes/config.h` is
+  empty;
+- `mes-libc-native.c`, ours, first in the unit: the system-call layer
+  (`__sys_call*`, `_sys_call*` with Mes's errno handling, `_exit`,
+  `_write`) on `__native_syscall`, the one primitive
   `cc/119-cc-native-runtime.fth` emits when `tcc-compile.fth` sets
-  `cc-native-getcwd`, instead of returning NULL;
+  `cc-native-syscall-any`; a `setjmp` that returns 0 and a `longjmp` that
+  exits 125 (tcc only longjmps after printing an error); `abtod` and
+  `dtoab` that exit 125 rather than return wrong bits; and crt1's work, a
+  `main` that sets `environ` and stdio as `__init_io` does before calling
+  the program's, renamed.  It also replaces Mes's `jmp_buf`, an array of
+  one struct, which native mode cannot pass as an argument;
 - tcc-mes's defines for x86 (`direct-input.c`), so the compiler looks for
   headers and libraries where tcc-mes does.
 
@@ -60,8 +74,10 @@ The two changes of ours are simple-patch before/after pairs:
 - `ungz-unsigned-bytes`: `stored()` reads a stored block's length bytes as
   plain `char` and compares them with `~len & 0xff`.  Plain `char` is
   signed in gcc-seed, so a byte of 0x80 or more fails ("puff() failed with
-  return code -2").  The pnut archive has such blocks.  `bits()` already
-  masks with `0xFF`; the patch masks these four reads the same way.
+  return code -2").  The pnut archive, an input until the first tcc moved
+  to Mes libc, has such blocks; the three archives left do not (stock ungz
+  gives the same tars).  `bits()` already masks with `0xFF`; the patch
+  masks these four reads the same way.
 - `untar-ustar-prefix`: untar reads only the 100-byte name field.  GitHub's
   archive of live-bootstrap stores 200 long paths as ustar prefix plus
   name, among them `steps/tcc-0.9.26/simple-patches/*`.  Stock untar writes
@@ -78,12 +94,9 @@ compared equal under `diff -r` (symlinks included), apart from untar's
 
 The Forth compiler's native mode, which builds the first tcc, does not
 build the tools.  They would need a libc that is not inside an archive
-they must unpack: pnut's libc is in the pnut archive, and its 25 MB bump
-heap cannot hold ungz's whole-file buffers for that 36 MB archive.
-M2libc's system calls are M1 inline assembly, which the Forth compiler
-does not read (found by reading M2libc's `amd64/linux/*.c`; no build was
-tried).  seed-cc with gcc-seed is in the repository and already builds
-these programs for the GCC chain.
+they must unpack, and Mes libc is in the Mes archive.  seed-cc with
+gcc-seed is in the repository and already builds these programs for the
+GCC chain.
 
 Host programs left, from `strace -f -e trace=execve`:
 - Source preparation (`build-first-tcc.sh`, which runs `build-tools.sh`):
@@ -106,9 +119,7 @@ Host programs left, from `strace -f -e trace=execve`:
 
 The tools are built by seed-cc in SysV mode, so this route now also
 depends on the compiler layers 120 and up and on
-`chain/runtime/gcc-seed`, as the GCC chain already does.  A native-mode
-build would need an in-tree copy of pnut's libc with a larger heap and a
-`symlink` stub for untar.
+`chain/runtime/gcc-seed`, as the GCC chain already does.
 
 ## The junction
 
@@ -121,7 +132,7 @@ the two MesCC commands replaced by copying the first tcc to `tcc-mes`
 
 | file | live-bootstrap (MesCC) | this route |
 |---|---|---|
-| `/usr/bin/tcc-mes` | `2b15c85f…` | `1a3a95ab…` (pinned) |
+| `/usr/bin/tcc-mes` | `2b15c85f…` | `d9e97270…` (pinned) |
 | `/usr/bin/tcc-boot0` | `ea464b2f…` | `c1696e57…` (pinned) |
 | `/usr/bin/tcc-boot1` | `d9116def…` | same |
 | `/usr/bin/tcc` | `b9dce87d…` | same |
@@ -160,30 +171,34 @@ tcc-boot1 `b9dce87d…` already, so the boot1 line does not match although
 - tcc-boot0 is `c1696e57…`, as the stand-ins that the junction study built
   with gcc, tcc 0.9.27 and seed-cc, using the same defines, gave.  MesCC's
   tcc-mes gives `ea464b2f…`.  Every first compiler other than MesCC now
-  agrees from tcc-boot0 on.  Before the getcwd primitive, pnut's `getcwd`
-  returned NULL and the first tcc recorded `/` as the `-g` directory,
-  giving `4e3e525a…`.
-- tcc-mes is a different program by design: an x86_64 binary with pnut's
-  libc, not MesCC's i386 one.
+  agrees from tcc-boot0 on.  Before the first tcc had a real `getcwd`,
+  it recorded `/` as the `-g` directory, giving `4e3e525a…`.
+- Changing the first tcc's libc from pnut's to Mes's (tcc-first
+  `1a3a95ab…` to `d9e97270…`) left tcc-boot0 at `c1696e57…`.  A libc's
+  float parsing could reach boot0 through float literals, but this tcc,
+  like tcc-mes, is built without `HAVE_FLOAT`, so `tccpp.c` compiles out
+  its `strtod` and `strtold` calls; `strtof` (an `F` suffix) traps, and
+  the replay ran to the end, so no trap was reached.
+- tcc-mes is a different program by design: an x86_64 binary with Mes's
+  libc compiled by the Forth compiler, not MesCC's i386 one.
 
 ## Inputs
 
-`tinycc/SOURCES` and `MANIFEST.sha256` pin four archives under
+`tinycc/SOURCES` and `MANIFEST.sha256` pin three archives under
 `build-out/tinycc-inputs/`.  `tinycc/SOURCES` has no comments, because the
 seed-built `sha256sum --check` reads it as it is:
 - `tcc-0.9.26.tar.gz`: janneke's `tcc-0.9.26-1147-gee75a10c`, with the
   name, URL and sha256 of live-bootstrap's `steps/tcc-0.9.26/sources`;
 - `mes-0.28.tar.gz`: GNU Mes 0.28, as `steps/mes-0.28/sources` pins it.
-  Its headers and libc source are what the junction compiles;
-- pnut at `abc34a52`, the commit seed-forth vendored.  Only
-  `portable_libc/` is read, the libc compiled into the first tcc;
+  Its headers and libc source are the libc compiled into the first tcc,
+  and what the junction compiles;
 - live-bootstrap at `a49273cb`: the simple-patches, simple-patch and
   checksum-transcriber, and the kaem text and checksums of the junction.
 
-GitHub generates the pnut and live-bootstrap archives from the commit and
-does not promise their bytes stay the same.  If one changes, the commit in
-its name is the identity of the source: compare `git archive` of that
-commit with the new archive's contents before moving its pin.
+GitHub generates the live-bootstrap archive from the commit and does not
+promise its bytes stay the same.  If it changes, the commit in its name is
+the identity of the source: compare `git archive` of that commit with the
+new archive's contents before moving its pin.
 
 `python3 tools/fetch-archives.py build-out/tinycc-inputs/<name>` downloads
 them.

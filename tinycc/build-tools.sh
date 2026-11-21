@@ -15,8 +15,10 @@
 #       ungz-unsigned-bytes  stored() reads the block length bytes as plain
 #           char.  Where char is signed, as in gcc-seed, a length byte of
 #           0x80 or more fails the complement check ("puff() failed with
-#           return code -2"); the pnut archive has such blocks.  bits()
-#           already masks with 0xFF; the patch masks these four reads too.
+#           return code -2"); the pnut archive, an input until the first
+#           tcc moved to Mes libc, has such blocks; the three left do not.
+#           bits() already masks with 0xFF; the patch masks these four
+#           reads too.
 #       untar-ustar-prefix  untar reads only the 100-byte name field.
 #           GitHub's archive of live-bootstrap stores 200 long paths as
 #           ustar prefix + name, among them steps/tcc-0.9.26/simple-patches/*;
@@ -73,7 +75,7 @@ for t in ungz untar; do
 done
 
 # Every archive, before anything is unpacked
-for a in tcc-0.9.26.tar.gz mes-0.28.tar.gz pnut-abc34a5207b1373d0a4e3dcb3d3d6df6e22ae23d.tar.gz $LB.tar.gz; do
+for a in tcc-0.9.26.tar.gz mes-0.28.tar.gz $LB.tar.gz; do
     [ -f "$IN/$a" ] || fail "$IN/$a missing; run python3 tools/fetch-archives.py $IN/$a"
 done
 "$BIN/sha256sum" --check tinycc/SOURCES > "$OUT/sources.check" \

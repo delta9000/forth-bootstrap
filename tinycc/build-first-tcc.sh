@@ -14,8 +14,9 @@
 # The source preparation is done by the tools tinycc/build-tools.sh builds
 # from the seed (seed-cc, from stage0-posix's and live-bootstrap's C): its
 # sha256sum checks the archives against tinycc/SOURCES, ungz and untar
-# unpack them, simple-patch applies live-bootstrap's simple-patches and our
-# libc-getcwd pair, and catm writes config.h, copies our two files and
+# unpack them, simple-patch applies live-bootstrap's simple-patches, mkdir
+# and cp lay out Mes's include/arch as live-bootstrap's steps/mes-0.28 does,
+# and catm writes the empty config.h files, copies our three files and
 # joins the Forth input (layers, driver, direct-input.c) that seed-forth
 # reads on stdin.  Host programs left here: bash runs this script; rm and
 # mkdir -p clear and make build-out directories; dirname finds the
@@ -27,12 +28,14 @@
 #       live-bootstrap's steps/tcc-0.9.26/pass1.kaem does before it runs
 #       MesCC: its two simple-patches to tcctools.c (from the pinned
 #       live-bootstrap tree) and an empty config.h.  Nothing else.
-#   pnut-<commit>/  tinycc-inputs/pnut-<commit>.tar.gz, whole (untar has no
-#       member selection); only portable_libc/ is read, with
-#       tinycc/libc-getcwd.{before,after} applied to src/unistd.c, and
-#       compiled into the same image.  seed-forth's six libc patches are for
-#       its x86_64 boot stages and are not needed here.
-#   libc-sscanf.c  tinycc/libc-sscanf.c, the sscanf pnut's libc lacks
+#   mes-0.28/  tinycc-inputs/mes-0.28.tar.gz, whole, with what
+#       live-bootstrap does before compiling its libc: an empty
+#       include/mes/config.h (steps/tcc-0.9.26/pass1.kaem) and
+#       include/arch/ holding include/linux/x86_64's kernel-stat.h, signal.h
+#       and syscall.h (steps/mes-0.28/pass1.kaem).  Only include/ and the
+#       lib/ files tinycc/mes-libc.c names are read.
+#   mes-libc.c, mes-libc-native.c  tinycc/'s: the list of Mes libc files
+#       and the plain-C stand-in for its assembly
 #   direct-input.c  tinycc/direct-input.c
 #
 # The result's sha256 is pinned in tests/pins/tinycc.sha256 and checked at
@@ -45,7 +48,7 @@ IN=build-out/tinycc-inputs
 SRC=build-out/tcc-sources
 OUT=build-out/tinycc
 TCC_PKG=tcc-0.9.26-1147-gee75a10c
-PNUT=pnut-abc34a5207b1373d0a4e3dcb3d3d6df6e22ae23d
+MES=mes-0.28
 LB=live-bootstrap-a49273cbb5c381b851198bc1e53c294702f4f7c9
 
 fail() { echo "build-first-tcc: $*" >&2; exit 1; }
@@ -70,19 +73,22 @@ for p in remove-fileopen addback-fileopen; do
 done
 "$BIN/catm" "$SRC/$TCC_PKG/config.h"
 
-# portable libc
-"$BIN/ungz" --file "$IN/$PNUT.tar.gz" --output "$SRC/pnut.tar" 2> /dev/null \
-    || fail "ungz failed on $PNUT.tar.gz"
-(cd "$SRC" && ../tinycc/bin/untar --non-strict --file pnut.tar > /dev/null 2>&1) \
-    || fail "untar failed on pnut.tar"
-"$BIN/simple-patch" "$SRC/$PNUT/portable_libc/src/unistd.c" \
-    tinycc/libc-getcwd.before tinycc/libc-getcwd.after \
-    || fail "simple-patch libc-getcwd failed"
+# Mes libc
+"$BIN/ungz" --file "$IN/$MES.tar.gz" --output "$SRC/mes.tar" 2> /dev/null \
+    || fail "ungz failed on $MES.tar.gz"
+(cd "$SRC" && ../tinycc/bin/untar --non-strict --file mes.tar > /dev/null 2>&1) \
+    || fail "untar failed on mes.tar"
+"$BIN/catm" "$SRC/$MES/include/mes/config.h"
+"$BIN/mkdir" "$SRC/$MES/include/arch"
+for h in kernel-stat.h signal.h syscall.h; do
+    "$BIN/cp" "$SRC/$MES/include/linux/x86_64/$h" "$SRC/$MES/include/arch/$h"
+done
 "$BIN/rm" "$SRC/tcc.tar"
-"$BIN/rm" "$SRC/pnut.tar"
+"$BIN/rm" "$SRC/mes.tar"
 
 "$BIN/catm" "$SRC/direct-input.c" tinycc/direct-input.c
-"$BIN/catm" "$SRC/libc-sscanf.c" tinycc/libc-sscanf.c
+"$BIN/catm" "$SRC/mes-libc.c" tinycc/mes-libc.c
+"$BIN/catm" "$SRC/mes-libc-native.c" tinycc/mes-libc-native.c
 
 # Compile.  Native mode loads 020 to 119 except 081 (seed-forth's
 # tools/tcc-start.fth list); 120's main is not loaded.
