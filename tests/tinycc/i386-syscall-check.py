@@ -34,7 +34,7 @@ def calls(path):
             continue
         pid, text = m.groups()
         if text.endswith("<unfinished ...>"):
-            unfinished[pid] = text[:-len("<unfinished ...>")]
+            unfinished[pid] = text[:-len("<unfinished ...>")].rstrip()
             continue
         m = re.match(r"<\.\.\. \w+ resumed>(.*)", text)
         if m:
