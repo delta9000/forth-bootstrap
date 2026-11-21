@@ -1,11 +1,22 @@
 # kernel/
 
-The two kernels the QEMU run boots.  `k0/` is K0, 1,453 bytes of hex0
-(`k0.hex0`, assembled by `hex0-seed`, and written directly in that form,
-as commented hex0, by AI models under the owner's direction; there is no
-generator) that enters long mode and runs one program at a time:
-seed Forth.  For the TinyCC route it also writes live-bootstrap's
-builder-hex0 disk (`tests/tinycc/hex0-handoff-check.sh`, `tinycc/README.md`).  `tools/` holds what seed Forth uses to build K1 under K0: the
+The two kernels the QEMU run boots.  `k0/` is K0 (`k0.hex0`,
+1,276 bytes): a Multiboot image that enters 64-bit long mode on the page
+tables its boot image brings (`kernel/k0/mkfs.py`), and then runs static Linux
+x86-64 programs one at a time, in ring 0, over a file table held in RAM.
+It answers 19 Linux system calls (read, write, open, close, lstat, lseek,
+mmap, brk, dup2, fork, execve, exit, wait4, getcwd, chdir, rename, mkdir,
+unlink, chmod) and one of its own, 248, which writes a file to the IDE
+disk; every other number returns -38.  `fork` copies the parent's state,
+stack and image aside and runs the child to its exit, and writing to the
+console is one `out` per byte to COM1.  K0 was written directly in hex0,
+from a behavioural specification (`kernel/k0/SPEC.md`), by an AI model under the
+owner's direction, without sight of any earlier K0, and it is checked by
+independent assemblers: every byte line carries its instruction as a
+comment, and GNU as and llvm-mc must both turn the comments back into the
+same bytes.
+
+`tools/` holds what seed Forth uses to build K1 under K0: the
 recipe runner (`amd64-runner.c`, compiled by the Forth compiler), the
 object writer for K1's assembly, and the recipes.  `k1/` is K1, a small C
 kernel that runs static Linux x86-64 programs as processes, runs the whole
