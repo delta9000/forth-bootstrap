@@ -22,7 +22,8 @@
 # and the host's bash stands in for kaem.  The other programs the kaem text
 # calls (stage0's catm, chmod, cp, match, mkdir, rm, sha256sum, ungz,
 # untar; live-bootstrap's checksum-transcriber and simple-patch) are built
-# from their C by seed-cc (tinycc/build-tools.sh), and the kaem text's PATH
+# from their C by seed Forth in native mode against M2libc
+# (tinycc/build-tools.sh), and the kaem text's PATH
 # holds nothing from the host.  tcc-mes and
 # tcc-boot0 are MesCC's own output and are not expected to match; they are
 # checked against this route's pins in tests/pins/tinycc.sha256 instead.

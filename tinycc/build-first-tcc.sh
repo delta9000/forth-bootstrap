@@ -12,7 +12,8 @@
 # preprocessor, assembler or linker takes part.
 #
 # The source preparation is done by the tools tinycc/build-tools.sh builds
-# from the seed (seed-cc, from stage0-posix's and live-bootstrap's C): its
+# from the seed (native mode against M2libc, from stage0-posix's and
+# live-bootstrap's C): its
 # sha256sum checks the archives against tinycc/SOURCES, ungz and untar
 # unpack them, simple-patch applies live-bootstrap's simple-patches, mkdir
 # and cp lay out Mes's include/arch as live-bootstrap's steps/mes-0.28 does,

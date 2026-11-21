@@ -54,26 +54,59 @@ The source it compiles:
 ## Source preparation
 
 `tinycc/build-tools.sh` (run by `build-first-tcc.sh`) builds the programs
-that check, unpack and patch the sources, with no host compiler:
-seed-cc, which seed Forth builds (`cc/driver/seed-cc-start.fth`, pinned in
-`tests/pins/outputs.sha256`), compiles them against
-`chain/runtime/gcc-seed`, as `chain/plumbing/stage1.kaem` does:
+that check, unpack and patch the sources, with no host compiler.
+seed-forth compiles each in native mode, as it compiles the first tcc
+(layers 020 to 119), against stage0-posix's M2libc
+(`vendor/stage0-posix/M2libc`, in the repository):
 
 | program | source |
 |---|---|
 | `sha256sum` `catm` `mkdir` `cp` `chmod` `rm` `match` | stage0-posix `mescc-tools-extra`, unchanged |
 | `ungz` | `mescc-tools-extra`, with `tools/ungz-unsigned-bytes` |
 | `untar` | `mescc-tools-extra`, with `tools/untar-ustar-prefix` |
-| `simple-patch` | live-bootstrap `steps/simple-patch-1.0/src`, unchanged (`tools/simple-patch-unit.c` adds two headers) |
+| `simple-patch` | live-bootstrap `steps/simple-patch-1.0/src`, unchanged |
 | `checksum-transcriber` | live-bootstrap `steps/checksum-transcriber-1.0/src`, unchanged |
 
 Their sha256 are pinned in `tests/pins/tinycc.sha256`; two checkouts at
-different paths built the same bytes.
+different paths built the same bytes, the second with no seed-cc in its
+`build-out`.  All thirteen build in under two seconds.
+
+M2libc is compiled in its own M2 mode, as M2-Mesoplanet builds these
+tools for stage0-posix: `__M2__` makes its headers include its `.c`
+files, so each tool is one translation unit.  `tinycc/m2libc-native.c`,
+ours, goes ahead of the tool's source and stands in for what M2-Planet
+and M2libc's M1 assembly provide:
+- `amd64/linux/unistd.c`, `fcntl.c` and `sys/stat.c`: it defines their
+  include guards, their constants, and in C the thirteen system calls the
+  tools reach, each on `__native_syscall` (cc-native-syscall-any, as for
+  the first tcc), plus `getcwd` and `_exit`;
+- `libc-full.M1`'s `_start` and `exit`: a `main` that sets `_envp` and
+  calls `__init_malloc` and `__init_io` before the tool's `main` (renamed),
+  and an `exit` that flushes through `__kill_io`;
+- M2-Planet's built-in types (`SCM`, `FUNCTION`, the fixed-width
+  integers), and `va_list` for native mode's eight-byte stack slots in
+  place of the `__va_*` builtins M2libc's `stdarg.h` names;
+- `stdlib.c` and `string.c` both define `memset`, which M2-Planet accepts
+  and native mode does not (error 211); `stdlib.c`'s, called only by its
+  `calloc`, is renamed.
+
+M2libc's `malloc` grows the heap with `brk`, so ungz holds a whole archive
+in memory: the 36 MB pnut archive unpacked in 4.1 s and 122 MB.
+
+The Forth input for each tool is the layers, three lines naming the output
+and the source, `tinycc/tool-compile.fth`, the shim and the source, joined
+by the seed-built `catm`; bash's builtin `printf` writes the three lines,
+as a command line would carry them.  `catm`'s own input has to be joined
+before `catm` exists: `tinycc/catm-start.fth`, a Forth program for the
+seed alone (its first words are `cc/driver/seed-cc-start.fth`'s), writes
+it, with catm's names in `tinycc/tools/catm.fth`.  The driver writes each
+tool with mode 0755, so nothing needs `chmod` before `chmod` is built.
 
 The two changes of ours are simple-patch before/after pairs:
 - `ungz-unsigned-bytes`: `stored()` reads a stored block's length bytes as
-  plain `char` and compares them with `~len & 0xff`.  Plain `char` is
-  signed in gcc-seed, so a byte of 0x80 or more fails ("puff() failed with
+  plain `char` and compares them with `~len & 0xff`.  Where plain `char`
+  is signed, as in gcc-seed, which built these tools before, a byte of
+  0x80 or more fails ("puff() failed with
   return code -2").  The pnut archive, an input until the first tcc moved
   to Mes libc, has such blocks; the three archives left do not (stock ungz
   gives the same tars).  `bits()` already masks with `0xFF`; the patch
@@ -88,15 +121,9 @@ simple-patch is in the live-bootstrap archive, so stock ungz and untar
 (`build-out/tinycc/bin-boot/`) unpack that archive first; its
 `simple-patch.c` path fits the name field.  The patched tools then unpack
 it again into `build-out/tinycc/lb/`.  With host `tar` as the reference,
-the seed tools' trees of the live-bootstrap, pnut and tcc archives
+the native tools' trees of the live-bootstrap, Mes, tcc and pnut archives
 compared equal under `diff -r` (symlinks included), apart from untar's
-`pax_global_header` file.
-
-The Forth compiler's native mode, which builds the first tcc, does not
-build the tools.  They would need a libc that is not inside an archive
-they must unpack, and Mes libc is in the Mes archive.  seed-cc with
-gcc-seed is in the repository and already builds these programs for the
-GCC chain.
+`pax_global_header` file; so did the seed-cc tools' trees before them.
 
 Host programs left, from `strace -f -e trace=execve`:
 - Source preparation (`build-first-tcc.sh`, which runs `build-tools.sh`):
@@ -104,7 +131,9 @@ Host programs left, from `strace -f -e trace=execve`:
   directories; `dirname` finds the repository; `wc`, `sha256sum`, `sed`
   and `cut` print the size and compare tools and tcc-first with their
   pins.  None of them reads or writes a source file or the Forth input;
-  the seed-built `catm` joins that, and seed-forth reads it as stdin.
+  the seed-built `catm` joins that (`catm-start.fth` for catm's own), and
+  seed-forth reads it as stdin.  bash's builtin `printf` writes each
+  tool's three-line names file.
 - Replay (`tests/tinycc/junction-check.sh`), in addition: `bwrap` makes the
   root; `--probe` runs `chmod`, `mktemp`, `true` and `rm` for its i386
   test; `realpath` names the host's dynamic loader for the bind mount;
@@ -117,9 +146,8 @@ Host programs left, from `strace -f -e trace=execve`:
   seed-built tools, and nothing from the host.
 - `tools/fetch-archives.py` (python3) downloads the archives.
 
-The tools are built by seed-cc in SysV mode, so this route now also
-depends on the compiler layers 120 and up and on
-`chain/runtime/gcc-seed`, as the GCC chain already does.
+This route uses only the compiler layers 020 to 119 in native mode: not
+seed-cc, the layers 120 and up, or `chain/runtime/gcc-seed`.
 
 ## The junction
 
@@ -154,8 +182,8 @@ bytes from tcc-boot1 on.
 - The i386 stages run on the host's Linux kernel through its 32-bit
   support, not under K0 or K1.  K1 loads only x86_64 ELF.
 - Host bash stands in for kaem.  The other commands of the kaem text are
-  the programs live-bootstrap uses, built by seed-cc (above); two of them
-  carry a patch of ours.
+  the programs live-bootstrap uses, built by seed Forth in native mode
+  against M2libc (above); two of them carry a patch of ours.
 - MesCC itself was not run.  Its column above is live-bootstrap's
   published file.
 

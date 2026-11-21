@@ -23,8 +23,8 @@ create cc-native-name-gettimeofday s, gettimeofday
 \ arguments, returning rax as Linux gives it (-errno on failure).  It
 \ replaces the named primitives and the traps below, so that a C library
 \ can define read, exit, longjmp and the rest itself.  Off by default, so
-\ that no other native program changes.  tinycc/mes-libc-native.c is
-\ written for it.
+\ that no other native program changes.  tinycc/mes-libc-native.c and
+\ tinycc/m2libc-native.c are written for it.
 variable cc-native-syscall-any
 create cc-native-name-syscall s, __native_syscall
 

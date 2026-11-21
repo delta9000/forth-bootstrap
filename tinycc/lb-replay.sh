@@ -22,7 +22,8 @@
 # that is not a bash builtin is one of live-bootstrap's programs: stage0's
 # catm, chmod, cp, match, mkdir, rm, sha256sum, ungz and untar, and
 # live-bootstrap's checksum-transcriber and simple-patch, built from their
-# C by seed-cc, or a tcc of the replay.  It is printed before it runs:
+# C by seed Forth in native mode against M2libc, or a tcc of the replay.
+# It is printed before it runs:
 #   mes-0.28    only the lines that unpack mes-0.28 and install its headers
 #               under /usr/include/mes.  mes-m2, mescc and MesCC's libc are
 #               not built; nothing later reads them.
