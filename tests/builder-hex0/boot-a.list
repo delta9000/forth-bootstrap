@@ -1,0 +1,13 @@
+f probe /probe
+x /probe unimpl
+x /probe brk
+x /probe entry-shell
+x /probe fork
+x /probe execfork
+x /probe execoverlay
+x /probe files
+x /probe ring
+x /probe speed1m
+x /probe speed10m
+x /probe stdin
+r STDIN-MARKER-0123456789

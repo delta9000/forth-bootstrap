@@ -1,0 +1,471 @@
+[    0.0431] cSeaBIOS (version Arch Linux 1.17.0-2-2)
+[    0.0431] 
+[    0.0431] 
+[    0.0455] iPXE (http://ipxe.org) 00:03.0 C900 PCI2.10 PnP PMM+BEFD4010+BEF34010 C900
+[    0.0506] Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
+[    0.0506] 
+[    0.0506] 
+[    0.0798] Booting from Hard Disk...
+[    0.0800] src
+[    0.0858] /probe
+[    0.0861] /probe
+[    0.1206] unimpl
+[    0.1212] == unimpl begin
+[    0.1228] mmap(90,ebx=0) ret=0x00000000 (0) regs-preserved
+[    0.1247] mmap(90,old_mmap struct) ret=0x00000000 (0) regs-preserved
+[    0.1268] mmap2(192,0,4096,3,0x22,-1,0) ret=0x00000000 (0) regs-preserved
+[    0.1283] munmap(91) ret=0x00000000 (0) regs-preserved
+[    0.1299] dup2(63,4,0) ret=0x00000000 (0) regs-preserved
+[    0.1314] dup(41,1) ret=0x00000000 (0) regs-preserved
+[    0.1330] unlink(10,/u1) ret=0x00000000 (0) regs-preserved
+[    0.1347]   /u1: open=4 len(SEEK_END)=5 read=5 bytes=[hello]
+[    0.1365] rename(38,/u1,/u2) ret=0x00000000 (0) regs-preserved
+[    0.1382]   /u1: open=4 len(SEEK_END)=5 read=5 bytes=[hello]
+[    0.1387]   /u2: open=-1
+[    0.1433] lstat(107,/u1,st) ret=0x00000000 (0) regs-preserved
+[    0.1471]   lstat buffer unchanged=1
+[    0.1521] lstat(107,/nonexistent,st) ret=0x00000000 (0) regs-preserved
+[    0.1569] stat(106,/nonexistent,st) ret=0x00000000 (0) regs-preserved
+[    0.1620] lstat64(196,/nonexistent,st) ret=0x00000000 (0) regs-preserved
+[    0.1669] stat64(195,/nonexistent,st) ret=0x00000000 (0) regs-preserved
+[    0.1715] fstat64(197,1,st) ret=0x00000000 (0) regs-preserved
+[    0.1753]   stat buffers unchanged=1
+[    0.1786]   open(/)=-1
+[    0.1835] getdents(141,fd,st,256) ret=0x00000000 (0) regs-preserved
+[    0.1884] getdents64(220,fd,st,256) ret=0x00000000 (0) regs-preserved
+[    0.1923]   getdents buffer unchanged=1
+[    0.1970] chmod(15,/u1,0755) ret=0x00000000 (0) regs-preserved
+[    0.2018] rmdir(40,/nonexistent) ret=0x00000000 (0) regs-preserved
+[    0.2062] getpid(20) ret=0x00000000 (0) regs-preserved
+[    0.2109] ioctl(54,1,TCGETS,st) ret=0x00000000 (0) regs-preserved
+[    0.2154] uname(122,st) ret=0x00000000 (0) regs-preserved
+[    0.2202] clock_gettime(265,0,st) ret=0x00000000 (0) regs-preserved
+[    0.2246] pipe(42,st) ret=0x00000000 (0) regs-preserved
+[    0.2301] exit_group(252,9) [should not exit if unimplemented] ret=0x00000000 (0) regs-pre
+[    0.2333] served
+[    0.2364] ALIAS
+[    0.2417] sys 0x104=260 (al=4 write) fd1 'ALIAS\n' ret=0x00000006 (6) regs-preserved
+[    0.2502] sys 0x121=289 (al=0x21 access) /u1 ret=0x00000000 (0) clobbered: ebx->0x00050000
+[    0.2502] 
+[    0.2557] sys 0x121=289 (al=0x21 access) /nonexistent ret=0xffffffff (-1) clobbered: ebx->
+[    0.2590] 0x00050000
+[    0.2645] openat(295=0x127, al=0x27 mkdir?) ebx="/u3" ret=0x00000000 (0) regs-preserved
+[    0.2695]   access(33,/u3) ret=0x00000000 (0) clobbered: ebx->0x00050000
+[    0.2736] -- implemented calls, register clobbers
+[    0.2786] access(33,/u1) ret=0x00000000 (0) clobbered: ebx->0x00050000
+[    0.2838] access(33,/nonexistent) ret=0xffffffff (-1) clobbered: ebx->0x00050000
+[    0.2888] open(5,/u4,O_WRONLY|O_CREAT) ret=0x00000005 (5) regs-preserved
+[    0.2941] write(4,fd,'x',1) to file ret=0x00000001 (1) clobbered: ebx->0x01000070
+[    0.2970] y
+[    0.3021] write(4,1,'y\n',2) to console ret=0x00000002 (2) regs-preserved
+[    0.3065] lseek(19,fd,0,0) ret=0x00000000 (0) regs-preserved
+[    0.3108] close(6,fd) ret=0x00000000 (0) regs-preserved
+[    0.3153] read(3,fd,buf,10) ret=0x00000001 (1) regs-preserved
+[    0.3196] close(6,fd) ret=0x00000000 (0) regs-preserved
+[    0.3240] mkdir(39,/ud) ret=0x00000000 (0) regs-preserved
+[    0.3287] chdir(12,/ud) ret=0x00000000 (0) clobbered: ebx->0x00050000
+[    0.3335] getcwd(183,buf,256) ret=0x0804e840 (134539328) regs-preserved
+[    0.3367]   cwd=/ud
+[    0.3418] chdir(12,/nonexistent) ret=0xffffffff (-1) clobbered: ebx->0x00050000
+[    0.3471] chdir(12,/u1) (non-empty file) ret=0xffffffff (-1) clobbered: ebx->0x00050000
+[    0.3518] chdir(12,/) ret=0xffffffff (-1) clobbered: ebx->0x00050000
+[    0.3564] brk(45,0) ret=0x0806e788 (134670216) regs-preserved
+[    0.3596] == unimpl end
+[    0.3627] /probe
+[    0.3775] brk
+[    0.3807] == brk begin
+[    0.3845] _start=0x08048060 (134512736)
+[    0.3893] file end (edata_mark, = vaddr+filesz)=0x0804e788 (134539144)
+[    0.3935] memsz end (end_mark)=0x0807faa0 (134740640)
+[    0.3976] brk(0) initial=0x0806e788 (134670216)
+[    0.4016] brk - file end=0x00020000 (131072)
+[    0.4056] brk - memsz end=0xfffeece8 (-70424)
+[    0.4101] nonzero bytes in bss (0x30000 array)=0x00000000 (0)
+[    0.4147] nonzero bytes between memsz end and brk=0x00000000 (0)
+[    0.4193] byte written at brk+0x1000 reads back=0x0000005a (90)
+[    0.4617] byte written at 0x20000000 (above brk) reads back=0x0000006b (107)
+[    0.4665] brk(64MB = 0x0c048000) ret=0x0c048000 tsc-cycles=141567k
+[    0.5006]   brk(0) now=0x0c048000 (201621504)
+[    0.6195]   nonzero bytes in [old brk, new brk) after growth (was dirtied)=0x00000000 (0)
+[    0.6243] brk(256MB = 0x18048000) ret=0x18048000 tsc-cycles=429126k
+[    0.7194]   brk(0) now=0x18048000 (402948096)
+[    0.9304]   nonzero bytes in [old brk, new brk) after growth (was dirtied)=0x00000000 (0)
+[    0.9352] brk(600MB = 0x2d848000) ret=0x2d848000 tsc-cycles=776586k
+[    1.1018]   brk(0) now=0x2d848000 (763658240)
+[    1.1073]   nonzero bytes in [old brk, new brk) after growth (was dirtied)=0x00000000 (0)
+[    1.1116] brk(current) ret=0x2d848000 (763658240)
+[    1.1161] brk(0) after brk(current)=0x2d848000 (763658240)
+[    1.1447] argv[0] before = '/probe' at 0x30000300
+[    1.1490] brk(0x30001000) ret=0x30001000 (805310464)
+[    1.1528] argv[0] after = '' strlen=0
+[    1.1561] == brk end
+[    1.1593] /probe
+[    1.1748] entry-shell
+[    1.1787] == entry begin (entry-shell)
+[    1.1831]   eflags after a console write=0x00000206 IF=1
+[    1.1867]   entry eax=0x00000000
+[    1.1904]   entry ebx=0x00000000
+[    1.1940]   entry ecx=0x00000000
+[    1.1977]   entry edx=0x00000000
+[    1.2013]   entry esi=0x00000000
+[    1.2050]   entry edi=0x00000000
+[    1.2086]   entry ebp=0x00000000
+[    1.2123]   entry esp=0x07ffffd0
+[    1.2160]   entry eflags=0x00000246
+[    1.2197]   entry cs=0x00000008
+[    1.2233]   entry ss=0x00000010
+[    1.2269]   entry ds=0x00000010
+[    1.2305]   eflags.IF=1 IOPL=0
+[    1.2337]   argc=2
+[    1.2380]   argv[0]=0x30000500 strlen=6 text='/probe'
+[    1.2426]   argv[1]=0x30000400 strlen=11 text='entry-shell'
+[    1.2463]   argv[argc]=0x00000000
+[    1.2497]   envp count=0
+[    1.2552]   stack words from esp: 0x00000002 0x30000500 0x30000400 0x00000000 0x00000000 0
+[    1.2607] x00008b8a 0x00008c45 0x00000080 0x00000000 0x00000000 0x0000012f 0x00008cfe 
+[    1.2662]   stack below entry esp, 65536 bytes: zero=65240 0xCC(parent fill)=1 other=295 (
+[    1.2703] highest non-zero/non-CC at esp-468)
+[    1.2758]   stack below entry esp, 1024 bytes: zero=700 0xCC(parent fill)=0 other=324 (hig
+[    1.2798] hest non-zero/non-CC at esp-468)
+[    1.2831] == entry end
+[    1.2863] /probe
+[    1.3013] fork
+[    1.3046] == fork begin
+[    1.3086] parent brk=0x0806e788 (134670216)
+[    1.3127] &g_data (bss)=0x0807f840 (134740032)
+[    1.3169] &g_below (data)=0x0804e72c (134539052)
+[    1.3212] above(brk+0x10000)=0x0807e788 (134735752)
+[    1.3250] far=0x20000000 (536870912)
+[    1.3289] &stackvar=0x07ffff68 (134217576)
+[    1.3333] belowesp(esp-0x2000)=0x07ffdf60 (134209376)
+[    1.3373] child: fork ret=0 regs-preserved
+[    1.3414] child sees g_data=0x00001111 (4369)
+[    1.3455] child sees g_below=0x00001111 (4369)
+[    1.3495] child sees above=0x00001111 (4369)
+[    1.3535] child sees far=0x00001111 (4369)
+[    1.3577] child sees stackvar=0x00001111 (4369)
+[    1.3618] child sees belowesp=0x00001111 (4369)
+[    1.3659] child brk(0)=0x0806e788 (134670216)
+[    1.3827] child wrote 0x2222 everywhere; execve /probe child
+[    1.3867] [child program] brk(0)=0x0806e788
+[    1.3916] [child program] eflags after console writes=0x00000006 IF=0
+[    1.3962] [child program] g_data (fresh image)=0x00000000 (0)
+[    1.4010] [child program] value at far before write=0x00000000 (0)
+[    1.4058] [child program] value at above before write=0x00000000 (0)
+[    1.4105] [child program] g_below (fresh image)=0x00000077 (119)
+[    1.4156] [child program] wrote 0x3333 to far, above, g_data, g_below; exit 42
+[    1.4197] parent: fork ret=1 regs-preserved
+[    1.4243] parent sees g_data (bss, above brk)=0x00003333 (13107)
+[    1.4291] parent sees g_below (data, below brk)=0x00001111 (4369)
+[    1.4332] parent sees above=0x00003333 (13107)
+[    1.4372] parent sees far=0x00003333 (13107)
+[    1.4414] parent sees stackvar=0x00001111 (4369)
+[    1.4456] parent sees belowesp=0x00002222 (8738)
+[    1.4501] parent brk(0) after child=0x0806e788 (134670216)
+[    1.4552] waitpid(7,-1,&st,0) ret=0x00000000 (0) clobbered: esi->0x00021018
+[    1.4710]   status=0x00002a00 (10752)
+[    1.4747] parent: second fork ret=1
+[    1.4794] wait4(114,-1,&st,0,0) ret=0x00000000 (0) regs-preserved
+[    1.4831]   status=0x00000000 (0)
+[    1.4885] waitpid(7,-1,&st,0) after wait4 ret=0x00000000 (0) clobbered: esi->0x00021018
+[    1.5047]   status=0x00012c00 (76800)
+[    1.5102] waitpid(7,-1,&st,0) child exit 0 ret=0x00000000 (0) clobbered: esi->0x00021018
+[    1.5139]   status=0x00000000 (0)
+[    1.5172] == fork end
+[    1.5203] /probe
+[    1.5361] execfork
+[    1.5532] == execfork begin
+[    1.5571] == entry begin (entry-forked)
+[    1.5618]   eflags after a console write=0x00000006 IF=0
+[    1.5655]   entry eax=0x00000000
+[    1.5693]   entry ebx=0x00000000
+[    1.5731]   entry ecx=0x00000000
+[    1.5769]   entry edx=0x00000000
+[    1.5806]   entry esi=0x00000000
+[    1.5844]   entry edi=0x00000000
+[    1.5881]   entry ebp=0x00000000
+[    1.5919]   entry esp=0x07fffed0
+[    1.5957]   entry eflags=0x00000046
+[    1.5993]   entry cs=0x00000008
+[    1.6031]   entry ss=0x00000010
+[    1.6068]   entry ds=0x00000010
+[    1.6104]   eflags.IF=0 IOPL=0
+[    1.6137]   argc=5
+[    1.6181]   argv[0]=0x300279a4 strlen=6 text='/probe'
+[    1.6228]   argv[1]=0x300278a4 strlen=12 text='entry-forked'
+[    1.6270]   argv[2]=0x300277a4 strlen=1 text='a'
+[    1.6327]   argv[3]=0x300276a4 strlen=257 text='LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL..
+[    1.6364] .' last 8='LLLLLLLa'
+[    1.6407]   argv[4]=0x300275a4 strlen=2 text='zz'
+[    1.6445]   argv[argc]=0x00000000
+[    1.6485]   envp[0]=0x300274a4 'E2=two'
+[    1.6524]   envp[1]=0x300273a4 'E1=one'
+[    1.6564]   envp[2]=0x300272a4 'E0=zero'
+[    1.6598]   envp count=3
+[    1.6655]   stack words from esp: 0x00000005 0x300279a4 0x300278a4 0x300277a4 0x300276a4 0
+[    1.6711] x300275a4 0x00000000 0x300274a4 0x300273a4 0x300272a4 0x00000000 0x000082ba 
+[    1.6767]   stack below entry esp, 65536 bytes: zero=126 0xCC(parent fill)=65177 other=233
+[    1.6809]  (highest non-zero/non-CC at esp-372)
+[    1.6866]   stack below entry esp, 1024 bytes: zero=128 0xCC(parent fill)=600 other=296 (h
+[    1.6904] ighest non-zero/non-CC at esp-436)
+[    1.6937] == entry end
+[    1.6975] parent: child status 0x00000000
+[    1.7007] == execfork end
+[    1.7037] /probe
+[    1.7189] execoverlay
+[    1.7342] == execoverlay begin
+[    1.7379] == entry begin (entry-overlay)
+[    1.7422]   eflags after a console write=0x00000006 IF=0
+[    1.7456]   entry eax=0x00000000
+[    1.7492]   entry ebx=0x00000000
+[    1.7527]   entry ecx=0x00000000
+[    1.7562]   entry edx=0x00000000
+[    1.7597]   entry esi=0x00000000
+[    1.7632]   entry edi=0x00000000
+[    1.7667]   entry ebp=0x00000000
+[    1.7702]   entry esp=0x07fffed0
+[    1.7738]   entry eflags=0x00000046
+[    1.7773]   entry cs=0x00000008
+[    1.7807]   entry ss=0x00000010
+[    1.7842]   entry ds=0x00000010
+[    1.7876]   eflags.IF=0 IOPL=0
+[    1.7907]   argc=5
+[    1.7948]   argv[0]=0x30001300 strlen=6 text='/probe'
+[    1.7994]   argv[1]=0x30001200 strlen=13 text='entry-overlay'
+[    1.8035]   argv[2]=0x30001100 strlen=1 text='a'
+[    1.8089]   argv[3]=0x30001000 strlen=257 text='LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL..
+[    1.8125] .' last 8='LLLLLLLa'
+[    1.8166]   argv[4]=0x30000f00 strlen=2 text='zz'
+[    1.8203]   argv[argc]=0x00000000
+[    1.8240]   envp[0]=0x30000e00 'E2=two'
+[    1.8279]   envp[1]=0x30000d00 'E1=one'
+[    1.8317]   envp[2]=0x30000c00 'E0=zero'
+[    1.8350]   envp count=3
+[    1.8405]   stack words from esp: 0x00000005 0x30001300 0x30001200 0x30001100 0x30001000 0
+[    1.8459] x30000f00 0x00000000 0x30000e00 0x30000d00 0x30000c00 0x00000000 0x000082ba 
+[    1.8514]   stack below entry esp, 65536 bytes: zero=126 0xCC(parent fill)=65177 other=233
+[    1.8554]  (highest non-zero/non-CC at esp-372)
+[    1.8609]   stack below entry esp, 1024 bytes: zero=132 0xCC(parent fill)=600 other=292 (h
+[    1.8649] ighest non-zero/non-CC at esp-436)
+[    1.8684] == entry end
+[    1.8715] /probe
+[    1.8876] files
+[    1.8910] == files begin
+[    1.8950] -- open missing
+[    1.8994] open(/missing, O_RDONLY)=0xffffffff (-1)
+[    1.9037] open(/missing, O_WRONLY)=0xffffffff (-1)
+[    1.9081] open(/missing, O_RDWR|O_TRUNC)=0xffffffff (-1)
+[    1.9128] open(/missing, O_WRONLY|O_CREAT|O_TRUNC)=0x00000004 (4)
+[    1.9172] open(/nodir/x, O_WRONLY|O_CREAT)=0xffffffff (-1)
+[    1.9214] open(/nodir/x, O_RDONLY)=0xffffffff (-1)
+[    1.9259] open(/a/b/c, O_WRONLY|O_CREAT)=0xffffffff (-1)
+[    1.9296] mkdir(/a)=0x00000000 (0)
+[    1.9347] open(/a/b/c, O_WRONLY|O_CREAT) after mkdir /a only=0xffffffff (-1)
+[    1.9393] mkdir(/a/b/c/d) (parents missing)=0xffffffff (-1)
+[    1.9441] open(relname, O_WRONLY|O_CREAT) with cwd /=0x00000005 (5)
+[    1.9481] access(/relname)=0x00000000 (0)
+[    1.9524] open(/a/../relname, O_RDONLY)=0x00000005 (5)
+[    1.9559] -- fd numbering
+[    1.9596] first fd=0x00000005 (5)
+[    1.9633] second fd=0x00000006 (6)
+[    1.9678] after close(first), next open fd=0x00000005 (5)
+[    1.9719] close(77) (never opened)=0x00000000 (0)
+[    1.9763] read(77,...) (never opened)=0x00000000 (0)
+[    1.9804] -- grow a file that is not the newest
+[    1.9853]   /fa: open=5 len(SEEK_END)=10 read=10 bytes=[AAAAAAAAAA]
+[    1.9900]   /fb: open=5 len(SEEK_END)=10 read=10 bytes=[BBBBBBBBBB]
+[    1.9946] reopen /fa O_WRONLY (no O_CREAT)=0x00000005 (5)
+[    1.9987] lseek(/fa,0,SEEK_END)=0x0000000a (10)
+[    2.0026] write 'aaaaa'=0x00000005 (5)
+[    2.0075]   /fa: open=5 len(SEEK_END)=15 read=15 bytes=[AAAAAAAAAAaaaaa]
+[    2.0122]   /fb: open=5 len(SEEK_END)=10 read=10 bytes=[aaaaaBBBBB]
+[    2.0160]  after creating /fc with CCCC:
+[    2.0210]   /fa: open=5 len(SEEK_END)=15 read=15 bytes=[AAAAAAAAAAaaaaa]
+[    2.0257]   /fb: open=5 len(SEEK_END)=10 read=10 bytes=[aaaaaBBBBB]
+[    2.0302]   /fc: open=5 len(SEEK_END)=4 read=4 bytes=[CCCC]
+[    2.0343] -- overwrite in place without O_CREAT
+[    2.0390]   /fb: open=5 len(SEEK_END)=10 read=10 bytes=[bbaaaBBBBB]
+[    2.0429] -- O_CREAT on an existing name
+[    2.0469] open(/fb, O_CREAT) fd=0x00000005 (5)
+[    2.0513]   /fb: open=5 len(SEEK_END)=0 read=0 bytes=[]
+[    2.0551] -- lseek past end, then write
+[    2.0593] lseek(fd,100,SEEK_SET)=0x00000064 (100)
+[    2.0629] write 'X'=0x00000001 (1)
+[    2.0671] lseek(fd,0,SEEK_CUR)=0x00000065 (101)
+[    2.0712] lseek(fd,0,SEEK_END)=0x0000000b (11)
+[    2.0766]   /fd: file index=16 address=0x54006fff length(table)=11 bytes at address+9..+11
+[    2.0816] : 0x00000039 0x00000000 0x00000000 byte at address+100=0x00000058
+[    2.0862]   next_file_address (0x8307)=0x5400700a (1409314826)
+[    2.0910]   /fd: open=5 len(SEEK_END)=11 read=11 bytes=[0123456789\x00]
+[    2.0959]   /fd: open=5 len(SEEK_END)=11 read=11 bytes=[0123456789\x00]
+[    2.1003]   /fe: open=5 len(SEEK_END)=1 read=1 bytes=[e]
+[    2.1041] -- lseek beyond end and read
+[    2.1083] lseek(/fa,1000,SEEK_SET)=0x000003e8 (1000)
+[    2.1119] read 4=0x00000000 (0)
+[    2.1160] lseek(/fa,-5,SEEK_SET)=0xfffffffb (-5)
+[    2.1204] read at end: lseek(0,SEEK_END)=0x0000000f (15)
+[    2.1242] read 4 at EOF=0x00000000 (0)
+[    2.1280] -- close and reopen, position
+[    2.1315]   read 3 -> 3 'AAA'
+[    2.1354]   lseek(SEEK_CUR)=0x00000003 (3)
+[    2.1392]   reopen fd=0x00000005 (5)
+[    2.1436]   lseek(SEEK_CUR) after reopen=0x00000000 (0)
+[    2.1473]   read 3 -> 3 'AAA'
+[    2.1524]   second simultaneous fd read 2 -> 'AA' (independent offset if 'AA')
+[    2.1563] -- read sizes from a file
+[    2.1612]   read(fd,buf,4096) on 15-byte file=0x0000000f (15)
+[    2.1652] -- read/write on stdio fds
+[    2.1687] e2
+[    2.1728]   write(2,'e2\n',3)=0x00000003 (3)
+[    2.1759] e0
+[    2.1802]   write(0,'e0\n',3)=0x00000003 (3)
+[    2.1842] -- chdir then relative open
+[    2.1881]   mkdir(/w)=0x00000000 (0)
+[    2.1920]   chdir(/w)=0x00000000 (0)
+[    2.1963]   open(rel2,O_CREAT)=0x00000006 (6)
+[    2.2004]   access(/w/rel2)=0x00000000 (0)
+[    2.2046]   getcwd ret=0x0804e840 (134539328)
+[    2.2078]   cwd='/w'
+[    2.2121]   chdir(..) from /w=0xffffffff (-1)
+[    2.2159]   cwd after chdir(..)='/w'
+[    2.2200]   chdir(/) from /w=0xffffffff (-1)
+[    2.2238]   cwd after chdir(/)='/w'
+[    2.2287]   getcwd(buf,2) ret (buffer too small)=0x0804e840 (134539328)
+[    2.2344]   buf after (was 0xee): 0x0000002f 0x00000077 0x00000000 0x00000000 0x000000ee 0
+[    2.2385] x000000ee 0x000000ee 0x000000ee 
+[    2.2422] == files end
+[    2.2460] /probe
+[    2.2642] ring
+[    2.2678] == ring begin
+[    2.2712] cs=0x00000008 (8)
+[    2.2758] cs & 3 (CPL)=0x00000000 (0)
+[    2.2806] eflags now=0x00000202 (514)
+[    2.2853] IF now=0x00000001 (1)
+[    2.2905] cr0 (readable => CPL 0)=0x00000011 (17)
+[    2.2942] .
+[    2.2997]   canary write(1,'.',1) console: deepest write below caller esp = 48 bytes, chan
+[    2.3066] ged bytes=48 ret=0x00000001
+[    2.3066] 
+[    2.3121]   canary write(fd,'.',1) file: deepest write below caller esp = 40 bytes, change
+[    2.3187] d bytes=40 ret=0x00000001
+[    2.3187] 
+[    2.3242]   canary brk(0): deepest write below caller esp = 20 bytes, changed bytes=20 ret
+[    2.3302] =0x0806e788
+[    2.3303] 
+[    2.3355]   canary getpid (unimplemented): deepest write below caller esp = 12 bytes, chan
+[    2.3420] ged bytes=12 ret=0x00000000
+[    2.3420] 
+[    2.3475]   canary open(/cfile,O_RDONLY): deepest write below caller esp = 72 bytes, chang
+[    2.3541] ed bytes=72 ret=0x00000005
+[    2.3541] 
+[    2.3598]   canary access(/cfile): deepest write below caller esp = 56 bytes, changed byte
+[    2.3663] s=56 ret=0x00000000
+[    2.3663] 
+[    2.3717]   canary getcwd(buf,256): deepest write below caller esp = 24 bytes, changed byt
+[    2.3782] es=24 ret=0x0804e840
+[    2.3782] 
+[    2.3838]   canary lseek(fd,0,0): deepest write below caller esp = 20 bytes, changed bytes
+[    2.3904] =20 ret=0x00000000
+[    2.3904] 
+[    2.3960]   canary read(fd,buf,1) file: deepest write below caller esp = 48 bytes, changed
+[    3.2297]  bytes=48 ret=0x00000001
+[    3.2353]   spin 1 (IF=1, 3147M tsc cycles, no syscall): deepest write below esp = 0, chan
+[    3.9951] ged bytes=0
+[    4.0006]   spin 2 (IF=1, 2869M tsc cycles, no syscall): deepest write below esp = 0, chan
+[    4.7787] ged bytes=0
+[    4.7840]   spin 3 (IF=1, 2938M tsc cycles, no syscall): deepest write below esp = 0, chan
+[    5.5285] ged bytes=0
+[    5.5339]   spin 4 (IF=1, 2811M tsc cycles, no syscall): deepest write below esp = 0, chan
+[    5.5371] ged bytes=0
+[    5.5404] == ring end
+[    5.5434] /probe
+[    5.5585] speed1m
+[    5.5618] == speed begin
+[    5.6415] SPD-WRITE-BEGIN n=1000000
+[    5.6451] SPD-WRITE-END tsc=288537k
+[    5.6489]   length=0x000f4240 (1000000)
+[    5.7148] SPD-READ-BEGIN n=1000000
+[    5.7188] SPD-READ-END tsc=236477k got=1000000
+[    5.7848] SPD-NULL-BEGIN n=1000000
+[    5.7884] SPD-NULL-END tsc=236437k
+[    5.7919] SPD-CON-BEGIN n=2000
+[    5.7972] ................................................................................
+[    5.8025] ................................................................................
+[    5.8079] ................................................................................
+[    5.8132] ................................................................................
+[    5.8186] ................................................................................
+[    5.8241] ................................................................................
+[    5.8294] ................................................................................
+[    5.8347] ................................................................................
+[    5.8400] ................................................................................
+[    5.8453] ................................................................................
+[    5.8506] ................................................................................
+[    5.8559] ................................................................................
+[    5.8612] ................................................................................
+[    5.8665] ................................................................................
+[    5.8719] ................................................................................
+[    5.8772] ................................................................................
+[    5.8825] ................................................................................
+[    5.8878] ................................................................................
+[    5.8931] ................................................................................
+[    5.8984] ................................................................................
+[    5.9038] ................................................................................
+[    5.9091] ................................................................................
+[    5.9144] ................................................................................
+[    5.9197] ................................................................................
+[    5.9278] ................................................................................
+[    5.9278] 
+[    5.9314] SPD-CON-END tsc=504767k
+[    5.9346] == speed end
+[    5.9378] /probe
+[    5.9528] speed10m
+[    5.9561] == speed begin
+[    6.7192] SPD-WRITE-BEGIN n=10000000
+[    6.7231] SPD-WRITE-END tsc=2880376k
+[    6.7271]   length=0x00989680 (10000000)
+[    7.3593] SPD-READ-BEGIN n=10000000
+[    7.3634] SPD-READ-END tsc=2383079k got=10000000
+[    7.9937] SPD-NULL-BEGIN n=10000000
+[    7.9974] SPD-NULL-END tsc=2376875k
+[    8.0009] SPD-CON-BEGIN n=2000
+[    8.0063] ................................................................................
+[    8.0116] ................................................................................
+[    8.0170] ................................................................................
+[    8.0224] ................................................................................
+[    8.0278] ................................................................................
+[    8.0332] ................................................................................
+[    8.0386] ................................................................................
+[    8.0439] ................................................................................
+[    8.0493] ................................................................................
+[    8.0547] ................................................................................
+[    8.0601] ................................................................................
+[    8.0655] ................................................................................
+[    8.0708] ................................................................................
+[    8.0762] ................................................................................
+[    8.0816] ................................................................................
+[    8.0870] ................................................................................
+[    8.0924] ................................................................................
+[    8.0978] ................................................................................
+[    8.1031] ................................................................................
+[    8.1085] ................................................................................
+[    8.1139] ................................................................................
+[    8.1192] ................................................................................
+[    8.1246] ................................................................................
+[    8.1300] ................................................................................
+[    8.1382] ................................................................................
+[    8.1383] 
+[    8.1418] SPD-CON-END tsc=510070k
+[    8.1450] == speed end
+[    8.1481] /probe
+[    8.1635] stdin
+[    8.1668] == stdin begin
+[    8.1719]   read(0,buf,64) ret=1 first byte=0x00000053 buf[1]=0x00000023
+[    8.1772]   next bytes one call each (ret:byte): 1:0x00000054 1:0x00000044 1:0x00000049 1:
+[    8.1826] 0x0000004e 1:0x0000002d 1:0x0000004d 1:0x00000041 1:0x00000052 1:0x0000004b 1:0x
+[    8.1879] 00000045 1:0x00000052 1:0x0000002d 1:0x00000030 1:0x00000031 1:0x00000032 1:0x00
+[    8.1933] 000033 1:0x00000034 1:0x00000035 1:0x00000036 1:0x00000037 1:0x00000038 1:0x0000
+[    8.1971] 0039 1:0x0000000a 1:0x00000000
+[    8.2003] == stdin end
+[    8.2036] Build finished.
+[    8.2072] ERROR: no hda writes!
+boot.sh: pipeline exit 0

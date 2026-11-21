@@ -1,0 +1,3 @@
+f probe /probe
+x /probe execmissing
+x /probe entry-shell

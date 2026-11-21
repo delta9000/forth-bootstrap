@@ -1,0 +1,39 @@
+[    0.0406] cSeaBIOS (version Arch Linux 1.17.0-2-2)
+[    0.0407] 
+[    0.0407] 
+[    0.0431] iPXE (http://ipxe.org) 00:03.0 C900 PCI2.10 PnP PMM+BEFD4010+BEF34010 C900
+[    0.0482] Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
+[    0.0482] 
+[    0.0482] 
+[    0.0738] Booting from Hard Disk...
+[    0.0740] src
+[    0.0797] /probe
+[    0.0801] /nosuchprog
+[    1.0218] arKVM internal error. Suberror: 1
+[    1.0218] extra data[0]: 0x0000000000000000
+[    1.0218] extra data[1]: 0x0000000000000400
+[    1.0218] extra data[2]: 0x0000000100000019
+[    1.0218] extra data[3]: 0x00000000f000f000
+[    1.0218] extra data[4]: 0x0000000000000000
+[    1.0218] extra data[5]: 0x0000000000000000
+[    1.0218] emulation failure
+[    1.0218] EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000000
+[    1.0218] ESI=00000000 EDI=00000000 EBP=00000000 ESP=07ffffd0
+[    1.0218] EIP=f000ff53 EFL=00000246 [---Z-P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+[    1.0218] ES =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+[    1.0218] CS =0008 00000000 ffffffff 00c09b00 DPL=0 CS32 [-RA]
+[    1.0218] SS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+[    1.0218] DS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+[    1.0218] FS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+[    1.0218] GS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+[    1.0218] LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+[    1.0219] TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
+[    1.0219] GDT=     00007f70 00000027
+[    1.0219] IDT=     00010000 000007ff
+[    1.0219] CR0=00000011 CR2=00000000 CR3=00000000 CR4=00000000
+[    1.0219] DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000 
+[    1.0219] DR6=00000000ffff0ff0 DR7=0000000000000400
+[    1.0219] EFER=0000000000000000
+[    1.0219] Code=?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? <??> ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??
+[   14.9841] qemu-system-x86_64: terminating on signal 15 from pid 62666 (timeout)
+boot.sh: pipeline exit 0

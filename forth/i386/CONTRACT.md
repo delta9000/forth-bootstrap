@@ -12,7 +12,7 @@ repository and the i386 host files go beside it (section 3).
 
 Conventions are `seed/i386/SPEC.md`'s: MUST and FREE, 8-byte cells,
 `file:line` citations, `B2:<line>` for builder-hex0's stage 2, `P§n` for
-`~/.claude/projects/-tmp/notes/forth-bootstrap/hex0-probe.md`,
+`tests/builder-hex0/README.md`,
 **[measured]** and **[designed]**. "SPEC n" is a section of
 `seed/i386/SPEC.md`.
 
@@ -713,8 +713,5 @@ against this document:
   Taking the four paths out of that driver into a names file, as the
   tools have, would let both hosts share it; it changes a file the
   x86-64 build reads, not its output.
-- **`P§n` citations** point at a notes file outside the repository. A
-  later reader cannot open it; copying `hex0-probe.md` into the
-  repository would fix that for both documents.
 - **Where the acceptance scripts live**, and whether the host oracle
   becomes a step of `CHECK_I386=1`.

@@ -24,8 +24,8 @@ Conventions:
 - `B2:<line>` cites builder-hex0's stage 2,
   `build-out/tinycc-inputs/builder-hex0-a2781242d19e6be891b453d8fa827137ab5db31a/builder-hex0-x86-stage2.hex0`.
 - `P§n` cites section n of the measured kernel behaviour,
-  `~/.claude/projects/-tmp/notes/forth-bootstrap/hex0-probe.md` (outside
-  the repository; the facts used here are restated in section 10).
+  `tests/builder-hex0/README.md` (the facts used here are also restated in
+  section 10).
 - **[measured]** marks a number or behaviour observed in a run made for
   this document (Appendix C); **[designed]** marks a choice made here that
   no run has exercised, because the seed does not exist.

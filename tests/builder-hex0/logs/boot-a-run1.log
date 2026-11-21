@@ -1,0 +1,276 @@
+[    0.0517] cSeaBIOS (version Arch Linux 1.17.0-2-2)
+[    0.0517] 
+[    0.0517] 
+[    0.0541] iPXE (http://ipxe.org) 00:03.0 C900 PCI2.10 PnP PMM+BEFD4010+BEF34010 C900
+[    0.0593] Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
+[    0.0593] 
+[    0.0593] 
+[    0.0876] Booting from Hard Disk...
+[    0.0879] src
+[    0.0930] /probe
+[    0.0932] /probe
+[    0.1264] unimpl
+[    0.1270] == unimpl begin
+[    0.1295] mmap(90,ebx=0) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c247 edx
+[    0.1299] ->0x00000002
+[    0.1325] mmap(90,old_mmap struct) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x08
+[    0.1333] 04c247 edx->0x00000002
+[    0.1360] mmap2(192,0,4096,3,0x22,-1,0) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx-
+[    0.1384] >0x0804c247 edx->0x00000002 esi->0x44444444 edi->0x55555555 ebp->0x66666666
+[    0.1410] munmap(91) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c247 edx->0x
+[    0.1413] 00000002
+[    0.1442] dup2(63,4,0) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c247 edx->
+[    0.1446] 0x00000002
+[    0.1469] dup(41,1) ret=0x00000000 (0) clobbered: ecx->0x0804c247 edx->0x00000002
+[    0.1524] unlink(10,/u1) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c247 edx
+[    0.1557] ->0x00000002
+[    0.1603]   /u1: open=4 len(SEEK_END)=5 read=5 bytes=[hello]
+[    0.1657] rename(38,/u1,/u2) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c247
+[    0.1693]  edx->0x00000002
+[    0.1738]   /u1: open=4 len(SEEK_END)=5 read=5 bytes=[hello]
+[    0.1772]   /u2: open=-1
+[    0.1826] lstat(107,/u1,st) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c247 
+[    0.1861] edx->0x00000002
+[    0.1898]   lstat buffer unchanged=1
+[    0.1954] lstat(107,/nonexistent,st) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x
+[    0.1992] 0804c247 edx->0x00000002
+[    0.2047] stat(106,/nonexistent,st) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0
+[    0.2084] 804c247 edx->0x00000002
+[    0.2139] lstat64(196,/nonexistent,st) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->
+[    0.2177] 0x0804c247 edx->0x00000002
+[    0.2231] stat64(195,/nonexistent,st) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0
+[    0.2270] x0804c247 edx->0x00000002
+[    0.2324] fstat64(197,1,st) ret=0x00000000 (0) clobbered: ecx->0x0804c247 edx->0x00000002
+[    0.2362]   stat buffers unchanged=1
+[    0.2395]   open(/)=-1
+[    0.2453] getdents(141,fd,st,256) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x080
+[    0.2488] 4c247 edx->0x00000002
+[    0.2544] getdents64(220,fd,st,256) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0
+[    0.2582] 804c247 edx->0x00000002
+[    0.2620]   getdents buffer unchanged=1
+[    0.2676] chmod(15,/u1,0755) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c247
+[    0.2710]  edx->0x00000002
+[    0.2765] rmdir(40,/nonexistent) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804
+[    0.2801] c247 edx->0x00000002
+[    0.2856] getpid(20) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c247 edx->0x
+[    0.2888] 00000002
+[    0.2943] ioctl(54,1,TCGETS,st) ret=0x00000000 (0) clobbered: ecx->0x0804c247 edx->0x00000
+[    0.2974] 002
+[    0.3029] uname(122,st) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c247 edx-
+[    0.3062] >0x00000002
+[    0.3117] clock_gettime(265,0,st) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x080
+[    0.3154] 4c247 edx->0x00000002
+[    0.3208] pipe(42,st) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c247 edx->0
+[    0.3241] x00000002
+[    0.3295] exit_group(252,9) [should not exit if unimplemented] ret=0x00000000 (0) clobbere
+[    0.3341] d: ebx->0x00000001 ecx->0x0804c247 edx->0x00000002
+[    0.3372] ALIAS
+[    0.3427] sys 0x104=260 (al=4 write) fd1 'ALIAS\n' ret=0x00000006 (6) clobbered: ecx->0x08
+[    0.3463] 04c247 edx->0x00000002
+[    0.3520] sys 0x121=289 (al=0x21 access) /u1 ret=0x00000000 (0) clobbered: ebx->0x00000001
+[    0.3559]  ecx->0x0804c247 edx->0x00000002
+[    0.3614] sys 0x121=289 (al=0x21 access) /nonexistent ret=0xffffffff (-1) clobbered: ebx->
+[    0.3657] 0x00000001 ecx->0x0804c247 edx->0x00000002
+[    0.3711] openat(295=0x127, al=0x27 mkdir?) dirfd=-100 /u3 ret=0x00000000 (0) clobbered: e
+[    0.3755] bx->0x00000001 ecx->0x0804c247 edx->0x00000002
+[    0.3809]   access(33,/u3) ret=0xffffffff (-1) clobbered: ebx->0x00000001 ecx->0x0804c247 
+[    0.3843] edx->0x00000002
+[    0.3884] -- implemented calls, register clobbers
+[    0.3939] access(33,/u1) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c247 edx
+[    0.3971] ->0x00000002
+[    0.4026] access(33,/nonexistent) ret=0xffffffff (-1) clobbered: ebx->0x00000001 ecx->0x08
+[    0.4062] 04c247 edx->0x00000002
+[    0.4116] open(5,/u4,O_WRONLY|O_CREAT) ret=0x00000005 (5) clobbered: ebx->0x00000001 ecx->
+[    0.4153] 0x0804c247 edx->0x00000002
+[    0.4208] write(4,fd,'x',1) to file ret=0x00000001 (1) clobbered: ebx->0x00000001 ecx->0x0
+[    0.4244] 804c247 edx->0x00000002
+[    0.4274] y
+[    0.4327] write(4,1,'y\n',2) to console ret=0x00000002 (2) clobbered: ecx->0x0804c247 edx-
+[    0.4361] >0x00000002
+[    0.4414] lseek(19,fd,0,0) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c247 e
+[    0.4448] dx->0x00000002
+[    0.4502] close(6,fd) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c247 edx->0
+[    0.4534] x00000002
+[    0.4588] read(3,fd,buf,10) ret=0x00000001 (1) clobbered: ebx->0x00000001 ecx->0x0804c247
+[    0.4642] close(6,fd) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c247 edx->0
+[    0.4674] x00000002
+[    0.4729] mkdir(39,/ud) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c247 edx-
+[    0.4761] >0x00000002
+[    0.4815] chdir(12,/ud) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c247 edx-
+[    0.4848] >0x00000002
+[    0.4902] getcwd(183,buf,256) ret=0x0804db60 (134536032) clobbered: ebx->0x00000001 ecx->0
+[    0.4938] x0804c247 edx->0x00000002
+[    0.4970]   cwd=/ud
+[    0.5024] chdir(12,/nonexistent) ret=0xffffffff (-1) clobbered: ebx->0x00000001 ecx->0x080
+[    0.5060] 4c247 edx->0x00000002
+[    0.5114] chdir(12,/u1) (non-empty file) ret=0xffffffff (-1) clobbered: ebx->0x00000001 ec
+[    0.5152] x->0x0804c247 edx->0x00000002
+[    0.5206] chdir(12,/) ret=0xffffffff (-1) clobbered: ebx->0x00000001 ecx->0x0804c247 edx->
+[    0.5238] 0x00000002
+[    0.5293] brk(45,0) ret=0x0806dae4 (134666980) clobbered: ebx->0x00000001 ecx->0x0804c247 
+[    0.5327] edx->0x00000002
+[    0.5361] == unimpl end
+[    0.5392] /probe
+[    0.5544] brk
+[    0.5577] == brk begin
+[    0.5615] _start=0x08048060 (134512736)
+[    0.5663] file end (edata_mark, = vaddr+filesz)=0x0804dae4 (134535908)
+[    0.5706] memsz end (end_mark)=0x0807edc0 (134737344)
+[    0.5746] brk(0) initial=0x0806dae4 (134666980)
+[    0.5786] brk - file end=0x00020000 (131072)
+[    0.5826] brk - memsz end=0xfffeed24 (-70364)
+[    0.5872] nonzero bytes in bss (0x30000 array)=0x00000000 (0)
+[    0.5918] nonzero bytes between memsz end and brk=0x00000000 (0)
+[    0.5964] byte written at brk+0x1000 reads back=0x0000005a (90)
+[    0.6417] byte written at 0x20000000 (above brk) reads back=0x0000006b (107)
+[    0.6464] brk(64MB = 0x0c048000) ret=0x0c048000 tsc-cycles=148418k
+[    0.6800]   brk(0) now=0x0c048000 (201621504)
+[    0.8036]   nonzero bytes in [old brk, new brk) after growth (was dirtied)=0x00000000 (0)
+[    0.8091] brk(256MB = 0x18048000) ret=0x18048000 tsc-cycles=446567k
+[    0.9027]   brk(0) now=0x18048000 (402948096)
+[    1.1125]   nonzero bytes in [old brk, new brk) after growth (was dirtied)=0x00000000 (0)
+[    1.1172] brk(600MB = 0x2d848000) ret=0x2d848000 tsc-cycles=772345k
+[    1.2804]   brk(0) now=0x2d848000 (763658240)
+[    1.2858]   nonzero bytes in [old brk, new brk) after growth (was dirtied)=0x00000000 (0)
+[    1.2899] brk(current) ret=0x2d848000 (763658240)
+[    1.2943] brk(0) after brk(current)=0x2d848000 (763658240)
+[    1.3249] argv[0] before = '/probe' at 0x30000300
+[    1.3291] brk(0x30001000) ret=0x30001000 (805310464)
+[    1.3332] argv[0] after = '' strlen=0
+[    1.3366] == brk end
+[    1.3397] /probe
+[    1.3553] entry-shell
+[    1.3591] == entry begin (entry-shell)
+[    1.3627]   entry eax=0x00000000
+[    1.3664]   entry ebx=0x00000000
+[    1.3700]   entry ecx=0x00000000
+[    1.3736]   entry edx=0x00000000
+[    1.3772]   entry esi=0x00000000
+[    1.3808]   entry edi=0x00000000
+[    1.3844]   entry ebp=0x00000000
+[    1.3880]   entry esp=0x07ffffd0
+[    1.3917]   entry eflags=0x00000246
+[    1.3953]   entry cs=0x00000008
+[    1.3990]   entry ss=0x00000010
+[    1.4025]   entry ds=0x00000010
+[    1.4061]   eflags.IF=1 IOPL=0
+[    1.4092]   argc=2
+[    1.4135]   argv[0]=0x30000500 strlen=6 text='/probe'
+[    1.4187]   argv[1]=0x30000400 strlen=11 text='entry-shell'
+[    1.4226]   argv[argc]=0x00000000
+[    1.4259]   envp count=0
+[    1.4315]   stack words from esp: 0x00000002 0x30000500 0x30000400 0x00000000 0x00000000 0
+[    1.4369] x00008b8a 0x00008c45 0x00000080 0x00000000 0x00000000 0x0000012f 0x00008cfe 
+[    1.4423]   stack below entry esp, 65536 bytes: zero=65237 0xCC(parent fill)=0 other=299 (
+[    1.4463] highest non-zero/non-CC at esp-468)
+[    1.4518]   stack below entry esp, 1024 bytes: zero=697 0xCC(parent fill)=0 other=327 (hig
+[    1.4556] hest non-zero/non-CC at esp-468)
+[    1.4589] == entry end
+[    1.4621] /probe
+[    1.4771] fork
+[    1.4804] == fork begin
+[    1.4843] parent brk=0x0806dae4 (134666980)
+[    1.4882] &g_data=0x0807eb60 (134736736)
+[    1.4924] above(brk+0x10000)=0x0807dae4 (134732516)
+[    1.4961] far=0x20000000 (536870912)
+[    1.5002] &stackvar=0x07ffff68 (134217576)
+[    1.5045] belowesp(esp-0x2000)=0x07ffdf40 (134209344)
+[    1.5097] child: fork ret=0 clobbered: ebx->0x00000001 ecx->0x0804c247 edx->0x00000002
+[    1.5138] child sees g_data=0x00001111 (4369)
+[    1.5181] child sees above=0x00001111 (4369)
+[    1.5227] child sees far=0x00001111 (4369)
+[    1.5268] child sees stackvar=0x00001111 (4369)
+[    1.5310] child sees belowesp=0x00001111 (4369)
+[    1.5350] child brk(0)=0x0806dae4 (134666980)
+[    1.5513] child wrote 0x2222 everywhere; execve /probe child
+[    1.5552] [child program] brk(0)=0x0806dae4
+[    1.5597] [child program] g_data (fresh image)=0x00000000 (0)
+[    1.5645] [child program] value at far before write=0x00000000 (0)
+[    1.5692] [child program] value at above before write=0x00000000 (0)
+[    1.5740] [child program] wrote 0x3333 to far, above, g_data; exit 42
+[    1.5794] parent: fork ret=1 clobbered: ebx->0x00000001 ecx->0x0804c247 edx->0x00000002
+[    1.5834] parent sees g_data=0x00003333 (13107)
+[    1.5875] parent sees above=0x00003333 (13107)
+[    1.5914] parent sees far=0x00003333 (13107)
+[    1.5955] parent sees stackvar=0x00001111 (4369)
+[    1.5997] parent sees belowesp=0x00002222 (8738)
+[    1.6041] parent brk(0) after child=0x0806dae4 (134666980)
+[    1.6095] waitpid(7,-1,&st,0) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c24
+[    1.6129] 7 edx->0x00000002
+[    1.6290]   status=0x00002a00 (10752)
+[    1.6329] parent: second fork ret=1
+[    1.6383] wait4(114,-1,&st,0,0) ret=0x00000000 (0) clobbered: ebx->0x00000001 ecx->0x0804c
+[    1.6423] 247 edx->0x00000002 esi->0x44444444
+[    1.6459]   status=0x00000000 (0)
+[    1.6512] waitpid(7,-1,&st,0) after wait4 ret=0x00000000 (0) clobbered: ebx->0x00000001 ec
+[    1.6550] x->0x0804c247 edx->0x00000002
+[    1.6708]   status=0x00012c00 (76800)
+[    1.6761] waitpid(7,-1,&st,0) child exit 0 ret=0x00000000 (0) clobbered: ebx->0x00000001 e
+[    1.6801] cx->0x0804c247 edx->0x00000002
+[    1.6838]   status=0x00000000 (0)
+[    1.6870] == fork end
+[    1.6901] /probe
+[    1.7054] execfork
+[    1.7211] == execfork begin
+[    1.7251] == entry begin (entry-forked)
+[    1.7287]   entry eax=0x00000000
+[    1.7324]   entry ebx=0x00000000
+[    1.7361]   entry ecx=0x00000000
+[    1.7397]   entry edx=0x00000000
+[    1.7434]   entry esi=0x00000000
+[    1.7471]   entry edi=0x00000000
+[    1.7507]   entry ebp=0x00000000
+[    1.7544]   entry esp=0x07fffed0
+[    1.7582]   entry eflags=0x00000046
+[    1.7618]   entry cs=0x00000008
+[    1.7654]   entry ss=0x00000010
+[    1.7690]   entry ds=0x00000010
+[    1.7726]   eflags.IF=0 IOPL=0
+[    1.7758]   argc=5
+[    1.7802]   argv[0]=0x30026d00 strlen=6 text='/probe'
+[    1.7847]   argv[1]=0x30026c00 strlen=12 text='entry-forked'
+[    1.7889]   argv[2]=0x30026b00 strlen=1 text='a'
+[    1.7944]   argv[3]=0x30026a00 strlen=257 text='LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL..
+[    1.7974] .'
+[    1.8017]   argv[4]=0x30026900 strlen=2 text='zz'
+[    1.8054]   argv[argc]=0x00000000
+[    1.8092]   envp[0]=0x30026800 'E2=two'
+[    1.8131]   envp[1]=0x30026700 'E1=one'
+[    1.8170]   envp[2]=0x30026600 'E0=zero'
+[    1.8204]   envp count=3
+[    1.8259]   stack words from esp: 0x00000005 0x30026d00 0x30026c00 0x30026b00 0x30026a00 0
+[    1.8314] x30026900 0x00000000 0x30026800 0x30026700 0x30026600 0x00000000 0x000082ba 
+[    1.8369]   stack below entry esp, 65536 bytes: zero=115 0xCC(parent fill)=65184 other=237
+[    1.8413]  (highest non-zero/non-CC at esp-372)
+[    1.8469]   stack below entry esp, 1024 bytes: zero=118 0xCC(parent fill)=608 other=298 (h
+[    1.8509] ighest non-zero/non-CC at esp-436)
+[    1.8542] == entry end
+[    1.8582] parent: child status 0x00000000
+[    2.7879] child: access(/nonexistent)=-1; execve(/nonexistent) nexKVM internal error. Suberror: 1
+[    2.7879] extra data[0]: 0x0000000000000000
+[    2.7879] extra data[1]: 0x0000000000000400
+[    2.7879] extra data[2]: 0x0000000100000019
+[    2.7879] extra data[3]: 0x00000000f000f000
+[    2.7879] extra data[4]: 0x0000000000000000
+[    2.7879] extra data[5]: 0x0000000000000000
+[    2.7879] emulation failure
+[    2.7880] EAX=00000000 EBX=00000000 ECX=00000000 EDX=00000000
+[    2.7880] ESI=00000000 EDI=00000000 EBP=00000000 ESP=07fffedc
+[    2.7880] EIP=f000ff53 EFL=00000046 [---Z-P-] CPL=0 II=0 A20=1 SMM=0 HLT=0
+[    2.7880] ES =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+[    2.7880] CS =0008 00000000 ffffffff 00c09b00 DPL=0 CS32 [-RA]
+[    2.7880] SS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+[    2.7880] DS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+[    2.7880] FS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+[    2.7880] GS =0010 00000000 ffffffff 00c09300 DPL=0 DS   [-WA]
+[    2.7880] LDT=0000 00000000 0000ffff 00008200 DPL=0 LDT
+[    2.7880] TR =0000 00000000 0000ffff 00008b00 DPL=0 TSS32-busy
+[    2.7880] GDT=     00007f70 00000027
+[    2.7880] IDT=     00010000 000007ff
+[    2.7880] CR0=00000011 CR2=00000000 CR3=00000000 CR4=00000000
+[    2.7880] DR0=0000000000000000 DR1=0000000000000000 DR2=0000000000000000 DR3=0000000000000000 
+[    2.7880] DR6=00000000ffff0ff0 DR7=0000000000000400
+[    2.7880] EFER=0000000000000000
+[    2.7880] Code=?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? <??> ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ?? ??
+[  128.6111] qemu-system-x86_64: terminating on signal 15 from pid 33077 (timeout)
+boot.sh: pipeline exit 0

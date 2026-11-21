@@ -1,0 +1,17 @@
+[    0.0399] cSeaBIOS (version Arch Linux 1.17.0-2-2)
+[    0.0399] 
+[    0.0399] 
+[    0.0424] iPXE (http://ipxe.org) 00:03.0 C900 PCI2.10 PnP PMM+BEFD4010+BEF34010 C900
+[    0.0477] Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
+[    0.0477] 
+[    0.0477] 
+[    0.0733] Booting from Hard Disk...
+[    0.0735] src
+[    0.0789] /probe
+[    0.0792] /probe
+[    0.1124] brkdown
+[    0.1130] == brkdown begin
+[    0.1143] brk(0)=0x0806e240 (134668864)
+[    0.1170] pattern 0x5A over [brk, brk+1MiB); brk(brk-4096) next, target=0x0806d240 (134664
+[   73.9349] 768qemu-system-x86_64: terminating on signal 15 from pid 38429 (timeout)
+boot.sh: pipeline exit 0

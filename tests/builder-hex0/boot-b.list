@@ -1,0 +1,4 @@
+f probe /probe
+x /probe irq
+x /probe forknoexec
+x /probe entry-shell

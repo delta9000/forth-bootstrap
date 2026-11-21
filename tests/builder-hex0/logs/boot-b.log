@@ -1,0 +1,61 @@
+[    0.0416] cSeaBIOS (version Arch Linux 1.17.0-2-2)
+[    0.0416] 
+[    0.0416] 
+[    0.0441] iPXE (http://ipxe.org) 00:03.0 C900 PCI2.10 PnP PMM+BEFD4010+BEF34010 C900
+[    0.0507] Press Ctrl-B to configure iPXE (PCI 00:03.0)...                                                                               
+[    0.0507] 
+[    0.0507] 
+[    0.0768] Booting from Hard Disk...
+[    0.0770] src
+[    0.0828] /probe
+[    0.0831] /probe
+[    0.1202] irq
+[    0.1207] == irq begin
+[    0.1216] IDT base=0x00010000 (65536)
+[    0.1226] IDT limit=0x000007ff (2047)
+[    0.1252]   PIC at start: master IMR=0x000000b8 slave IMR=0x0000008e master IRR=0x00000010
+[    0.9057]  master ISR=0x00000000
+[    0.9081]   spin 1 (no EOI sent) IF=1 2957M tsc: IRQ0..7 counts: 1 0 0 0 0 0 0 0
+[    0.9107]   PIC after spin 1: master IMR=0x000000b8 slave IMR=0x0000008e master IRR=0x0000
+[    0.9116] 0011 master ISR=0x00000001
+[    1.7402]   sent one non-specific EOI to the master PIC
+[    1.7425]   spin 2 (after EOI) IF=1 3137M tsc: IRQ0..7 counts: 0 0 0 0 0 0 0 0
+[    1.7451]   PIC after spin 2: master IMR=0x000000b8 slave IMR=0x0000008e master IRR=0x0000
+[    1.7460] 0011 master ISR=0x00000001
+[    1.7492] == irq end
+[    1.7525] /probe
+[    1.7698] forknoexec
+[    1.7734] == forknoexec begin
+[    1.7774] child (no execve): exiting 7
+[    1.7806] /probe
+[    1.7988] entry-shell
+[    1.8028] == entry begin (entry-shell)
+[    1.8075]   eflags after a console write=0x00000206 IF=1
+[    1.8113]   entry eax=0x00000000
+[    1.8156]   entry ebx=0x00000000
+[    1.8192]   entry ecx=0x00000000
+[    1.8228]   entry edx=0x00000000
+[    1.8264]   entry esi=0x00000000
+[    1.8300]   entry edi=0x00000000
+[    1.8340]   entry ebp=0x00000000
+[    1.8378]   entry esp=0x07ffffd0
+[    1.8415]   entry eflags=0x00000246
+[    1.8451]   entry cs=0x00000008
+[    1.8487]   entry ss=0x00000010
+[    1.8523]   entry ds=0x00000010
+[    1.8557]   eflags.IF=1 IOPL=0
+[    1.8589]   argc=2
+[    1.8632]   argv[0]=0x30026d64 strlen=6 text='/probe'
+[    1.8678]   argv[1]=0x30026c64 strlen=11 text='entry-shell'
+[    1.8714]   argv[argc]=0x00000000
+[    1.8747]   envp count=0
+[    1.8801]   stack words from esp: 0x00000002 0x30026d64 0x30026c64 0x00000000 0x00000000 0
+[    1.8856] x00008b8a 0x00008c45 0x00000080 0x00000000 0x00000000 0x0000012f 0x00008cfe 
+[    1.8913]   stack below entry esp, 65536 bytes: zero=65277 0xCC(parent fill)=1 other=258 (
+[    1.8956] highest non-zero/non-CC at esp-404)
+[    1.9018]   stack below entry esp, 1024 bytes: zero=722 0xCC(parent fill)=0 other=302 (hig
+[    1.9062] hest non-zero/non-CC at esp-436)
+[    1.9096] == entry end
+[    1.9136] Build finished.
+[    1.9181] ERROR: no hda writes!
+boot.sh: pipeline exit 0
