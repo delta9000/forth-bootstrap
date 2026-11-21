@@ -7,6 +7,7 @@
 \     has no interpret-mode number parser at all — [lit] is the only path
 \     (the seed's parse_decimal_code).  Characters use char / [char]
 \     (defined below), so no ASCII code needs a comment to explain it.
+\     After the hand-over to interpret, numbers are written bare.
 \   - No seed address is typed in: sysvar cells are found from the seed's
 \     state and latest primitives, and primitive xts with ' (tick).
 
@@ -487,22 +488,22 @@ interpret
 
 \ ----- File syscalls (see the syscall wrappers above) -----
 \ open  ( path flags mode -- fd )    SYS_open=2
-: open   [lit] 0 [lit] 0 [lit] 0 [lit]  2 syscall6 ;
+: open   0 0 0 2 syscall6 ;
 
 \ read  ( fd buf count -- n )        SYS_read=0
-: read   [lit] 0 [lit] 0 [lit] 0 [lit]  0 syscall6 ;
+: read   0 0 0 0 syscall6 ;
 
 \ close ( fd -- err )                SYS_close=3
 \ Pads 5 zero args + syscall #.
-: close  [lit] 0 [lit] 0 [lit] 0 [lit] 0 [lit] 0 [lit]  3 syscall6 ;
+: close  0 0 0 0 0 3 syscall6 ;
 
 \ ----- Character classification -----
 \ alpha? ( c -- flag )  true if c is alphabetic
 : alpha?  dup alpha-lower? swap alpha-upper? or ;
 
 \ space? ( c -- flag )  true if c is ' '|tab|LF|CR
-: space?  dup [lit] 32 - 0= over [lit]  9 - 0= or
-          over [lit] 10 - 0= or  swap [lit] 13 - 0= or ;
+: space?  dup 32 - 0= over 9 - 0= or
+          over 10 - 0= or  swap 13 - 0= or ;
 
 \ ----- Comparisons -----
 \ <= ( a b -- f )  not (a > b).
@@ -540,17 +541,17 @@ immediate
 \ HERE becomes STATE + 4096 = 0x414000.  030-cc-io.fth and 130-asm.fth call
 \ it before creating their megabyte buffers, which then cannot overlap VM
 \ state.  HERE must still be below the data stack (0x410000) when it runs.
-: skip-vm-pages  state [lit] 4096 + here-addr ! ;
+: skip-vm-pages  state 4096 + here-addr ! ;
 
 \ token ( "tok" -- a u )  read the next token; leave its address in the TIB
 \ and its length.  The seed keeps the length in a register Forth cannot
 \ see, so we blank the TIB's 256 bytes first and then count the token's
 \ bytes up to the first blank (a token is at most 255 bytes).
 : token
-  tib [lit] 256 + tib                            ( end p )
+  tib 256 + tib                                  ( end p )
   begin, 2dup > while, bl over c! 1+ repeat,     \ fill the TIB with blanks
   2drop  ' drop                                  \ read the token into it
-  tib [lit] 0                                    ( a 0 )
+  tib 0                                          ( a 0 )
   begin, 2dup + c@ bl <> while, 1+ repeat, ;     ( a u )
 
 \ bytes, ( a u -- )  copy u bytes from a to HERE, advancing HERE.
@@ -571,11 +572,11 @@ immediate
 \ loop, after r> drop has taken the parked count off the return stack.
 : bytes-eq
   begin,
-    dup [lit] 0 >
+    dup 0 >
   while,
     >r                                           ( a1 a2  R: u )
     over c@ over c@ <> if,                       ( a1 a2 )
-      r> drop 2drop [lit] 0 exit,                \ mismatch: answer 0
+      r> drop 2drop 0 exit,                      \ mismatch: answer 0
     then,
     1+ swap 1+ swap                              ( a1+1 a2+1 )
     r> 1-                                        ( a1+1 a2+1 u-1 )
