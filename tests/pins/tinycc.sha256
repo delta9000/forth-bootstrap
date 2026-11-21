@@ -1,0 +1,8 @@
+# tests/pins/tinycc.sha256 -- sha256 of what the TinyCC route builds that
+# live-bootstrap does not publish.
+#   tinycc/tcc-first   build-out/tinycc/tcc-first, the first tcc, compiled by
+#                      seed Forth (tinycc/build-first-tcc.sh, 790,384 bytes);
+#                      the same in two checkouts at different paths
+# When a change is meant to alter one, update its line in the same commit
+# and say why.
+7b2efd95a84f1d7c83369db586ffc113a8931c7c417b6d7854f7e577b42f4d97  tinycc/tcc-first
