@@ -818,7 +818,8 @@ The source is hex0 that three readers must turn into the same bytes:
 stage0-posix's `hex0-seed`, builder-hex0's built-in `hex0`, and the
 checker. The first two share these rules (B2:2308-2393;
 `vendor/stage0-posix/AMD64/hex0_AMD64.hex0:79-133`): `#` or `;` starts a
-comment that runs to the next LF; outside comments the characters
+comment that runs to the next LF (the checker accepts only `;` after the
+bytes of a line, though hex0 takes either); outside comments the characters
 `0-9A-Fa-f` are hex digits, taken two at a time, and every other
 character is ignored.
 
@@ -953,7 +954,7 @@ These need only the seed, so its implementer can run them first.
 | `seed/i386/build.sh` | to write | hex0-seed assembles the file into `./seed-forth-i386` |
 | `python3 tests/seed/i386/asm-check.py` | to write | section 12 |
 | `tests/seed/i386/test.sh` | to write | the cases below; all pass |
-| the same under `strace -f` | to write | the only calls are `brk`, `open`, `read`, `write` and `exit`; `open` once; no `read` of descriptor 0; every `read` has count 1; no `brk` below the current break |
+| the same under `strace -f` | to write | the only calls are `brk`, `open`, `read`, `write` and `exit`; `open` once per case, twice in the two cases that open a second file through `syscall6`, and not at all with no argument; no `read` of descriptor 0; every `read` has count 1; no `brk` below the current break |
 
 The cases of `tests/seed/i386/test.sh`. Each puts seed-level Forth in a
 file and runs `./seed-forth-i386 FILE`. They are `test.sh`'s cases for
@@ -1007,6 +1008,25 @@ make system calls, a two-line prelude differs (the definitions of `emit`
 and of an exit word) and the rest of the text is the same. Appendix B's
 vectors pass on the x86-64 seed **[measured]**.
 
+Eleven cases cannot be compared, because the two seeds differ there by
+design, and are exempt: no argument and a missing file (the x86-64 seed
+reads standard input); the read-back of `C2 04 00` and `6A 00 E8`, and
+the literal's size (different encodings); INPUT and ARGV (the x86-64
+seed has neither); and a dictionary of more than 0x20000 bytes (the
+x86-64 seed's data stack sits 64 KiB above its HERE). `test.sh` marks
+them as i386-only, with the reason. `./seed-forth` is built from
+`seed/000-seed.hex0` when that file exists; otherwise the script takes a
+prebuilt copy, or the one `ORACLE` names.
+
+Judge every case by its output as well as its exit status. A broken
+primitive can make the outer loop read the next token as the end of
+input and exit 0 (a broken `0=` did this to the host's vector check), so
+a case whose expected output is empty, judged by its exit status alone,
+proves little. Each case SHOULD print a last line after its last test,
+and the script require it. `tests/seed/i386/test.sh` compares each case's
+whole output, so this holds wherever a case's expected output is not
+empty; the cases that expect no output are not yet covered.
+
 ### 13.2 With the i386 host files
 
 These need the files `forth/i386/CONTRACT.md` specifies. They are the
@@ -1028,12 +1048,14 @@ kaem is compared with it as the tools are with theirs.
 
 ### 13.3 What changes and has to be updated with the seed
 
-- `check-all.sh`: steps for 13.1 and 13.2, and the seed's size.
+- `check-all.sh`: steps for 13.1 (`CHECK_I386_SEED=1`, steps 24 to 27)
+  and 13.2 (`CHECK_I386=1` step 23, and `CHECK_I386_BOOT=1` step 19), and
+  the seed's size.
 - `tests/pins/`: no file pins the x86-64 seed's hash, and none need pin
   this one's; the boot compares the two assemblies of it with each
   other.
-- `README.md`, `seed/README.md`, `tinycc/README.md`: the route, the
-  second seed and its size.
+- `README.md` and `tinycc/README.md`: the route, the second seed and its
+  size. `seed/README.md` describes the x86-64 seed only.
 - The book quotes `seed/000-seed.hex0`, `forth/*.fth` and `cc/*.fth`
   (`CLAUDE.md`, Invariants). None of those files changes. Whether the
   book covers the i386 seed is the owner's decision.
@@ -1065,8 +1087,13 @@ each has to be right by reading the code against this document:
   tcc's bytes happen to depend on.
 - `syscall6` for `fork` and `execve`. On this route Forth runs neither;
   kaem does, through C.
-- interrupts. None was seen delivered on builder-hex0 (P§6). If one
-  were, it would write below esp like a system call.
+- interrupts. None was seen delivered on builder-hex0 in the probe's
+  rerun (P§6), but the recorded log of the same test counts one IRQ0, so
+  the question is not settled. If one were delivered, it would write
+  below esp like a system call.
+- a non-zero exit status on builder-hex0. Its shell carries on after
+  any status, so the boot checks judge the fatal path by its console
+  text.
 - a dictionary larger than the image, a data stack deeper than 8,192
   cells, and more than 448 open descriptors. Nothing checks them.
 
