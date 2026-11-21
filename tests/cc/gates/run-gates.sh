@@ -63,12 +63,13 @@ not_run=(
 # Die gates: programs the compiler must reject.  "<fixture>|<expected
 # compiler exit>|<expected last stderr line>"; the line is cc-die's
 # "cc: line N: error C" (cc/020-cc-arena.fth), and no /tmp/cc-out may be
-# written.  These are seed-forth's die gates at 0dd2b88, one per code.  A
-# .c fixture is fed as it is.  A .sh fixture is a generator for an input
-# too large or too repetitive to check in: run with sh, it prints the C
-# source on stdout and may write helper files (a header to #include) into
-# $CC_DIE_TMP, which is build-out/gates/die-tmp, not /tmp, because the
-# compiler may run with a private /tmp.  die-31-include-deep.c includes
+# written.  One per code: seed-forth's die gates at 0dd2b88 (10 to 82,
+# 113, 124 to 129, 162, 171, 206, 207) and short programs for the parser's
+# codes from 90 to 205.  A .c fixture is fed as it is.  A .sh fixture is a
+# generator for an input too large or too repetitive to check in: run with
+# sh, it prints the C source on stdout and may write helper files (a header
+# to #include) into $CC_DIE_TMP, which is build-out/gates/die-tmp, not
+# /tmp, because the compiler may run with a private /tmp.  die-31-include-deep.c includes
 # itself as "gates/die-31-include-deep.c" for the reason G14b.c does.
 # tests/cc/gates/check-coverage.sh, run at the end, reads this list and
 # counts which of the compiler's error codes it tests.
@@ -101,15 +102,86 @@ die_gates=(
   "die-80-globals-full.sh|80|cc: line 515: error 80"
   "die-81-global-refs-full.sh|81|cc: line 16387: error 81"
   "die-82-bss-full.c|82|cc: line 3: error 82"
+  "die-90-field-unknown.c|90|cc: line 3: error 90"
+  "die-91-subscript-not-variable.c|91|cc: line 3: error 91"
+  "die-92-subscript-no-bracket.c|92|cc: line 2: error 92"
+  "die-93-ident-undeclared.c|93|cc: line 2: error 93"
+  "die-94-call-not-function.c|94|cc: line 2: error 94"
+  "die-95-typedef-as-value.c|95|cc: line 3: error 95"
+  "die-96-paren-unclosed.c|96|cc: line 2: error 96"
+  "die-97-expr-bad-start.c|97|cc: line 2: error 97"
+  "die-98-postinc-not-lvalue.c|98|cc: line 2: error 98"
+  "die-99-postfix-subscript-no-bracket.c|99|cc: line 2: error 99"
+  "die-100-member-of-non-struct.c|100|cc: line 2: error 100"
+  "die-101-member-not-name.c|101|cc: line 3: error 101"
+  "die-102-sizeof-no-paren.c|102|cc: line 2: error 102"
+  "die-103-sizeof-struct-no-tag.c|103|cc: line 2: error 103"
+  "die-104-sizeof-struct-unknown.c|104|cc: line 2: error 104"
+  "die-105-sizeof-struct-not-tag.c|105|cc: line 3: error 105"
+  "die-106-sizeof-bad-keyword.c|106|cc: line 2: error 106"
+  "die-107-sizeof-undeclared.c|107|cc: line 2: error 107"
+  "die-108-sizeof-function.c|108|cc: line 3: error 108"
+  "die-109-sizeof-literal.c|109|cc: line 2: error 109"
+  "die-110-sizeof-unclosed.c|110|cc: line 2: error 110"
   "die-113-inc-not-lvalue.c|113|cc: line 4: error 113"
+  "die-114-addr-of-literal.c|114|cc: line 2: error 114"
+  "die-115-addr-of-undeclared.c|115|cc: line 2: error 115"
+  "die-116-addr-of-function.c|116|cc: line 3: error 116"
+  "die-117-ternary-no-colon.c|117|cc: line 2: error 117"
+  "die-120-assign-not-lvalue.c|120|cc: line 2: error 120"
+  "die-121-call-unclosed.c|121|cc: line 3: error 121"
+  "die-122-call-seven-args.c|122|cc: line 3: error 122"
   "die-124-const-div-zero.c|124|cc: line 2: error 124"
   "die-125-const-not-enum.c|125|cc: line 4: error 125"
   "die-126-const-bad.c|126|cc: line 4: error 126"
   "die-127-const-paren.c|127|cc: line 2: error 127"
   "die-128-const-colon.c|128|cc: line 2: error 128"
   "die-129-if-trailing.c|129|cc: line 2: error 129"
+  "die-140-do-without-while.c|140|cc: line 2: error 140"
+  "die-141-do-wrong-keyword.c|141|cc: line 2: error 141"
+  "die-142-while-no-paren.c|142|cc: line 2: error 142"
+  "die-143-missing-semicolon.c|143|cc: line 2: error 143"
+  "die-144-local-no-name.c|144|cc: line 2: error 144"
+  "die-145-local-struct-no-tag.c|145|cc: line 2: error 145"
+  "die-146-local-struct-unknown.c|146|cc: line 2: error 146"
+  "die-147-local-struct-not-tag.c|147|cc: line 3: error 147"
+  "die-148-field-struct-no-tag.c|148|cc: line 2: error 148"
+  "die-149-struct-def-no-tag.c|149|cc: line 2: error 149"
+  "die-150-field-bad-keyword.c|150|cc: line 2: error 150"
+  "die-151-field-bad-type.c|151|cc: line 2: error 151"
+  "die-152-field-no-name.c|152|cc: line 2: error 152"
+  "die-153-fnptr-no-name.c|153|cc: line 2: error 153"
+  "die-154-fnptr-no-terminator.c|154|cc: line 2: error 154"
+  "die-156-local-array-zero.c|156|cc: line 2: error 156"
+  "die-157-local-array-no-bracket.c|157|cc: line 2: error 157"
+  "die-159-local-init-no-semicolon.c|159|cc: line 2: error 159"
+  "die-160-struct-local-no-name.c|160|cc: line 3: error 160"
+  "die-161-struct-ptr-local-bad.c|161|cc: line 3: error 161"
   "die-162-frame-full.c|162|cc: line 7: error 162"
+  "die-170-case-no-colon.c|170|cc: line 2: error 170"
   "die-171-labels-full.sh|171|cc: line 67: error 171"
+  "die-172-label-twice.c|172|cc: line 2: error 172"
+  "die-173-goto-not-name.c|173|cc: line 2: error 173"
+  "die-180-param-type-undeclared.c|180|cc: line 2: error 180"
+  "die-181-param-type-not-typedef.c|181|cc: line 3: error 181"
+  "die-182-param-type-bad.c|182|cc: line 2: error 182"
+  "die-183-param-no-name.c|183|cc: line 2: error 183"
+  "die-184-fnptr-params-eof.c|184|cc: line 3: error 184"
+  "die-185-return-struct-no-tag.c|185|cc: line 2: error 185"
+  "die-186-stray-brace.c|186|cc: line 2: error 186"
+  "die-187-fn-name-not-ident.c|187|cc: line 2: error 187"
+  "die-190-enum-not-name.c|190|cc: line 2: error 190"
+  "die-192-enum-no-comma.c|192|cc: line 2: error 192"
+  "die-193-typedef-bad-keyword.c|193|cc: line 2: error 193"
+  "die-194-typedef-undeclared.c|194|cc: line 2: error 194"
+  "die-195-typedef-of-variable.c|195|cc: line 3: error 195"
+  "die-196-typedef-bad-base.c|196|cc: line 2: error 196"
+  "die-197-typedef-fnptr-no-name.c|197|cc: line 2: error 197"
+  "die-198-typedef-name-not-ident.c|198|cc: line 2: error 198"
+  "die-199-prototype-name-not-ident.c|199|cc: line 2: error 199"
+  "die-202-toplevel-bad-start.c|202|cc: line 2: error 202"
+  "die-203-global-no-name.c|203|cc: line 2: error 203"
+  "die-205-global-no-semicolon.c|205|cc: line 2: error 205"
   "die-206-fn-undefined.c|206|cc: line 8: error 206"
   "die-207-no-main.c|207|cc: line 5: error 207"
 )
