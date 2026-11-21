@@ -1,0 +1,749 @@
+;; seed/i386/000-seed.hex0 -- the Forth seed for builder-hex0 and Linux/i386.
+;;
+;; A static ELF32 executable, written by hand as commented hex0.  It is a
+;; minimal Forth, specified by seed/i386/SPEC.md:
+;;
+;;     seed-forth-i386 FILE [ARG ...]
+;;
+;; reads whitespace-separated tokens from FILE, executes or compiles the
+;; words they name, and accepts unsigned decimal numbers.  It has 21 words:
+;;
+;;     dup drop swap >r r>   @ ! c@ c!   + * / nand 0=
+;;     key token find   syscall6   state : ;
+;;
+;; Everything else is Forth text, loaded on top (forth/i386/CONTRACT.md).
+;;
+;; How to read this file.  Every line with bytes is one ELF field, one
+;; dictionary header field or one instruction, and the comment after the
+;; first ';' says which, in Intel syntax.  tests/seed/i386/asm-check.py
+;; assembles the comments with GNU as and llvm-mc and compares the bytes.
+;; A branch carries "(rel8 = TARGET - NEXT)": both are file offsets, and the
+;; difference is the displacement in the line's last bytes.  Headings give
+;; file offsets too; the address in memory is 0x08048000 plus the offset.
+;; Text after a second ';' is explanation.
+;;
+;; ===== Cells =====
+;;
+;; A cell is 8 bytes although the processor runs in 32-bit mode: the low
+;; half at the lower address, the high half above it.  Arithmetic is on all
+;; 64 bits.  An address, a length or a byte is a cell with a high half of 0.
+;;
+;; ===== Registers =====
+;;
+;;   edx:eax = the top of the data stack (TOS): eax the low half, edx the
+;;             high half
+;;   esi     = the data-stack pointer.  [esi] and [esi+4] are the second
+;;             item.  A push subtracts 8 (dpush); "lodsd" loads [esi] into
+;;             eax and adds 4 to esi, so it pops half a cell
+;;   esp     = the return stack, which is the processor's stack
+;;   ebx, ecx, edi, ebp = scratch: free inside a routine, and not kept by
+;;             any dictionary word or by the kernel
+;;
+;; The direction flag is clear on entry and never set, so lodsd, stosd,
+;; movsd, cmpsb and movsb all move upward.  Nothing is kept below esp: on
+;; builder-hex0 a system call writes there.
+;;
+;; ===== Calls and returns =====
+;;
+;; The return stack holds cells too.  A dictionary word is called with
+;;
+;;     push 0          ; the return cell's high half
+;;     call WORD       ; its low half: the return address
+;;
+;; and returns with "ret 4", which takes the low half as the address and
+;; discards the high half.  The seed calls key, token and find this way
+;; itself, because the library replaces key and find.  Routines that are
+;; not dictionary words (dpush, getc) use a plain call and ret.
+;;
+;; ===== Memory map =====
+;;
+;;   0x08048000 = the file image: ELF headers, code and the 21 headers
+;;   0x08049000 = lowest address of the data stack's 64 KiB
+;;   0x08059000 = data-stack base: esi starts here, first push lands at 0x08058FF8
+;;   0x08059000 = sysvar page: the address `state` pushes; cells at
+;;   STATE +0, LATEST +8, HERE +16, LAST_FOUND +24, INPUT +32, ARGV +40, TIB +48
+;;   0x0805A000 = initial HERE: the dictionary grows upward from here
+;;   0x0A048000 = image end: 32 MiB above the start; the break is raised to it
+;;
+;; The six sysvars are cells.  The seed writes only their low halves; the
+;; high halves are 0 because the kernel hands the image over zeroed.
+;;   STATE       0 interpreting, 1 compiling
+;;   LATEST      the newest dictionary header
+;;   HERE        the first free dictionary byte
+;;   LAST_FOUND  the header find matched last
+;;   INPUT       the file descriptor key reads
+;;   ARGV        the address of the kernel's argv[0] pointer
+;;   TIB         the token buffer, 258 bytes: 256 for the longest token the
+;;               fatal message prints, 2 for the "?" and newline after it
+;;
+;; ===== A dictionary header =====
+;;
+;;   link   8 bytes: the previous header's address as a cell; 0 ends the chain
+;;   flags  1 byte: bit 0 is IMMEDIATE
+;;   nlen   1 byte: the length of the name
+;;   name   nlen bytes
+;; and the word's code follows at once, so its execution token (xt) is the
+;; header's address + 10 + nlen.
+
+;; ===== ELF32 header (52 bytes) =====
+
+7F 45 4C 46                 ; e_ident[0..3] = magic "\x7fELF"
+01                          ; e_ident[EI_CLASS] = ELFCLASS32
+01                          ; e_ident[EI_DATA] = ELFDATA2LSB (little-endian)
+01                          ; e_ident[EI_VERSION] = EV_CURRENT
+00                          ; e_ident[EI_OSABI] = ELFOSABI_NONE (System V)
+00                          ; e_ident[EI_ABIVERSION] = 0
+00 00 00 00 00 00 00        ; e_ident padding (7 zero bytes)
+02 00                       ; e_type = ET_EXEC
+03 00                       ; e_machine = EM_386
+01 00 00 00                 ; e_version = EV_CURRENT
+5B 80 04 08                 ; e_entry = 0x0804805B (_start)
+34 00 00 00                 ; e_phoff = 52
+00 00 00 00                 ; e_shoff = 0 (no section headers)
+00 00 00 00                 ; e_flags = 0
+34 00                       ; e_ehsize = 52
+20 00                       ; e_phentsize = 32
+01 00                       ; e_phnum = 1
+00 00                       ; e_shentsize = 0
+00 00                       ; e_shnum = 0
+00 00                       ; e_shstrndx = 0
+
+;; ===== Program header (32 bytes) =====
+;; One segment, readable, writable and executable: the dictionary is code
+;; written at run time.  Linux maps p_memsz bytes, the file first and zeros
+;; after.  builder-hex0 copies p_filesz bytes into memory it has zeroed and
+;; ignores p_memsz.
+
+01 00 00 00                 ; p_type = PT_LOAD
+00 00 00 00                 ; p_offset = 0
+00 80 04 08                 ; p_vaddr = 0x08048000
+00 80 04 08                 ; p_paddr = 0x08048000
+A7 04 00 00                 ; p_filesz = 1191 (the whole file)
+00 00 00 02                 ; p_memsz = 0x02000000 (32 MiB: the file, the data stack, the sysvar page and the dictionary)
+07 00 00 00                 ; p_flags = R|W|X
+00 10 00 00                 ; p_align = 0x1000
+
+;; ----- no_file @ 0x54  exit with status 1: no FILE argument, or FILE does not open
+;; It prints nothing.  It sits before _start so that both of _start's
+;; tests reach it with a short jump.
+31 C0                       ; xor eax, eax
+40                          ; inc eax                       ; eax = 1: exit
+89 C3                       ; mov ebx, eax                  ; status 1
+CD 80                       ; int 0x80
+
+;; ----- _start @ 0x5B  the entry point
+;; esp points at the kernel's argument block: argc, then the pointers
+;; argv[0], argv[1], ..., 4 bytes each.  The registers hold nothing.
+;;
+;; First the break is raised to the image's end.  builder-hex0 starts it
+;; just above the file, inside the dictionary space, and zeroes memory when
+;; the break grows; raising it now, while everything above is still zero,
+;; costs nothing later.  A request below the current break never returns on
+;; builder-hex0, so the current break is asked for and compared first.  On
+;; Linux it is already at or above the image's end.
+31 DB                       ; xor ebx, ebx                  ; brk(0) returns the current break
+6A 2D                       ; push 45
+58                          ; pop eax                       ; eax = 45: brk
+CD 80                       ; int 0x80
+BB 00 80 04 0A              ; mov ebx, 0x0A048000           ; the image's end
+39 D8                       ; cmp eax, ebx
+73 05                       ; jae .raised (rel8 = 0x70 - 0x6B) ; unsigned: already there
+6A 2D                       ; push 45
+58                          ; pop eax                       ; brk again, to the image's end
+CD 80                       ; int 0x80
+;; .raised:
+8D 44 24 04                 ; lea eax, [esp+4]              ; the address of the argv[0] pointer
+A3 28 90 05 08              ; mov [ARGV], eax               ; a low half: zero-extended
+83 3C 24 02                 ; cmp dword [esp], 2            ; argc
+72 D5                       ; jb no_file (rel8 = 0x54 - 0x7F) ; no FILE argument
+8B 5C 24 08                 ; mov ebx, [esp+8]              ; argv[1]: the path
+31 C9                       ; xor ecx, ecx                  ; flags 0: read only
+31 D2                       ; xor edx, edx                  ; mode 0
+6A 05                       ; push 5
+58                          ; pop eax                       ; eax = 5: open
+CD 80                       ; int 0x80
+85 C0                       ; test eax, eax
+78 C4                       ; js no_file (rel8 = 0x54 - 0x90) ; negative: Linux's errno, builder-hex0's -1
+A3 20 90 05 08              ; mov [INPUT], eax              ; the descriptor key reads
+BE 00 90 05 08              ; mov esi, 0x08059000           ; the data stack is empty
+C7 05 10 90 05 08 00 A0 05 08 ; mov dword [HERE], 0x0805A000
+C7 05 08 90 05 08 62 84 04 08 ; mov dword [LATEST], 0x08048462 (: header) ; the last header in this file
+;; and into the outer loop.
+
+;; ----- interpret @ 0xAE  the outer loop: one token per turn
+;; Read a token and look it up.  A word is executed if it is IMMEDIATE or
+;; STATE is 0, and otherwise a call to it is compiled.  A token that is no
+;; word must be a decimal number, which is pushed or compiled as a literal.
+;; Anything else is fatal.  The end of the input exits with status 0.
+;;
+;; token, find and the executed word may change every scratch register, so
+;; what the loop needs across a call it keeps on the return stack.
+6A 00                       ; push 0
+E8 94 02 00 00              ; call token (rel32 = 0x349 - 0xB5) ; ( -- c-addr u )
+85 C0                       ; test eax, eax                 ; u = 0: the end of the input
+74 4F                       ; jz .eof (rel8 = 0x108 - 0xB9)
+FF 36                       ; push dword [esi]              ; keep c-addr
+50                          ; push eax                      ; and u, for the number and the fatal message
+6A 00                       ; push 0
+E8 F6 02 00 00              ; call find (rel32 = 0x3B9 - 0xC3) ; ( c-addr u -- xt | 0 )
+93                          ; xchg eax, ebx                 ; ebx = the xt, or 0
+AD                          ; lodsd                         ; drop find's result: pop the low half
+92                          ; xchg eax, edx                 ;   park it in edx
+AD                          ; lodsd                         ;   pop the high half
+92                          ; xchg eax, edx                 ;   edx:eax = TOS, as earlier tokens left it
+59                          ; pop ecx                       ; ecx = u
+5F                          ; pop edi                       ; edi = c-addr
+85 DB                       ; test ebx, ebx
+74 3E                       ; jz .number (rel8 = 0x10C - 0xCE) ; not a word
+8B 2D 18 90 05 08           ; mov ebp, [LAST_FOUND]         ; the header find matched
+F6 45 08 01                 ; test byte [ebp+8], 1          ; its IMMEDIATE flag
+75 09                       ; jnz .execute (rel8 = 0xE3 - 0xDA)
+83 3D 00 90 05 08 00        ; cmp dword [STATE], 0
+75 06                       ; jne .compile (rel8 = 0xE9 - 0xE3)
+;; .execute:
+6A 00                       ; push 0                        ; the word returns here with ret 4
+FF D3                       ; call ebx
+EB C5                       ; jmp interpret (rel8 = 0xAE - 0xE9)
+;; .compile:
+;; Lay "push 0" and "call xt" at HERE: 6A 00 E8 rel32, seven bytes.
+8B 3D 10 90 05 08           ; mov edi, [HERE]
+66 C7 07 6A 00              ; mov word [edi], 0x006A        ; 6A 00 = push 0
+C6 47 02 E8                 ; mov byte [edi+2], 0xE8        ; E8 = call rel32
+83 C7 07                    ; add edi, 7                    ; edi = the address after the call
+29 FB                       ; sub ebx, edi                  ; rel32 = xt - that address
+89 5F FC                    ; mov [edi-4], ebx
+;; .advance:
+89 3D 10 90 05 08           ; mov [HERE], edi               ; HERE = the end of what was laid
+;; .again:
+EB A6                       ; jmp interpret (rel8 = 0xAE - 0x108)
+;; .eof:
+31 DB                       ; xor ebx, ebx                  ; status 0
+EB 72                       ; jmp bye (rel8 = 0x17E - 0x10C)
+;; .number:
+;; edi = c-addr, ecx = u, at least 1.  The value is built in ebp:eax, as
+;; value * 10 + digit for each character, wrapping past 64 bits.
+57                          ; push edi                      ; keep c-addr
+51                          ; push ecx                      ; and u for the fatal message
+E8 70 00 00 00              ; call dpush (rel32 = 0x183 - 0x113) ; make room: the number becomes TOS
+31 C0                       ; xor eax, eax                  ; low half of the value
+31 ED                       ; xor ebp, ebp                  ; high half
+;; .digit:
+0F B6 1F                    ; movzx ebx, byte [edi]         ; the next character
+47                          ; inc edi
+83 EB 30                    ; sub ebx, 48                   ; "0" is 48; anything below wraps to a large number
+83 FB 09                    ; cmp ebx, 9
+77 43                       ; ja .unknown (rel8 = 0x166 - 0x123) ; unsigned: not a digit
+6B ED 0A                    ; imul ebp, ebp, 10             ; high half * 10
+6A 0A                       ; push 10
+5A                          ; pop edx
+F7 E2                       ; mul edx                       ; edx:eax = low half * 10
+01 D8                       ; add eax, ebx                  ; + the digit
+11 EA                       ; adc edx, ebp                  ; the high half: both products and the carry
+89 D5                       ; mov ebp, edx
+49                          ; dec ecx
+75 E3                       ; jnz .digit (rel8 = 0x117 - 0x134)
+59                          ; pop ecx                       ; forget u
+59                          ; pop ecx                       ; and c-addr
+83 3D 00 90 05 08 00        ; cmp dword [STATE], 0          ; edx:eax = the number, already TOS
+74 C7                       ; je .again (rel8 = 0x106 - 0x13F) ; interpreting: it stays on the stack
+;; Compiling: lay 15 bytes that push the number when the definition runs,
+;;     E8 rel32    call dpush
+;;     B8 imm32    mov eax, the low half
+;;     BA imm32    mov edx, the high half
+8B 3D 10 90 05 08           ; mov edi, [HERE]
+C6 07 E8                    ; mov byte [edi], 0xE8          ; E8 = call rel32
+83 C7 05                    ; add edi, 5                    ; edi = the address after the call
+BB 83 81 04 08              ; mov ebx, 0x08048183           ; dpush
+29 FB                       ; sub ebx, edi                  ; rel32 = dpush - that address
+89 5F FC                    ; mov [edi-4], ebx
+C6 07 B8                    ; mov byte [edi], 0xB8          ; B8 = mov eax, imm32
+47                          ; inc edi
+AB                          ; stosd                         ; the low half; edi += 4
+C6 07 BA                    ; mov byte [edi], 0xBA          ; BA = mov edx, imm32
+47                          ; inc edi
+92                          ; xchg eax, edx
+AB                          ; stosd                         ; the high half
+AD                          ; lodsd                         ; drop the number: compiling leaves
+92                          ; xchg eax, edx                 ;   the data stack as it was
+AD                          ; lodsd
+92                          ; xchg eax, edx
+EB 9A                       ; jmp .advance (rel8 = 0x100 - 0x166)
+;; .unknown:
+59                          ; pop ecx                       ; ecx = u
+5F                          ; pop edi                       ; edi = c-addr
+;; and into fatal.
+
+;; ----- fatal @ 0x168  print the token, "?" and a newline; exit with status 2
+;; edi = the token's address, ecx = its length.  The two extra bytes are
+;; stored after the token, where the token buffer has room for them, so
+;; that one write sends the whole message to descriptor 1.
+66 C7 04 0F 3F 0A           ; mov word [edi+ecx], 0x0A3F    ; 3F = "?", 0A = newline
+8D 51 02                    ; lea edx, [ecx+2]              ; count: the token and those two
+89 F9                       ; mov ecx, edi                  ; buffer
+6A 01                       ; push 1
+5B                          ; pop ebx                       ; descriptor 1
+6A 04                       ; push 4
+58                          ; pop eax                       ; eax = 4: write
+CD 80                       ; int 0x80
+6A 02                       ; push 2
+5B                          ; pop ebx                       ; status 2
+;; and into bye.
+
+;; ----- bye @ 0x17E  exit; ebx = the status
+6A 01                       ; push 1
+58                          ; pop eax                       ; eax = 1: exit
+CD 80                       ; int 0x80
+
+;; ----- dpush @ 0x183  push TOS onto the data stack in memory
+;; edx:eax keeps its value, so this is all of dup; and after it a routine
+;; loads a new TOS into edx:eax.  A compiled literal calls it too.
+83 EE 08                    ; sub esi, 8
+89 06                       ; mov [esi], eax
+89 56 04                    ; mov [esi+4], edx
+C3                          ; ret
+
+;; ----- getc @ 0x18C  ebx = the next input byte, 0 at the end; for token
+;; The byte comes through key's execution token, called as a dictionary
+;; word, so that it comes from the library's key once that has replaced
+;; this one.  The data stack and TOS are as before; ecx, edi and ebp are
+;; lost.
+6A 00                       ; push 0
+E8 88 01 00 00              ; call key (rel32 = 0x31B - 0x193) ; ( -- c )
+93                          ; xchg eax, ebx                 ; ebx = c
+AD                          ; lodsd                         ; drop c
+92                          ; xchg eax, edx
+AD                          ; lodsd
+92                          ; xchg eax, edx
+C3                          ; ret
+
+;; ===== The dictionary =====
+;; 21 headers, each followed by its word's code, chained in file order.
+
+;; --- dup @ 0x199 --- header
+00 00 00 00 00 00 00 00     ; link  = 0 (end of chain)
+00                          ; flags = 0
+03                          ; nlen  = 3
+64 75 70                    ; name  = "dup"
+;; ----- dup @ 0x1A6  ( a -- a a )
+E8 D8 FF FF FF              ; call dpush (rel32 = 0x183 - 0x1AB)
+C2 04 00                    ; ret 4
+
+;; --- drop @ 0x1AE --- header
+99 81 04 08 00 00 00 00     ; link  = 0x08048199 (dup)
+00                          ; flags = 0
+04                          ; nlen  = 4
+64 72 6F 70                 ; name  = "drop"
+;; ----- drop @ 0x1BC  ( a -- )
+;; The second item becomes TOS.  esi points at it, so lodsd pops it half
+;; by half.  ! and c! and : end by jumping here.
+AD                          ; lodsd                         ; eax = the low half; esi += 4
+92                          ; xchg eax, edx                 ; park it in edx
+AD                          ; lodsd                         ; eax = the high half; esi += 4
+92                          ; xchg eax, edx                 ; eax = low, edx = high
+C2 04 00                    ; ret 4
+
+;; --- ! @ 0x1C3 --- header
+AE 81 04 08 00 00 00 00     ; link  = 0x080481AE (drop)
+00                          ; flags = 0
+01                          ; nlen  = 1
+21                          ; name  = "!"
+;; ----- store @ 0x1CE  ( v addr -- )  store the cell v at addr
+;; esi points at v on the data stack: two movsd copy its 8 bytes to
+;; [edi] and step esi past it, which pops it.
+97                          ; xchg eax, edi                 ; edi = addr
+A5                          ; movsd                         ; the low half
+A5                          ; movsd                         ; the high half
+EB E9                       ; jmp drop (rel8 = 0x1BC - 0x1D3) ; the item under v becomes TOS
+
+;; --- c! @ 0x1D3 --- header
+C3 81 04 08 00 00 00 00     ; link  = 0x080481C3 (!)
+00                          ; flags = 0
+02                          ; nlen  = 2
+63 21                       ; name  = "c!"
+;; ----- cstore @ 0x1DF  ( b addr -- )  store the lowest byte of b at addr
+97                          ; xchg eax, edi                 ; edi = addr
+AD                          ; lodsd                         ; pop b's low half
+AA                          ; stosb                         ; store its lowest byte, one byte only
+AD                          ; lodsd                         ; pop b's high half, unused
+EB D7                       ; jmp drop (rel8 = 0x1BC - 0x1E5) ; the item under b becomes TOS
+
+;; --- swap @ 0x1E5 --- header
+D3 81 04 08 00 00 00 00     ; link  = 0x080481D3 (c!)
+00                          ; flags = 0
+04                          ; nlen  = 4
+73 77 61 70                 ; name  = "swap"
+;; ----- swap @ 0x1F3  ( a b -- b a )
+87 06                       ; xchg eax, [esi]
+87 56 04                    ; xchg edx, [esi+4]
+C2 04 00                    ; ret 4
+
+;; --- >r @ 0x1FB --- header
+E5 81 04 08 00 00 00 00     ; link  = 0x080481E5 (swap)
+00                          ; flags = 0
+02                          ; nlen  = 2
+3E 72                       ; name  = ">r"
+;; ----- to_r @ 0x207  ( n -- ; R: -- n )  move n to the return stack
+;; n goes underneath this word's own return cell, so that the caller finds
+;; n on top of the return stack afterwards.
+5B                          ; pop ebx                       ; the return address
+59                          ; pop ecx                       ; and its high half, 0
+52                          ; push edx                      ; n: the high half first,
+50                          ; push eax                      ;   so the low half is at the lower address
+51                          ; push ecx                      ; the return cell again
+53                          ; push ebx
+AD                          ; lodsd                         ; drop n from the data stack
+92                          ; xchg eax, edx
+AD                          ; lodsd
+92                          ; xchg eax, edx
+C2 04 00                    ; ret 4
+
+;; --- r> @ 0x214 --- header
+FB 81 04 08 00 00 00 00     ; link  = 0x080481FB (>r)
+00                          ; flags = 0
+02                          ; nlen  = 2
+72 3E                       ; name  = "r>"
+;; ----- r_from @ 0x220  ( -- n ; R: n -- )  take n back from the return stack
+;; n is the cell underneath this word's own return cell.
+E8 5E FF FF FF              ; call dpush (rel32 = 0x183 - 0x225)
+5B                          ; pop ebx                       ; the return address
+59                          ; pop ecx                       ; and its high half, 0
+58                          ; pop eax                       ; n's low half
+5A                          ; pop edx                       ; n's high half
+51                          ; push ecx                      ; the return cell again
+53                          ; push ebx
+C2 04 00                    ; ret 4
+
+;; --- @ @ 0x22E --- header
+14 82 04 08 00 00 00 00     ; link  = 0x08048214 (r>)
+00                          ; flags = 0
+01                          ; nlen  = 1
+40                          ; name  = "@"
+;; ----- fetch @ 0x239  ( addr -- v )  the cell at addr
+8B 50 04                    ; mov edx, [eax+4]              ; the high half first: eax is the address
+8B 00                       ; mov eax, [eax]
+C2 04 00                    ; ret 4
+
+;; --- c@ @ 0x241 --- header
+2E 82 04 08 00 00 00 00     ; link  = 0x0804822E (@)
+00                          ; flags = 0
+02                          ; nlen  = 2
+63 40                       ; name  = "c@"
+;; ----- cfetch @ 0x24D  ( addr -- b )  the byte at addr, zero-extended
+0F B6 00                    ; movzx eax, byte [eax]         ; reads one byte only
+31 D2                       ; xor edx, edx
+C2 04 00                    ; ret 4
+
+;; --- + @ 0x255 --- header
+41 82 04 08 00 00 00 00     ; link  = 0x08048241 (c@)
+00                          ; flags = 0
+01                          ; nlen  = 1
+2B                          ; name  = "+"
+;; ----- plus @ 0x260  ( a b -- a+b )  modulo 2^64
+03 06                       ; add eax, [esi]
+13 56 04                    ; adc edx, [esi+4]              ; with the carry out of the low halves
+83 C6 08                    ; add esi, 8
+C2 04 00                    ; ret 4
+
+;; --- * @ 0x26B --- header
+55 82 04 08 00 00 00 00     ; link  = 0x08048255 (+)
+00                          ; flags = 0
+01                          ; nlen  = 1
+2A                          ; name  = "*"
+;; ----- star @ 0x276  ( a b -- a*b )  the low 64 bits of the product
+;; With a = aH:aL in memory and b = bH:bL in edx:eax, the low half of the
+;; result is the low word of aL*bL, and the high half is the high word of
+;; aL*bL plus the low words of aL*bH and aH*bL.  aH*bH lies above bit 64.
+8B 0E                       ; mov ecx, [esi]                ; aL
+0F AF D1                    ; imul edx, ecx                 ; edx = bH * aL
+8B 5E 04                    ; mov ebx, [esi+4]              ; aH
+0F AF D8                    ; imul ebx, eax                 ; ebx = aH * bL
+01 D3                       ; add ebx, edx                  ; the two cross products
+F7 E1                       ; mul ecx                       ; edx:eax = bL * aL, 64 bits
+01 DA                       ; add edx, ebx
+83 C6 08                    ; add esi, 8
+C2 04 00                    ; ret 4
+
+;; --- / @ 0x28D --- header
+6B 82 04 08 00 00 00 00     ; link  = 0x0804826B (*)
+00                          ; flags = 0
+01                          ; nlen  = 1
+2F                          ; name  = "/"
+;; ----- slash @ 0x298  ( a b -- q )  unsigned 64-bit a / b, truncated
+;; The dividend a = aH:aL is in memory and the divisor b in edx:eax.
+;; Dividing by 0 faults in the div instruction below.
+;;
+;; A divisor below 2^32 is the common case, and two div instructions do
+;; it, as in long division with 32-bit digits: aH / b gives the quotient's
+;; high half, and its remainder is the high part of the second dividend.
+89 C1                       ; mov ecx, eax                  ; ecx = the divisor's low half
+85 D2                       ; test edx, edx
+75 12                       ; jnz .wide (rel8 = 0x2B0 - 0x29E) ; the divisor is 2^32 or more
+8B 46 04                    ; mov eax, [esi+4]              ; edx:eax = 0:aH
+F7 F1                       ; div ecx                       ; eax = the quotient's high half, edx = remainder
+93                          ; xchg eax, ebx                 ; ebx = the quotient's high half
+8B 06                       ; mov eax, [esi]                ; edx:eax = remainder:aL
+F7 F1                       ; div ecx                       ; eax = the quotient's low half
+;; .done:
+89 DA                       ; mov edx, ebx                  ; edx:eax = the quotient
+83 C6 08                    ; add esi, 8
+C2 04 00                    ; ret 4
+;; .wide:
+;; A divisor of 2^32 or more: the quotient is below 2^32, so 32 steps of
+;; shift and subtract find it.  ebp:ecx is the divisor and edx:ebx the
+;; remainder, which starts as aH (less than the divisor).  Each step
+;; shifts the remainder left and brings in the next bit of aL from the top
+;; of eax, and the quotient's bit enters eax at the bottom.
+89 D5                       ; mov ebp, edx                  ; ebp:ecx = the divisor
+8B 5E 04                    ; mov ebx, [esi+4]              ; edx:ebx = aH
+31 D2                       ; xor edx, edx
+8B 06                       ; mov eax, [esi]                ; eax = aL
+6A 20                       ; push 32
+5F                          ; pop edi                       ; 32 steps
+;; .step:
+01 C0                       ; add eax, eax                  ; the top bit of eax goes into the carry,
+11 DB                       ; adc ebx, ebx                  ;   from there into the remainder,
+11 D2                       ; adc edx, edx                  ;   whose top bit goes into the carry
+72 0A                       ; jc .subtract (rel8 = 0x2CE - 0x2C4) ; 2^64 or more: above any divisor
+39 EA                       ; cmp edx, ebp                  ; compare the high halves, unsigned
+72 0B                       ; jb .keep (rel8 = 0x2D3 - 0x2C8)
+77 04                       ; ja .subtract (rel8 = 0x2CE - 0x2CA)
+39 CB                       ; cmp ebx, ecx                  ; equal: the low halves decide
+72 05                       ; jb .keep (rel8 = 0x2D3 - 0x2CE)
+;; .subtract:
+29 CB                       ; sub ebx, ecx                  ; remainder -= divisor, modulo 2^64
+19 EA                       ; sbb edx, ebp
+40                          ; inc eax                       ; the quotient's bit is 1
+;; .keep:
+4F                          ; dec edi
+75 E6                       ; jnz .step (rel8 = 0x2BC - 0x2D6)
+31 DB                       ; xor ebx, ebx                  ; the quotient's high half is 0
+EB CE                       ; jmp .done (rel8 = 0x2A8 - 0x2DA)
+
+;; --- nand @ 0x2DA --- header
+8D 82 04 08 00 00 00 00     ; link  = 0x0804828D (/)
+00                          ; flags = 0
+04                          ; nlen  = 4
+6E 61 6E 64                 ; name  = "nand"
+;; ----- nand @ 0x2E8  ( a b -- ~(a&b) )
+23 06                       ; and eax, [esi]
+23 56 04                    ; and edx, [esi+4]
+F7 D0                       ; not eax
+F7 D2                       ; not edx
+83 C6 08                    ; add esi, 8
+C2 04 00                    ; ret 4
+
+;; --- 0= @ 0x2F7 --- header
+DA 82 04 08 00 00 00 00     ; link  = 0x080482DA (nand)
+00                          ; flags = 0
+02                          ; nlen  = 2
+30 3D                       ; name  = "0="
+;; ----- zero_equal @ 0x303  ( n -- f )  all 64 bits set if n is 0, else 0
+09 D0                       ; or eax, edx                   ; 0 only if both halves are 0
+83 F8 01                    ; cmp eax, 1                    ; borrows only from 0
+19 C0                       ; sbb eax, eax                  ; eax = -1 after a borrow, else 0
+99                          ; cdq                           ; edx = eax's sign bit, 32 times
+C2 04 00                    ; ret 4
+
+;; --- key @ 0x30E --- header
+F7 82 04 08 00 00 00 00     ; link  = 0x080482F7 (0=)
+00                          ; flags = 0
+03                          ; nlen  = 3
+6B 65 79                    ; name  = "key"
+;; ----- key @ 0x31B  ( -- c )  the next byte of the input; 0 at its end
+;; One read of one byte from the descriptor in INPUT, fetched on every
+;; call; nothing is buffered or remembered.  The byte is read into a zero
+;; pushed on the return stack, so the end of the file and a failed read
+;; both leave 0.  The kernel need not keep esi, so it is saved.
+;; The library overwrites this word's first five bytes, the call below,
+;; with a jump to its own key.
+E8 63 FE FF FF              ; call dpush (rel32 = 0x183 - 0x320)
+56                          ; push esi                      ; save the data-stack pointer
+6A 00                       ; push 0                        ; where the byte goes
+89 E1                       ; mov ecx, esp                  ; buffer
+8B 1D 20 90 05 08           ; mov ebx, [INPUT]              ; descriptor
+6A 01                       ; push 1
+5A                          ; pop edx                       ; count 1
+6A 03                       ; push 3
+58                          ; pop eax                       ; eax = 3: read
+CD 80                       ; int 0x80
+58                          ; pop eax                       ; the byte, or 0
+5E                          ; pop esi
+31 D2                       ; xor edx, edx
+C2 04 00                    ; ret 4
+
+;; --- token @ 0x33A --- header
+0E 83 04 08 00 00 00 00     ; link  = 0x0804830E (key)
+00                          ; flags = 0
+05                          ; nlen  = 5
+74 6F 6B 65 6E              ; name  = "token"
+;; ----- token @ 0x349  ( -- c-addr u )  read the next token into TIB
+;; Bytes 1 to 32 are whitespace and 0 is the end of the input.  Leading
+;; whitespace is skipped; then bytes above 32 are collected up to the next
+;; whitespace byte, which is consumed, or the end.  u = 0 means the input
+;; has ended.  A token that is the single character "\" starts a comment:
+;; the rest of its line is skipped and reading starts again.  A token of
+;; 256 bytes is fatal.
+;;
+;; ecx counts the bytes collected and ebx is the byte just read.  getc
+;; loses ecx, so it is saved around the call.
+;; .restart:
+31 C9                       ; xor ecx, ecx                  ; nothing collected
+;; .next:
+51                          ; push ecx
+E8 3B FE FF FF              ; call getc (rel32 = 0x18C - 0x351) ; ebx = the next byte
+59                          ; pop ecx
+83 FB 20                    ; cmp ebx, 32
+77 3B                       ; ja .store (rel8 = 0x392 - 0x357) ; unsigned: a token byte
+85 C9                       ; test ecx, ecx                 ; whitespace or the end: is there a token?
+75 04                       ; jnz .end (rel8 = 0x35F - 0x35B) ; yes, and this byte ends it
+85 DB                       ; test ebx, ebx
+75 EC                       ; jnz .next (rel8 = 0x34B - 0x35F) ; leading whitespace: skip it
+;; .end:
+;; ecx = the length, 0 only at the end of the input; ebx = the byte that
+;; ended the token.
+83 F9 01                    ; cmp ecx, 1
+75 19                       ; jne .return (rel8 = 0x37D - 0x364)
+80 3D 30 90 05 08 5C        ; cmp byte [TIB], 0x5C          ; 5C = "\"
+75 10                       ; jne .return (rel8 = 0x37D - 0x36D)
+;; .comment:
+;; Skip to the end of the line.  If the byte that ended the "\" was the
+;; line feed itself, the comment is over already.
+83 FB 0A                    ; cmp ebx, 10                   ; line feed
+74 D7                       ; je .restart (rel8 = 0x349 - 0x372)
+85 DB                       ; test ebx, ebx                 ; the end of the input
+74 D3                       ; je .restart (rel8 = 0x349 - 0x376) ; key gives 0 again, so u = 0
+E8 11 FE FF FF              ; call getc (rel32 = 0x18C - 0x37B)
+EB F0                       ; jmp .comment (rel8 = 0x36D - 0x37D)
+;; .return:
+E8 01 FE FF FF              ; call dpush (rel32 = 0x183 - 0x382)
+B8 30 90 05 08              ; mov eax, TIB                  ; c-addr
+31 D2                       ; xor edx, edx
+E8 F5 FD FF FF              ; call dpush (rel32 = 0x183 - 0x38E)
+91                          ; xchg eax, ecx                 ; eax = u; edx is still 0
+C2 04 00                    ; ret 4
+;; .store:
+88 99 30 90 05 08           ; mov byte [TIB+ecx], bl
+41                          ; inc ecx
+81 F9 00 01 00 00           ; cmp ecx, 256
+72 AA                       ; jb .next (rel8 = 0x34B - 0x3A1)
+BF 30 90 05 08              ; mov edi, TIB                  ; 256 bytes: print them and stop
+E9 BD FD FF FF              ; jmp fatal (rel32 = 0x168 - 0x3AB)
+
+;; --- find @ 0x3AB --- header
+3A 83 04 08 00 00 00 00     ; link  = 0x0804833A (token)
+00                          ; flags = 0
+04                          ; nlen  = 4
+66 69 6E 64                 ; name  = "find"
+;; ----- find @ 0x3B9  ( c-addr u -- xt | 0 )  look a name up
+;; Walks the chain from LATEST.  The first header whose nlen is u and
+;; whose name equals the u bytes at c-addr is the hit: its address goes
+;; into LAST_FOUND and its xt is the result.  Flags play no part.
+;; The walk starts with ebx pointing at the LATEST cell itself, which is
+;; read as if it were a link field: a header's link is its first cell.
+;; The library overwrites this word's first five bytes with a jump to its
+;; own find; no label lies inside them.
+56                          ; push esi                      ; cmpsb needs esi
+8B 2E                       ; mov ebp, [esi]                ; ebp = c-addr
+BB 08 90 05 08              ; mov ebx, LATEST               ; the address of the first link
+;; .next:
+8B 1B                       ; mov ebx, [ebx]                ; follow the link
+85 DB                       ; test ebx, ebx
+74 19                       ; jz .done (rel8 = 0x3E0 - 0x3C7) ; the end of the chain: the result is 0
+8D 7B 0A                    ; lea edi, [ebx+10]             ; edi = the header's name
+89 EE                       ; mov esi, ebp                  ; esi = c-addr
+0F B6 4B 09                 ; movzx ecx, byte [ebx+9]       ; ecx = nlen
+39 C1                       ; cmp ecx, eax                  ; against u
+75 ED                       ; jne .next (rel8 = 0x3C1 - 0x3D4)
+F3 A6                       ; repe cmpsb                    ; compare ecx bytes; with ecx = 0 it does nothing and the flags still say equal
+75 E9                       ; jne .next (rel8 = 0x3C1 - 0x3D8)
+89 1D 18 90 05 08           ; mov [LAST_FOUND], ebx         ; the header
+89 FB                       ; mov ebx, edi                  ; edi has passed the name: it is the xt
+;; .done:
+89 D8                       ; mov eax, ebx                  ; the xt, or 0
+31 D2                       ; xor edx, edx
+5E                          ; pop esi
+83 C6 08                    ; add esi, 8                    ; two cells in, one out
+C2 04 00                    ; ret 4
+
+;; --- syscall6 @ 0x3EB --- header
+AB 83 04 08 00 00 00 00     ; link  = 0x080483AB (find)
+00                          ; flags = 0
+08                          ; nlen  = 8
+73 79 73 63 61 6C 6C 36     ; name  = "syscall6"
+;; ----- syscall6 @ 0x3FD  ( a b c d e f n -- r )  int 0x80, call number n
+;; The arguments go in ebx, ecx, edx, esi, edi, ebp, each the low half of
+;; its cell; n is already in eax.  esi is an argument and the data-stack
+;; pointer, so it is saved on the return stack; nothing else is needed
+;; after the call.  r is eax sign-extended: a negative result is an error.
+8B 2E                       ; mov ebp, [esi]                ; f
+8B 7E 08                    ; mov edi, [esi+8]              ; e
+8B 56 18                    ; mov edx, [esi+24]             ; c
+8B 4E 20                    ; mov ecx, [esi+32]             ; b
+8B 5E 28                    ; mov ebx, [esi+40]             ; a
+56                          ; push esi
+8B 76 10                    ; mov esi, [esi+16]             ; d
+CD 80                       ; int 0x80
+5E                          ; pop esi
+83 C6 30                    ; add esi, 48                   ; seven cells in, one out
+99                          ; cdq                           ; edx = eax's sign bit, 32 times
+C2 04 00                    ; ret 4
+
+;; --- state @ 0x419 --- header
+EB 83 04 08 00 00 00 00     ; link  = 0x080483EB (syscall6)
+00                          ; flags = 0
+05                          ; nlen  = 5
+73 74 61 74 65              ; name  = "state"
+;; ----- state @ 0x428  ( -- addr )  the sysvar page, where the STATE cell is
+E8 56 FD FF FF              ; call dpush (rel32 = 0x183 - 0x42D)
+B8 00 90 05 08              ; mov eax, STATE
+31 D2                       ; xor edx, edx
+C2 04 00                    ; ret 4
+
+;; --- ; @ 0x437 --- header  IMMEDIATE
+19 84 04 08 00 00 00 00     ; link  = 0x08048419 (state)
+01                          ; flags = 1 (IMMEDIATE)
+01                          ; nlen  = 1
+3B                          ; name  = ";"
+;; ----- semicolon @ 0x442  ( -- )  end a definition
+;; Lays the return, C2 04 00 = ret 4, at HERE, and sets STATE to 0.
+8B 3D 10 90 05 08           ; mov edi, [HERE]
+66 C7 07 C2 04              ; mov word [edi], 0x04C2        ; C2 04
+C6 47 02 00                 ; mov byte [edi+2], 0           ; 00
+83 05 10 90 05 08 03        ; add dword [HERE], 3
+83 25 00 90 05 08 00        ; and dword [STATE], 0          ; interpreting
+C2 04 00                    ; ret 4
+
+;; --- : @ 0x462 --- header
+37 84 04 08 00 00 00 00     ; link  = 0x08048437 (;)
+00                          ; flags = 0
+01                          ; nlen  = 1
+3A                          ; name  = ":"
+;; ----- colon @ 0x46D  ( "name" -- )  start a definition
+;; Reads a token and lays a header for it at HERE: the link to the header
+;; that was LATEST, flags 0, the length and the name.  LATEST becomes the
+;; new header at once, so a word can be found inside its own definition.
+;; HERE ends up after the name, where the code will go, and STATE is 1.
+;; Every byte of the header is written, the zeros too: the library may
+;; have used the memory at HERE before.  At the end of the input the name
+;; is empty.
+6A 00                       ; push 0
+E8 D5 FE FF FF              ; call token (rel32 = 0x349 - 0x474) ; ( -- c-addr u )
+89 C1                       ; mov ecx, eax                  ; ecx = u
+8B 3D 10 90 05 08           ; mov edi, [HERE]               ; edi = the new header
+89 F8                       ; mov eax, edi
+87 05 08 90 05 08           ; xchg eax, [LATEST]            ; LATEST = the new header; eax = the one before
+AB                          ; stosd                         ; link, low half
+31 C0                       ; xor eax, eax
+AB                          ; stosd                         ; link, high half: 0
+AA                          ; stosb                         ; flags: 0
+89 C8                       ; mov eax, ecx
+AA                          ; stosb                         ; nlen
+56                          ; push esi                      ; movsb needs esi
+8B 36                       ; mov esi, [esi]                ; esi = c-addr
+F3 A4                       ; rep movsb                     ; the name: ecx bytes; ecx ends as 0
+5E                          ; pop esi
+89 3D 10 90 05 08           ; mov [HERE], edi               ; the first byte after the name
+41                          ; inc ecx                       ; ecx = 1
+89 0D 00 90 05 08           ; mov [STATE], ecx              ; compiling
+83 C6 08                    ; add esi, 8                    ; forget c-addr,
+E9 15 FD FF FF              ; jmp drop (rel32 = 0x1BC - 0x4A7) ; and drop u: the stack is as it was

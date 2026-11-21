@@ -335,8 +335,8 @@ Checks, all on the host through its IA32 support (`CHECK_I386=1
   encoder of `cc/090-cc-emit.fth` or REX prefix of a later layer is
   reached when the first tcc is compiled.
 
-Not done here: the i386 seed ("The i386 host: written, waiting for its
-seed", below).
+Not done here: the i386 seed and the Forth files on top of it ("The
+i386 seed and its host", below).
 
 ## One boot on builder-hex0
 
@@ -417,17 +417,26 @@ the boot, which the Mes-libc one of the hand-off does not.
   and unpacks builder-hex0's archive with the seed-built tools, runs
   hex0-seed for stage 1, writes the disk, starts QEMU and reads the drive.
 
-## The i386 host: written, waiting for its seed
+## The i386 seed and its host
 
 The one-boot route needs a seed that runs on builder-hex0, so that the
 programs on the disk above are built in the boot and not on the host.
-Two documents specify it:
+Two documents specify it, and both halves are written; the boot that
+uses them in place of the host-built programs is not yet:
 
 - `seed/i386/SPEC.md`: the seed itself, an i386 Forth with 64-bit cells
   that builder-hex0's built-in `hex0` assembles in the boot. It takes its
   Forth source by file name, because descriptor 0 there is the disk
-  stream. The x86-64 seed, K0, K1 and the GCC route are unchanged. It is
-  not in the repository yet.
+  stream. The x86-64 seed, K0, K1 and the GCC route are unchanged.
+  `seed/i386/000-seed.hex0` is that seed, 1,191 bytes, written from the
+  specification alone; `seed/i386/build.sh` assembles it on the host into
+  `./seed-forth-i386`. Its checks (`CHECK_I386_SEED=1 ./check-all.sh`):
+  `tests/seed/i386/asm-check.py` (its bytes equal GNU as and llvm-mc on
+  its comments), `tests/seed/i386/test.sh` (the cases of SPEC 13.1, 65 of
+  the 76 also run through the x86-64 seed with the same output, and all of
+  them again under strace), and `tests/seed/i386/boot-check.sh` (builder-hex0
+  assembles the source in a boot, the seed runs a Forth file there, and
+  the binary it built equals the host's).
 - `forth/i386/CONTRACT.md`: what is laid down on top of it. It lists every
   piece of machine code the Forth library and the compiler lay for the
   Forth system itself (as opposed to `cc/i386/`, which is the code of the

@@ -72,6 +72,19 @@
 #                   needs what CHECK_TINYCC needs, QEMU, KVM, python3 and
 #                   the archive of tinycc/hex0-handoff.SOURCES; SKIP
 #                   without them)
+#   CHECK_I386_SEED=1  the i386 seed alone (seed/i386/SPEC.md 13.1):
+#                   seed/i386/build.sh assembles seed/i386/000-seed.hex0
+#                   into the 1191-byte seed-forth-i386; its comments equal
+#                   GNU as and llvm-mc in 32-bit mode
+#                   (tests/seed/i386/asm-check.py); tests/seed/i386/test.sh,
+#                   every case also against the x86-64 seed where the text
+#                   allows; the same cases under strace; and
+#                   tests/seed/i386/boot-check.sh, where builder-hex0's hex0
+#                   assembles the seed in a boot and the result equals the
+#                   host's (seconds; needs the host kernel's i386 support,
+#                   as and python3; strace for the strace run; QEMU, KVM and
+#                   the archive of tinycc/hex0-handoff.SOURCES for the boot;
+#                   SKIP without them)
 #   CHECK_HEX0_HANDOFF=1  tests/tinycc/hex0-handoff-check.sh: K0 runs seed
 #                   Forth, which builds the first tcc; the first tcc makes
 #                   tcc-boot0 and mes libc and writes live-bootstrap's
@@ -169,6 +182,9 @@ if [ "${CHECK_I386:-0}" = 1 ]; then
         else
             skip "22-i386-kaem-boot" "$why"
         fi
+        # The i386 seed is built from its source here, so this step does
+        # not depend on CHECK_I386_SEED having run first.
+        [ -n "${SEED_I386:-}" ] || seed/i386/build.sh > /dev/null 2>&1 || true
         if why=$(tests/tinycc/i386-seed-check.sh --probe); then
             run "23-i386-seed" tests/tinycc/i386-seed-check.sh
         else
@@ -181,6 +197,24 @@ if [ "${CHECK_I386_BOOT:-0}" = 1 ]; then
         run "19-i386-one-boot" tests/tinycc/i386-one-boot-check.sh
     else
         skip "19-i386-one-boot" "$why"
+    fi
+fi
+if [ "${CHECK_I386_SEED:-0}" = 1 ]; then
+    if have as && have python3; then
+        run "24-i386-seed" sh -c 'seed/i386/build.sh && [ "$(wc -c < seed-forth-i386)" -eq 1191 ] && python3 tests/seed/i386/asm-check.py'
+    else
+        skip "24-i386-seed" "missing: as or python3"
+    fi
+    run "25-i386-seed-test" tests/seed/i386/test.sh
+    if have strace && have python3; then
+        run "26-i386-seed-strace" tests/seed/i386/test.sh --strace
+    else
+        skip "26-i386-seed-strace" "missing: strace or python3"
+    fi
+    if why=$(tests/seed/i386/boot-check.sh --probe); then
+        run "27-i386-seed-boot" tests/seed/i386/boot-check.sh
+    else
+        skip "27-i386-seed-boot" "$why"
     fi
 fi
 if [ "${CHECK_HEX0_HANDOFF:-0}" = 1 ]; then
