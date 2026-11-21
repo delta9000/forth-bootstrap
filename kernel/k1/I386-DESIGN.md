@@ -21,7 +21,10 @@ tcc-boot1 and tcc-boot2.
 live-bootstrap's `simple-patch` and `checksum-transcriber`.  A probe on
 the host showed that the route's own first tcc builds working i386
 versions of kaem (`vendor/mescc-tools/Kaem`) and the nine
-mescc-tools-extra programs against the mes libc that `tcc-mes` builds:
+mescc-tools-extra programs.  The probe linked against the mes libc the
+junction leaves in `/usr/lib/mes` (rebuilt last by tcc-boot2, with
+live-bootstrap's hashes), not the boot-1 copy `tcc-mes` makes; that
+variant was not tried:
 
 ```
 /tcc-first -static -L /usr/lib/mes -o kaem Kaem/kaem.c Kaem/variable.c \
@@ -32,9 +35,10 @@ ungz --file h.gz --output h2             # matched gzip -d
 untar --file t.tar                       # matched tar
 ```
 
-Traced, that kaem and those tools use 17 i386 calls: the ten above minus
+Traced, that kaem and those tools use 16 i386 calls: the ten above minus
 stat64, plus fork 2, waitpid 7, execve 11, chdir 12, chmod 15, access 33
-and mkdir 39.  So an i386 driver costs no seed-cc and no stage0-posix x86.
+and mkdir 39.  With the stages' stat64 that is 17 for the whole i386
+side.  So an i386 driver costs no seed-cc and no stage0-posix x86.
 
 **Before the Forth segment** (shared by all three, not solved here).
 The first tcc's sources must be unpacked and patched in the guest:
@@ -137,6 +141,14 @@ wrapper's header and stub written by a few lines of Forth or a runner
 verb.  The kernel then imports K0's file table from 0x50000000 as K1
 does today.
 
+The other hand-over is a second QEMU boot: `-kernel` with a multiboot
+header puts the CPU in 32-bit protected mode, which is how K0 itself
+starts (`start32` in `k0.asm`), so the kernel needs no mode switch.  But
+then boot 1's files have to leave K0, which has no disk driver, and the
+i386 kernel has to read them back: the same export problem as option 3
+below, plus an IDE read in the new kernel.  The one-boot drop is the
+cheaper of the two.
+
 **What the kernel contains.**  No paging and no scheduler: every program
 the chain runs is an ET_EXEC at 0x08048000, and only kaem forks, each
 time to exec and wait.  fork can save the parent's image and stack and
@@ -154,7 +166,19 @@ About 850 lines of C and 50 of assembly, plus the 64-bit stub as bytes.
 tcc 0.9.26's i386 assembler encodes what the kernel needs (`i386-asm.h`
 has `cli`, `sti`, `hlt`, `iret`, `lret`, `ljmp`, `lgdt`, `lidt`, `ltr`,
 `in`/`out`, moves to and from CR registers, `fxsave`), so the assembly
-can be a `.S` file or inline `asm` that tcc builds.  `k1-asm.fth` would
+can be a `.S` file or inline `asm` that tcc builds.  A probe confirmed
+it: `tcc-first -c` on a `.S` with `cli`, `sti`, `hlt`, `lgdt`, `lidt`,
+`ltr`, moves to and from CR0/CR2/CR3, `inb`/`outb`, `rep movsb`/`stosb`,
+`iret`, `lret`, `ljmp $0x08,$0x1000`, `fxsave`/`fxrstor`, `int $0x80`,
+`rdmsr` and `wrmsr` gave a `.text` byte-identical to `as --32`'s.
+
+The compiler has to be the first tcc, since tcc-boot0 does not exist
+until the first tcc has built it, and the kernel must be built before
+boot 1 ends.  The first tcc is built with `HAVE_LONG_LONG 0` and without
+`HAVE_FLOAT` or `HAVE_BITFIELD` (`tinycc/direct-input.c`), which in
+janneke's fork may restrict what it compiles correctly; the kernel's C
+should keep to `int`, `long` and pointers, with no `long long`, floating
+point or bit-fields.  `k1-asm.fth` would
 become that file, and an `asm-check` would compare tcc's object with
 `as --32`.  The 64-bit stub cannot be assembled by an i386 assembler;
 it would stay as hex bytes with comments.
@@ -196,7 +220,7 @@ number.  Against the measured list:
   file for writing makes a new file there, and mes `remove()` only tests
   `st_mode` of a struct stat64 that is left as it was (either branch then
   returns 0);
-- the i386 kaem and tools' 17: also covered (chmod 15 returns 0);
+- the i386 kaem and tools' 16: also covered (chmod 15 returns 0);
 - getcwd copies the process's directory, so `-g` records the same path.
 
 **Disk format.**  It boots from a BIOS disk: sector 0 is the
