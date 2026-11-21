@@ -329,7 +329,8 @@ Checks, all on the host through its IA32 support (`CHECK_I386=1
   encoder of `cc/090-cc-emit.fth` or REX prefix of a later layer is
   reached when the first tcc is compiled.
 
-Not done here: the i386 seed.
+Not done here: the i386 seed ("The i386 seed: specified, not written",
+below).
 
 ## One boot on builder-hex0
 
@@ -409,6 +410,28 @@ the boot, which the Mes-libc one of the hand-off does not.
 - The host cuts the script from the pinned kaem files (python3), checks
   and unpacks builder-hex0's archive with the seed-built tools, runs
   hex0-seed for stage 1, writes the disk, starts QEMU and reads the drive.
+
+## The i386 seed: specified, not written
+
+The one-boot route needs a seed that runs on builder-hex0, so that the
+programs on the disk above are built in the boot and not on the host.
+Two documents specify it; neither the seed nor the files they describe
+exist yet.
+
+- `seed/i386/SPEC.md`: the seed itself, an i386 Forth with 64-bit cells
+  that builder-hex0's built-in `hex0` assembles in the boot. It takes its
+  Forth source by file name, because descriptor 0 there is the disk
+  stream. The x86-64 seed, K0, K1 and the GCC route are unchanged.
+- `forth/i386/CONTRACT.md`: what is laid down on top of it. It lists every
+  piece of machine code the Forth library and the compiler lay for the
+  Forth system itself (as opposed to `cc/i386/`, which is the code of the
+  compiled C program), gives the i386 form of each, and specifies
+  `include`, allocation by `brk`, the boot's disk and scripts, and kaem
+  built by the seed.
+
+The oracle for both is the build above: the i386 seed must produce the
+same `tcc-first-i386` and the same `bin-i386` tools as the x86-64 seed,
+byte for byte.
 
 ## What does not reproduce
 
