@@ -63,7 +63,7 @@ is.  A first try at the native-mode `ungz` stopped with cc error 93 (an
 undeclared identifier, `cc/100-cc-expr.fth`); it was not pursued.  The
 pivot's plan to delete seed-cc decides which of the two is available.
 
-**K0 and the x86-64 part.**  K0 (`kernel/k0/k0.asm`, 1,313 bytes then;
+**K0 and the x86-64 part.**  K0 (`kernel/k0/k0.hex0`, 1,313 bytes then;
 1,435 with the hand-off's two changes)
 implements read, write, open, close, lstat, lseek, mmap, dup2, fork,
 execve, exit, wait4, getcwd, chdir, rename, mkdir and unlink.  The x86-64
@@ -158,7 +158,7 @@ does today.
 
 The other hand-over is a second QEMU boot: `-kernel` with a multiboot
 header puts the CPU in 32-bit protected mode, which is how K0 itself
-starts (`start32` in `k0.asm`), so the kernel needs no mode switch.  But
+starts (`start32` in `k0.hex0`), so the kernel needs no mode switch.  But
 then boot 1's files have to leave K0, which has no disk driver, and the
 i386 kernel has to read them back: the same export problem as option 3
 below, plus an IDE read in the new kernel.  The one-boot drop is the
@@ -272,7 +272,7 @@ by `hex0-seed` from the hex0 text, as K0 already does for
 choices:
 
 1. A new K0 system call that writes a memory range to the IDE disk by
-   PIO: about 25 instructions in `k0.asm`/`k0.hex0` (K1's `ata.c` shows
+   PIO: about 25 instructions in `k0.hex0` (K1's `ata.c` shows
    the port sequence).  Boot 1 then writes the boot-2 disk itself, and
    the same image file is the drive in both boots.
 2. No K0 change: a program writes the stream to stdout, which under K0

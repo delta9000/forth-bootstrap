@@ -23,11 +23,12 @@
 #       other program running, its objects equal seed-cc's, and
 #       k1-asm.fth's bytes equal GNU as on its comments (needs strace and
 #       as; SKIP without)
-#   09  tests/seed/asm-check.py: seed/000-seed.hex0's bytes equal GNU as on
-#       its comments, its ELF and dictionary fields equal what their
-#       comments state, and its branch notes and addresses add up; with
-#       llvm-mc installed, LLVM's assembler must write the same bytes too
-#       (needs as; SKIP without)
+#   09  tests/seed/asm-check.py and kernel/k0/check.sh: the two hex0
+#       sources, seed/000-seed.hex0 and kernel/k0/k0.hex0, equal GNU as on
+#       their comments (with llvm-mc installed, LLVM's assembler must write
+#       the same bytes too), their branch notes and addresses add up, the
+#       seed's ELF and dictionary fields equal what their comments state,
+#       and K0's build has its pinned sha256 (needs as; SKIP without)
 #   10  tests/pins/check-outputs.sh: seed-cc, seed-ar, Stage A's cc-out-v1,
 #       the K1 recipe runner and K1 equal tests/pins/outputs.sha256 (files a
 #       skipped step did not build are reported, not compared)
@@ -109,9 +110,9 @@ else
     skip "08-k1-build" "missing: strace, as or python3"
 fi
 if have as && have python3; then
-    run "09-seed-asm" python3 tests/seed/asm-check.py
+    run "09-hex0-asm" sh -c 'python3 tests/seed/asm-check.py && sh kernel/k0/check.sh'
 else
-    skip "09-seed-asm" "missing: as or python3"
+    skip "09-hex0-asm" "missing: as or python3"
 fi
 run "10-outputs" sh tests/pins/check-outputs.sh
 if [ "${CHECK_CHAIN:-0}" = 1 ]; then

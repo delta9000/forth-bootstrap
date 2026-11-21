@@ -156,7 +156,7 @@ The stages:
 | QEMU, KVM and the CPU | run K0, which starts everything else | the K1 run |
 | the host's Linux kernel, `bwrap`, `strace` | the host run's system calls, and a root whose only executable is `hex0-seed` | the host run (`chain/plumbing-root.sh`) |
 | host `python3`, `sh`, `tar` | copy files into disk images and into the host run's root; check results.  They never compile, unpack, patch or configure anything | both |
-| host `gcc`, GNU `as`, `nasm` | build references to compare against: Stage A's M2-Planet, the objects of `kernel/k1/tests/asm-check.py` and `tests/seed/asm-check.py`, `kernel/k0/check.sh`'s K0.  None of their output is used | checks only |
+| host `gcc`, GNU `as`, `llvm-mc` | build references to compare against: Stage A's M2-Planet, the objects of `kernel/k1/tests/asm-check.py`, `tests/seed/asm-check.py` and `kernel/k0/asm-check.py`.  None of their output is used | checks only |
 
 ## The parts
 
@@ -167,7 +167,7 @@ Each directory has a README that says where to start.
 | `seed/` | `000-seed.hex0`, the Forth, written directly as annotated hex0 (the only source of it); `build.sh`; `MINIMAL.md`, why it has the 21 words it has |
 | `forth/` | `010-lib.fth`, the Forth library on the seed's 21 machine-code words; `130-asm.fth`, an M1 assembler and hex2 linker used only by check step 03; the library's test |
 | `cc/` | the C compiler in Forth, loaded in numeric order (`020-cc-arena.fth` to `141-archive.fth`); its tests; `driver/`, seed-cc and seed-ar |
-| `kernel/` | `k0/` (K0 in hex0, with its NASM source), `k1/` (K1 in C and `k1-asm.fth`, its recipes, disk writers and tests), `tools/` (the recipe runner and the files that build K1) |
+| `kernel/` | `k0/` (K0, written directly in hex0, and its check), `k1/` (K1 in C and `k1-asm.fth`, its recipes, disk writers and tests), `tools/` (the recipe runner and the files that build K1) |
 | `chain/` | `runtime/gcc-seed` (seed-cc's C library), `plumbing/` (the first tools, as kaem scripts), `gcc-direct/` (binutils, stage C, stage D, the late tools), `ladder/` and `gcc64/` (the climb to GCC 10.5.0 and Linux), `patches/`, `plumbing-root.sh` |
 | `tinycc/` | the TinyCC route: seed Forth builds the first tcc, and its junction with live-bootstrap (`tinycc/README.md`) |
 | `tests/` | Stage A and the M2-Planet headers the compiler falls back to; the assembler and seed-cc checks; `seed/asm-check.py`, the seed's comments against GNU as; the chain's test programs |
@@ -288,8 +288,8 @@ junction (`tinycc/README.md`).
   archives).  `cc/115` to `cc/119` are native mode, an LP64 profile with a
   private calling convention that the System V layers build on.  The book,
   a separate project, walks through the same files.
-- **kernel/:** `kernel/k0/k0.asm` (K0, about 600 lines of commented NASM;
-  `k0.hex0` is the same bytes), then `kernel/k1/README.md` and `k1.h`,
+- **kernel/:** `kernel/k0/k0.hex0` (K0, one instruction per commented
+  line), then `kernel/k1/README.md` and `k1.h`,
   then `kernel/tools/k1-direct-start.fth` and `k1-direct.recipe` for how
   seed Forth builds K1, and `kernel/k1/run-chain.sh` for the run.
 - **chain/:** `chain/plumbing/README.md` (the first tools), then

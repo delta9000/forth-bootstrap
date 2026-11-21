@@ -3,7 +3,7 @@
 
 The image is K0's initial state, not an archive K0 parses:
 
-  +0x0000  kernel state (rbp = FSIMG + 0x80; layout in k0.asm)
+  +0x0000  kernel state (rbp = FSIMG + 0x80; layout in k0.hex0)
   +0x1000  PML4, +0x2000 PDPT: the first 4 GiB identity-mapped, 1 GiB pages
   +0x3000  init's argv: { path, NULL }, then the path string
   +0x4000  file table, 24-byte entries: name, nlen, data, size, cap, type
