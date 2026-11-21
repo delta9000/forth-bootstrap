@@ -76,27 +76,39 @@ the seed tools' trees of the live-bootstrap, pnut and tcc archives
 compared equal under `diff -r` (symlinks included), apart from untar's
 `pax_global_header` file.
 
-Native mode was asked for and not used.  The tools would need a libc that
-is not inside an archive they must unpack: pnut's libc is in the pnut
-archive, and its 25 MB bump heap cannot hold ungz's whole-file buffers for
-that 36 MB archive.  M2libc's system calls are M1 inline assembly, which
-the Forth compiler does not read.  seed-cc with gcc-seed is in the
-repository and already builds these programs for the GCC chain.
+The Forth compiler's native mode, which builds the first tcc, does not
+build the tools.  They would need a libc that is not inside an archive
+they must unpack: pnut's libc is in the pnut archive, and its 25 MB bump
+heap cannot hold ungz's whole-file buffers for that 36 MB archive.
+M2libc's system calls are M1 inline assembly, which the Forth compiler
+does not read (found by reading M2libc's `amd64/linux/*.c`; no build was
+tried).  seed-cc with gcc-seed is in the repository and already builds
+these programs for the GCC chain.
 
-Host programs left, from `strace -f -e trace=execve` over
-`tests/tinycc/junction-check.sh`:
-- bash runs the scripts; `rm -rf`, `mkdir -p`, `mktemp`, `dirname` and
-  `realpath` handle build-out paths; `cat` joins the Forth input into
-  seed-forth's stdin; `sha256sum`, `sed`, `cut`, `grep` and `wc` compare
-  results with pins and print sizes.  None of them reads or writes a source
-  file.
-- `bwrap` makes the junction root.  Inside it, the kaem text runs in bash
-  with steps/env's PATH (the root's own `/usr/bin`, where the replay
-  installs its tcc, and `/x86/bin`, which does not exist) followed by the
-  seed-built tools, and nothing from the host.  `lb-replay.sh`
-  uses the host's `grep`, `awk`, `sed` and `cat` to cut live-bootstrap's
-  kaem files and print them.
+Host programs left, from `strace -f -e trace=execve`:
+- Source preparation (`build-first-tcc.sh`, which runs `build-tools.sh`):
+  bash runs the scripts; `rm` and `mkdir -p` clear and make build-out
+  directories; `dirname` finds the repository; `wc`, `sha256sum`, `sed`
+  and `cut` print the size and compare tools and tcc-first with their
+  pins.  None of them reads or writes a source file or the Forth input;
+  the seed-built `catm` joins that, and seed-forth reads it as stdin.
+- Replay (`tests/tinycc/junction-check.sh`), in addition: `bwrap` makes the
+  root; `--probe` runs `chmod`, `mktemp`, `true` and `rm` for its i386
+  test; `realpath` names the host's dynamic loader for the bind mount;
+  `grep`, `sed`, `cut` and `sha256sum` print the log and compare the
+  results.  Inside the root, host bash runs `lb-replay.sh`, which cuts
+  live-bootstrap's kaem files and prints them with the host's `grep`,
+  `awk`, `sed` and `cat`.  The kaem text itself runs in that bash with
+  steps/env's PATH (the root's own `/usr/bin`, where the replay installs
+  its tcc, and `/x86/bin`, which does not exist) followed by the
+  seed-built tools, and nothing from the host.
 - `tools/fetch-archives.py` (python3) downloads the archives.
+
+The tools are built by seed-cc in SysV mode, so this route now also
+depends on the compiler layers 120 and up and on
+`chain/runtime/gcc-seed`, as the GCC chain already does.  A native-mode
+build would need an in-tree copy of pnut's libc with a larger heap and a
+`symlink` stub for untar.
 
 ## The junction
 

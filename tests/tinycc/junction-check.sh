@@ -34,8 +34,10 @@
 # unpacked (build-out/tinycc/lb/), bind-mounted; the two distfiles are
 # bind-mounted read only.  Needs bwrap, a kernel that runs i386 ELF
 # executables, bash, grep, awk, sed and cat in the host's /usr/bin (for
-# lb-replay.sh's own text handling), and the archives of tinycc/SOURCES
-# (python3 tools/fetch-archives.py build-out/tinycc-inputs/...).  Under
+# lb-replay.sh's own text handling), the vendor/stage0-posix submodule
+# (with its own submodules) and all four archives of tinycc/SOURCES, also
+# with FIRST_TCC (python3 tools/fetch-archives.py
+# build-out/tinycc-inputs/...).  Under
 # half a minute.
 set -euo pipefail
 cd "$(dirname "$0")/../.."

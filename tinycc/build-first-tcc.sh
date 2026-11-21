@@ -15,11 +15,12 @@
 # from the seed (seed-cc, from stage0-posix's and live-bootstrap's C): its
 # sha256sum checks the archives against tinycc/SOURCES, ungz and untar
 # unpack them, simple-patch applies live-bootstrap's simple-patches and our
-# libc-getcwd pair, and catm writes config.h and copies our two files.  The host programs left are
-# bash, which runs this script, rm and mkdir -p, which clear and make
-# build-out directories, and cat, which joins the Forth input (the
-# layers, the driver and direct-input.c) into seed-forth's stdin, plus
-# sha256sum, sed and cut to compare the result with its pin.
+# libc-getcwd pair, and catm writes config.h, copies our two files and
+# joins the Forth input (layers, driver, direct-input.c) that seed-forth
+# reads on stdin.  Host programs left here: bash runs this script; rm and
+# mkdir -p clear and make build-out directories; dirname finds the
+# repository; wc, sha256sum, sed and cut print the size and compare the
+# result with its pin.
 #
 # The source tree, build-out/tcc-sources/:
 #   tcc-0.9.26-1147-gee75a10c/  tinycc-inputs/tcc-0.9.26.tar.gz with what
@@ -90,10 +91,10 @@ layers=(forth/010-lib.fth)
 for n in 020 030 040 050 060 070 080 090 100 110 112 114 115 116 117 118 119; do
     layers+=(cc/$n-*.fth)
 done
-rm -f "$OUT/tcc-first"
+rm -f "$OUT/tcc-first" "$OUT/compile.input"
 rc=0
-cat "${layers[@]}" tinycc/tcc-compile.fth "$SRC/direct-input.c" \
-    | ./seed-forth > "$OUT/compile.stdout" 2>&1 || rc=$?
+"$BIN/catm" "$OUT/compile.input" "${layers[@]}" tinycc/tcc-compile.fth "$SRC/direct-input.c"
+./seed-forth < "$OUT/compile.input" > "$OUT/compile.stdout" 2>&1 || rc=$?
 # The Forth outer interpreter reports an unknown word on stdout and goes on,
 # so anything on stdout is a failure even when the exit status is 0.
 if [ "$rc" != 0 ] || [ -s "$OUT/compile.stdout" ] || [ ! -s "$OUT/tcc-first" ]; then

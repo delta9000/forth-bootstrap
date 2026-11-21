@@ -39,8 +39,9 @@
 #   CHECK_TINYCC=1  tests/tinycc/junction-check.sh: seed Forth builds the
 #                   first tcc, and live-bootstrap's tcc-0.9.26 pass1.kaem
 #                   from it reaches their published tcc and libraries
-#                   (seconds; needs bwrap, the host kernel's i386 support and
-#                   the archives of tinycc/SOURCES; SKIP without the first two)
+#                   (seconds; needs bwrap, the host kernel's i386 support,
+#                   the vendor/stage0-posix submodule and the archives of
+#                   tinycc/SOURCES; SKIP without the first two)
 #
 # Each step's output goes to $TMPDIR/check-all-NAME.log (default /tmp); the
 # console shows one OK, SKIP or FAIL line per step and the verdict.

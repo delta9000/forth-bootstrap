@@ -56,7 +56,7 @@ LB=live-bootstrap-a49273cbb5c381b851198bc1e53c294702f4f7c9
 
 fail() { echo "build-tools: $*" >&2; exit 1; }
 
-[ -f "$X/untar.c" ] || fail "$X missing; git submodule update --init vendor/stage0-posix"
+[ -f "$X/untar.c" ] || fail "$X missing; git submodule update --init --recursive vendor/stage0-posix"
 [ -x seed-forth ] || seed/build.sh > /dev/null
 [ -x "$CC" ] || ./seed-forth < cc/driver/seed-cc-start.fth \
     || fail "cc/driver/seed-cc-start.fth exited $?"
