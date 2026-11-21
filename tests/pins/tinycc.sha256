@@ -25,6 +25,11 @@
 #                      the same in two checkouts at different paths
 #   tinycc/bin-i386/*  build-out/tinycc/bin-i386/, the same tools compiled
 #                      by the i386 back end (tinycc/build-tools-i386.sh)
+#   tinycc/kaem-i386   build-out/tinycc/kaem-i386, vendor/mescc-tools/Kaem
+#                      compiled like those tools, with the process calls
+#                      of tinycc/m2libc-kaem-i386.c (99,008 bytes).  Not
+#                      the Mes-libc kaem of hex0-handoff/boot1 below,
+#                      which the first tcc compiles.
 #   tinycc/hex0-handoff/boot1/...
 #                      what boot 1 of tests/tinycc/hex0-handoff-check.sh
 #                      hands to boot 2 besides tcc-mes and tcc-boot0: the
@@ -80,3 +85,4 @@ afd5abe1964175f3771a1fe5f32ed7022db820813842e89c222d4e2c4ff14f69  tinycc/bin-i38
 08209e4703e23239da6a3a29f553dd486a7f035e156d4dfd05a524fac5e66d1a  tinycc/bin-i386/simple-patch
 41645a9a31b1d3ca76a4f2a5f31e079b38f6cf06df3329b2499e35eaddf4cdc5  tinycc/bin-i386/ungz
 3482feab3c18e57edf0fe054ecfff329733556a85ea4126bd9b0d27a6e589bbf  tinycc/bin-i386/untar
+d87baff1bb5b541036c6b95a8833f20eb4a5cc14109f8b048f490e5ac3a3993f  tinycc/kaem-i386

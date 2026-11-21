@@ -12,13 +12,17 @@
 # of M2libc's assembly.  They are static ELF32 programs for Linux's int
 # 0x80 and for builder-hex0.
 #
+# Also writes build-out/tinycc/kaem-i386: vendor/mescc-tools/Kaem built the
+# same way, with tinycc/m2libc-kaem-i386.c ahead of its three files.
+#
 # build-tools.sh runs first: it checks the archives, unpacks
 # live-bootstrap's tree and patches ungz.c and untar.c, and its catm joins
 # each tool's Forth input here.  seed-forth is the x86-64 one.  So this
 # script shows that the i386 back end compiles the tools; building them
 # with no x86-64 program is the i386 seed's work, not done here.
 #
-# tests/tinycc/i386-tools-check.sh runs them against build-tools.sh's.
+# tests/tinycc/junction-check.sh --i386 runs the tools, and
+# tests/tinycc/i386-kaem-check.sh and i386-kaem-boot-check.sh run kaem.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -36,21 +40,25 @@ rm -rf "$BIN32"
 mkdir -p "$BIN32"
 mapfile -t layers < <(cc/i386/layers.sh)
 
-# tool NAME SOURCE: seed-forth compiles SOURCE to $BIN32/NAME.  The Forth
-# outer interpreter reports an unknown word on stdout and goes on, so
-# anything on stdout is a failure even when the exit status is 0.
-tool() {
-    local out=$BIN32/$1 rc=0
+# compile OUT SOURCE...: seed-forth compiles the SOURCEs, one after another
+# as one unit, to OUT.  The last SOURCE gives the unit its name, beside
+# which quoted includes are looked for.  The Forth outer interpreter
+# reports an unknown word on stdout and goes on, so anything on stdout is
+# a failure even when the exit status is 0.
+compile() {
+    local out=$1 rc=0 name=${!#}
+    shift
     printf 'create tool-output s, %s [lit] 0 c,\ncreate tool-source s, %s\ntool-source [lit] %d cc-prep-source-name\n' \
-        "$out" "$2" "${#2}" > "$OUT/tool-names-i386.fth"
+        "$out" "$name" "${#name}" > "$OUT/tool-names-i386.fth"
     "$BIN/catm" "$OUT/tool-i386.input" "${layers[@]}" "$OUT/tool-names-i386.fth" \
-        tinycc/tool-compile.fth tinycc/m2libc-native-i386.c "$2"
+        tinycc/tool-compile.fth tinycc/m2libc-native-i386.c "$@"
     ./seed-forth < "$OUT/tool-i386.input" > "$OUT/tool-i386.stdout" 2>&1 || rc=$?
     if [ "$rc" != 0 ] || [ -s "$OUT/tool-i386.stdout" ] || [ ! -s "$out" ]; then
         head -c 2000 "$OUT/tool-i386.stdout" >&2
         fail "seed-forth exited $rc building $out (cc/ error codes are the exit status)"
     fi
 }
+tool() { compile "$BIN32/$1" "$2"; }
 
 for t in catm sha256sum mkdir cp chmod rm match; do
     tool $t "$X/$t.c"
@@ -61,9 +69,15 @@ done
 tool simple-patch "$OUT/lb/$LB/steps/simple-patch-1.0/src/simple-patch.c"
 tool checksum-transcriber "$OUT/lb/$LB/steps/checksum-transcriber-1.0/src/checksum-transcriber.c"
 
+# kaem: its three files as one unit, as M2-Mesoplanet compiles them for
+# stage0-posix, behind the process calls only kaem makes.
+K=vendor/mescc-tools/Kaem
+rm -f "$OUT/kaem-i386"
+compile "$OUT/kaem-i386" tinycc/m2libc-kaem-i386.c "$K/variable.c" "$K/kaem_globals.c" "$K/kaem.c"
+
 # The pins
 bad=0
-for f in "$BIN32"/*; do
+for f in "$BIN32"/* "$OUT/kaem-i386"; do
     name=tinycc/${f#"$OUT/"}
     want=$(sed -n "s|^\([0-9a-f]\{64\}\)  $name\$|\1|p" tests/pins/tinycc.sha256)
     got=$(sha256sum "$f" | cut -d' ' -f1)
@@ -72,5 +86,5 @@ for f in "$BIN32"/*; do
         bad=$((bad + 1))
     fi
 done
-[ "$bad" = 0 ] || fail "$bad tool(s) differ from tests/pins/tinycc.sha256"
-echo "build-tools-i386: build-out/tinycc/bin-i386 as pinned in tests/pins/tinycc.sha256"
+[ "$bad" = 0 ] || fail "$bad program(s) differ from tests/pins/tinycc.sha256"
+echo "build-tools-i386: build-out/tinycc/bin-i386 and kaem-i386 as pinned in tests/pins/tinycc.sha256"
