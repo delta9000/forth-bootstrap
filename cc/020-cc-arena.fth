@@ -107,14 +107,17 @@ variable kd-n
 \ the interpreter it does what the old one did.  Words already compiled,
 \ 010-lib.fth's included, keep their CALLs.
 \ [lit] first: the seed's [lit] compiles CALL lit and the value's cell (13
-\ bytes); take the value back out and lay the 18-byte push instead.
+\ bytes); take the value back out and lay the 18-byte push instead.  The
+\ push is compile-literal's from here on, so a bare number read by
+\ 010-lib.fth's interpret compiles to the same bytes as [lit] does.
+' push-imm64, is compile-literal
 ' [lit] constant seed-lit
 : here-8   here [lit] 8 - ;
 : here-13  here [lit] 13 - ;
 : [lit]
   seed-lit execute
   state @ if,
-    here-8 @  here-13 here-addr !  push-imm64,
+    here-8 @  here-13 here-addr !  compile-literal
   then, ;
 immediate
 \ Branches: if, while, and until, pop the flag and jz rel32; else, repeat,

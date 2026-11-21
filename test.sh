@@ -111,6 +111,69 @@ out=$(cat "$fwio/forth-fwio-test" 2>/dev/null || true)
 ec=0; out=$(cat forth/010-lib.fth forth/test-010-lib.fth | timeout 5 ./seed-forth) || ec=$?
 [ "$ec" = 0 ] && pass "forth/010-lib.fth: all comparisons/arith/control/defining words" || fail "forth/010-lib.fth: exit $ec, got '${out: -200}'"
 
+# ----- forth/010-lib.fth: the outer interpreter -----
+
+# The library ends by handing over to interpret, so everything after it is
+# read by interpret.  interp_case NAME EXIT STDOUT INPUT runs each case twice:
+# after the library alone, and after cc/020-cc-arena.fth too, whose native!
+# replaces key and find and whose [lit] lays an inline push.
+interp_case() {
+    local name=$1 want_ec=$2 want=$3 input=$4 ec out pre
+    for pre in "" cc/020-cc-arena.fth; do
+        ec=0; out=$(cat forth/010-lib.fth $pre <(printf '%s' "$input") | timeout 5 ./seed-forth) || ec=$?
+        [ "$ec" = "$want_ec" ] && [ "$out" = "$want" ] && pass "interpret${pre:+ after 020}: $name" ||
+            fail "interpret${pre:+ after 020}: $name: exit $ec (want $want_ec), got '$out' want '$want'"
+    done
+}
+# Numbers: decimal, -decimal and $hex only.
+interp_case "decimal" 0 "A" $'65 emit\n'
+interp_case "\$hex, either case" 0 "JJ" $'$4a emit $4A emit\n'
+interp_case "negative decimal" 0 "Y" $'-2 91 + emit\n'
+interp_case "-1 is all ones" 0 "U" $'-1 18446744073709551615 = 0= 0= 86 + emit\n'
+interp_case "unsigned wrap, as [lit]" 0 "A" $'18446744073709551681 emit\n'
+interp_case "compiled numbers" 0 "AJC" $': t 65 emit $4a emit -3 70 + emit ; t\n'
+interp_case "[lit] still works" 0 "AB" $'[lit] 65 emit : t [lit] 66 emit ; t\n'
+interp_case "1+ 0= - are words" 0 "B" $'64 1+ 1+ emit 0 0= drop 5 3 - drop\n'
+# An unknown token is fatal: the token and "?" on stdout, exit 2, nothing after it runs.
+interp_case "unknown word: exit 2" 2 "zork?" $'zork 65 emit\n'
+interp_case "unknown word while compiling: exit 2" 2 "zork?" $': t zork 65 emit ; t\n'
+for tok in 0x41 0X41 "'A'" '-$10' '$-10' '$' '--1' '1x' '$4g' '-'"'"; do
+    interp_case "not a number: $tok" 2 "B$tok?" "66 emit $tok 65 emit"$'\n'
+done
+# The defining and control words, run and compiled through interpret.
+interp_case "user immediate" 0 "IR" $': i 73 emit ; immediate : u i 82 emit ; u\n'
+interp_case "control flow" 0 "0123" $': d 0 begin, dup 4 < while, dup 48 + emit 1+ repeat, drop ; d\n'
+interp_case "constant/variable" 0 "ZZ" $'90 constant z z emit variable v 90 v ! v @ emit\n'
+interp_case "defer/is" 0 "D" $'defer w : x 68 emit ; '"' x is w w"$'\n'
+interp_case "[char] / char" 0 "PQ" $': t [char] P emit ; t char Q emit\n'
+interp_case ">r r> across tokens" 0 "BA" $'65 >r 66 emit r> emit\n'
+# Comments, in both states.
+interp_case "line comment" 0 "A" $'\\ 66 emit\n65 emit\n'
+interp_case "paren comment" 0 "AC" $'65 ( 66 emit ) emit ( two\nlines ) 67 emit\n'
+interp_case "comments compiled" 0 "AB" $': t 65 ( 0 0 ) emit \\ 0 0\n 66 emit ; t\n'
+# End of input exits 0 wherever it falls, also right after a word that reads
+# a name (`:` then lays a header with an empty name, which find would hit).
+interp_case "EOF without newline" 0 "A" $'65 emit'
+interp_case "EOF in \\ comment" 0 "A" $'65 emit \\ no newline'
+interp_case "EOF in ( comment" 0 "A" $'65 emit ( never closed'
+interp_case "EOF in definition" 0 "" $': t 65 emit'
+interp_case "EOF after :" 0 "A" $'65 emit :'
+interp_case "EOF after constant" 0 "A" $'65 emit 5 constant'
+interp_case "EOF after '" 0 "A" $'65 emit \''
+interp_case "bye" 0 "A" $'65 emit bye 66 emit\n'
+# The seed's reader limits still apply.
+interp_case "255-byte name" 0 "A" ": $n255 65 emit ; $n255"$'\n'
+interp_case "256-byte token: exit 2" 2 "${n255}a?" "${n255}a 65 emit"$'\n'
+interp_case "[lit] -5: exit 2" 2 "-5?" $'[lit] -5 65 emit\n'
+# A bare number compiles to the same bytes as [lit] N: after 020 both lay
+# the inline push, so two definitions of t differ only in their link cell.
+ec=0; out=$(cat forth/010-lib.fth cc/020-cc-arena.fth <(printf '%s\n' \
+    'here : t 4660 $ffff -7 ; here over - >r 8 + 1 swap r> 8 - write drop' \
+    'here : t [lit] 4660 [lit] 65535 [lit] 18446744073709551609 ; here over - >r 8 + 1 swap r> 8 - write drop') |
+    timeout 5 ./seed-forth | od -An -tx1 -v | tr -d ' \n') || ec=$?
+[ "$ec" = 0 ] && [ ${#out} = 232 ] && [ "${out:0:116}" = "${out:116}" ] &&
+    pass "interpret after 020: bare numbers lay [lit]'s bytes" || fail "bare vs [lit] bytes: exit $ec, got '$out'"
+
 # ----- cc-*.fth layer -----
 
 # Each layer test loads the library and the layers up to the one under
