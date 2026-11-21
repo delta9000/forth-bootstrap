@@ -103,6 +103,7 @@ Each directory has a README that says where to start.
 | `cc/` | the C compiler in Forth, loaded in numeric order (`020-cc-arena.fth` to `141-archive.fth`); its tests; `driver/`, seed-cc and seed-ar |
 | `kernel/` | `k0/` (K0 in hex0, with its NASM source), `k1/` (K1 in C and `k1-asm.fth`, its recipes, disk writers and tests), `tools/` (the recipe runner and the files that build K1) |
 | `chain/` | `runtime/gcc-seed` (seed-cc's C library), `plumbing/` (the first tools, as kaem scripts), `gcc-direct/` (binutils, stage C, stage D, the late tools), `ladder/` and `gcc64/` (the climb to GCC 10.5.0 and Linux), `patches/`, `plumbing-root.sh` |
+| `tinycc/` | the TinyCC route: seed Forth builds the first tcc, and its junction with live-bootstrap (`tinycc/README.md`) |
 | `tests/` | Stage A and the M2-Planet headers the compiler falls back to; the assembler and seed-cc checks; `seed/asm-check.py`, the seed's comments against GNU as; the chain's test programs |
 | `tools/` | `fetch-archives.py`, `check-pins.py` |
 | `results/` | reports from the recorded runs |
@@ -206,7 +207,8 @@ RAM with a sparse file instead, but a full run writes terabytes through
 it: not on an SSD.
 
 `./check-all.sh` runs the quick checks; `CHECK_CHAIN=1` and
-`CHECK_K1=smoke|linux` add the long ones.
+`CHECK_K1=smoke|linux` add the long ones, and `CHECK_TINYCC=1` the TinyCC
+junction (`tinycc/README.md`).
 
 ## Reading order
 
