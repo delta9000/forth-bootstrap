@@ -19,18 +19,27 @@
 #
 # What it does not prove.  The i386 stages (tcc-boot0 onward) run on the
 # host's Linux kernel through its 32-bit (IA32) support, not under K0/K1,
-# and bash, coreutils, gzip, tar and python3 from the host stand in for
-# kaem and the stage0-posix tools (tinycc/kaem-shims.sh).  tcc-mes and
+# and the host's bash stands in for kaem.  The other programs the kaem text
+# calls (stage0's catm, chmod, cp, match, mkdir, rm, sha256sum, ungz,
+# untar; live-bootstrap's checksum-transcriber and simple-patch) are built
+# from their C by seed Forth in native mode against M2libc
+# (tinycc/build-tools.sh), and the kaem text's PATH
+# holds nothing from the host.  tcc-mes and
 # tcc-boot0 are MesCC's own output and are not expected to match; they are
 # checked against this route's pins in tests/pins/tinycc.sha256 instead.
 #
 # How.  The chroot is a bwrap root, build-out/tinycc/junction-root, laid out
 # as live-bootstrap's / is before steps/mes-0.28; tinycc/lb-replay.sh runs
-# in it and says exactly which kaem lines it runs.  Needs bwrap, a kernel
-# that runs i386 ELF executables, bash, coreutils, gzip, tar and python3
-# in the host's /usr/bin, and the archives
-# of tinycc/SOURCES (python3 tools/fetch-archives.py
-# build-out/tinycc-inputs/...).  A few seconds.
+# in it and says exactly which kaem lines it runs.  The root is filled by
+# the seed-built tools: live-bootstrap's tree is the one build-tools.sh
+# unpacked (build-out/tinycc/lb/), bind-mounted; the two distfiles are
+# bind-mounted read only.  Needs bwrap, a kernel that runs i386 ELF
+# executables, bash, grep, awk, sed and cat in the host's /usr/bin (for
+# lb-replay.sh's own text handling), the vendor/stage0-posix submodule
+# (with its own submodules) and all three archives of tinycc/SOURCES, also
+# with FIRST_TCC (python3 tools/fetch-archives.py
+# build-out/tinycc-inputs/...).  Under
+# half a minute.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
@@ -44,7 +53,7 @@ LB=live-bootstrap-a49273cbb5c381b851198bc1e53c294702f4f7c9
 probe() {
     command -v bwrap > /dev/null || { echo "missing: bwrap"; return 1; }
     # the chroot runs these from the host's /usr, mounted at /host/usr
-    for t in bash gzip tar python3 sha256sum grep awk sed cat cp chmod rm mkdir; do
+    for t in bash grep awk sed cat; do
         [ -x /usr/bin/$t ] || { echo "missing: /usr/bin/$t"; return 1; }
     done
     bwrap --ro-bind / / --dev /dev true 2> /dev/null || { echo "bwrap cannot create a sandbox here"; return 1; }
@@ -66,10 +75,11 @@ why=$(probe) || { echo "junction-check: cannot run: $why" >&2; exit 1; }
 
 fail() { echo "junction-check: FAIL: $*" >&2; exit 1; }
 
-# The first compiler
+# The first compiler, and the tools (build-first-tcc.sh builds them too)
 if [ $# -ge 1 ]; then
     FIRST=$1
     own=0
+    tinycc/build-tools.sh
 else
     tinycc/build-first-tcc.sh
     FIRST=$OUT/tcc-first
@@ -77,18 +87,15 @@ else
 fi
 [ -x "$FIRST" ] || fail "$FIRST is not an executable"
 
-# The root: what seed.kaem makes, live-bootstrap's steps, the distfiles
-for a in tcc-0.9.26.tar.gz mes-0.28.tar.gz $LB.tar.gz; do
-    [ -f "$IN/$a" ] || fail "$IN/$a missing; run python3 tools/fetch-archives.py $IN/$a"
-    grep -F "  $IN/$a" tinycc/SOURCES | sha256sum --check --quiet - \
-        || fail "$IN/$a: sha256 differs from tinycc/SOURCES"
-done
+# The root: what seed.kaem makes; live-bootstrap's tree and the distfiles
+# are mounted.  build-tools.sh checked the archives against tinycc/SOURCES
+# and unpacked live-bootstrap's into $OUT/lb.  The steps directory is
+# mounted read-write and pass1.kaem builds in it, so build-tools.sh
+# unpacked a fresh copy.
+BIN=$OUT/bin
 rm -rf "$R"
-mkdir -p "$R"/usr/bin "$R"/usr/lib/mes "$R"/usr/include/mes "$R"/steps "$R"/tmp \
-    "$R"/dev "$R"/seed "$R"/external/distfiles
-tar -xzf "$IN/$LB.tar.gz" -C "$R" --no-same-owner --strip-components=1 \
-    "$LB/steps/env" "$LB/steps/mes-0.28" "$LB/steps/tcc-0.9.26" "$LB/seed/seed.kaem"
-cp "$IN/tcc-0.9.26.tar.gz" "$IN/mes-0.28.tar.gz" "$R/external/distfiles/"
+"$BIN/mkdir" -p "$R"/usr/bin "$R"/usr/lib/mes "$R"/usr/include/mes "$R"/tmp \
+    "$R"/dev "$R"/external/distfiles
 
 # The host's dynamic loader at the path its programs name
 interp=/lib64/ld-linux-x86-64.so.2
@@ -102,6 +109,11 @@ echo "junction-check: first compiler $FIRST"
 sha256sum "$FIRST"
 rc=0
 bwrap --bind "$R" / \
+    --bind "$OUT/lb/$LB/steps" /steps \
+    --ro-bind "$OUT/lb/$LB/seed" /seed \
+    --ro-bind "$IN/tcc-0.9.26.tar.gz" /external/distfiles/tcc-0.9.26.tar.gz \
+    --ro-bind "$IN/mes-0.28.tar.gz" /external/distfiles/mes-0.28.tar.gz \
+    --ro-bind "$BIN" /forth-bootstrap/bin \
     --ro-bind /usr /host/usr \
     --ro-bind "$(realpath "$interp")" "$interp" \
     --ro-bind tinycc /forth-bootstrap/tinycc \
@@ -141,6 +153,6 @@ while read -r want path; do
                 bad=$((bad + 1))
             fi ;;
     esac
-done < "$R/steps/tcc-0.9.26/tcc-0.9.26.x86.checksums"
+done < "$OUT/lb/$LB/steps/tcc-0.9.26/tcc-0.9.26.x86.checksums"
 [ "$bad" = 0 ] || fail "$bad file(s) differ (log: $OUT/junction.log)"
 echo "junction-check: OK, live-bootstrap's published tcc-0.9.26 reached from $FIRST"

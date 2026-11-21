@@ -10,19 +10,24 @@
 \ no assembler, linker or host C compiler takes part.
 \
 \ Native mode: LP64 types, a private all-stack call ABI, float and double
-\ as 8-byte bit patterns only (cc-bootstrap-floatbits), the syscall
-\ primitives from cc/119-cc-native-runtime.fth.  The paths are relative to
-\ the repository root, so the output does not depend on where the checkout
-\ is; the [lit] 36 after each is its length.
+\ as 8-byte bit patterns only (cc-bootstrap-floatbits), and one system
+\ call primitive from cc/119-cc-native-runtime.fth (cc-native-syscall-any),
+\ under Mes libc's own read, write, exit and the rest.  The include paths
+\ are pass1.kaem's for Mes libc: include and include/linux/x86_64.  The
+\ paths are relative to the repository root, so the output does not depend
+\ on where the checkout is; the [lit] after each is its length.
 true cc-target-lp64 !
 true cc-prep-direct !
 [lit] 1 cc-bootstrap-floatbits !
+true cc-native-syscall-any !
 [lit] 8388608 cc-arena-map
 create tcc-output s, build-out/tinycc/tcc-first [lit] 0 c,
 create tcc-source s, build-out/tcc-sources/direct-input.c
 tcc-source [lit] 36 cc-prep-source-name
-create tcc-include s, build-out/tcc-sources/libc64/include
-tcc-include [lit] 36 cc-prep-add-include
+create tcc-include s, build-out/tcc-sources/mes-0.28/include
+tcc-include [lit] 38 cc-prep-add-include
+create tcc-include-linux s, build-out/tcc-sources/mes-0.28/include/linux/x86_64
+tcc-include-linux [lit] 51 cc-prep-add-include
 variable tcc-fd
 variable tcc-pointer
 variable tcc-count

@@ -39,8 +39,9 @@
 #   CHECK_TINYCC=1  tests/tinycc/junction-check.sh: seed Forth builds the
 #                   first tcc, and live-bootstrap's tcc-0.9.26 pass1.kaem
 #                   from it reaches their published tcc and libraries
-#                   (seconds; needs bwrap, the host kernel's i386 support and
-#                   the archives of tinycc/SOURCES; SKIP without the first two)
+#                   (seconds; needs bwrap, the host kernel's i386 support,
+#                   the vendor/stage0-posix submodule and the archives of
+#                   tinycc/SOURCES; SKIP without the first two)
 #   CHECK_HEX0_HANDOFF=1  tests/tinycc/hex0-handoff-check.sh: K0 runs seed
 #                   Forth, which builds the first tcc; the first tcc makes
 #                   tcc-boot0 and mes libc and writes live-bootstrap's

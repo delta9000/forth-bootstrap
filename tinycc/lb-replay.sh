@@ -8,14 +8,22 @@
 # /steps/env, /steps/mes-0.28/, /steps/tcc-0.9.26/ and /seed/seed.kaem from
 # the pinned live-bootstrap tree, /external/distfiles/ with the two
 # archives, and the directories seed.kaem makes (/usr, /usr/bin,
-# /usr/lib/mes, /usr/include/mes, /steps, /tmp, /dev).  Also mounted:
-# /host/usr (the host's /usr, read only: bash and the tools in
-# tinycc/kaem-shims.sh) and /forth-bootstrap (tinycc/ and the first tcc,
-# read only).
+# /usr/lib/mes, /usr/include/mes, /steps, /tmp, /dev).  Also mounted, read
+# only: /host/usr (the host's /usr: bash, and grep, awk, sed and cat for
+# this script's own text handling), /forth-bootstrap/tinycc (tinycc/),
+# /forth-bootstrap/tcc-first (the first tcc) and /forth-bootstrap/bin
+# (build-out/tinycc/bin, the tools tinycc/build-tools.sh builds from the
+# seed).
 #
 # What runs is live-bootstrap's own kaem text, cut from their files at
 # marker lines that must be present, and executed by bash (the kaem lines
-# these steps use are also valid sh).  It is printed before it runs:
+# these steps use are also valid sh).  Its PATH is steps/env's followed by
+# /forth-bootstrap/bin and nothing from the host, so every command it runs
+# that is not a bash builtin is one of live-bootstrap's programs: stage0's
+# catm, chmod, cp, match, mkdir, rm, sha256sum, ungz and untar, and
+# live-bootstrap's checksum-transcriber and simple-patch, built from their
+# C by seed Forth in native mode against M2libc, or a tcc of the replay.
+# It is printed before it runs:
 #   mes-0.28    only the lines that unpack mes-0.28 and install its headers
 #               under /usr/include/mes.  mes-m2, mescc and MesCC's libc are
 #               not built; nothing later reads them.
@@ -27,8 +35,8 @@
 #               junction-check.sh outside the chroot.
 set -euo pipefail
 
-export TINYCC_SHIMS=/forth-bootstrap/tinycc TINYCC_PYTHON=/host/usr/bin/python3
 FIRST=/forth-bootstrap/tcc-first
+TOOLS=/forth-bootstrap/bin
 
 # Print the lines of FILE from the line equal to FROM up to, not including,
 # the next line equal to TO.  FROM must occur exactly once, TO after it.
@@ -45,7 +53,7 @@ cut_kaem() {
 }
 
 # Run kaem text on stdin in a fresh bash, as kaem --file runs a step:
-# variables it sets do not outlive it.
+# variables it sets do not outlive it.  Its PATH is KAEM_PATH.
 run_kaem() {
     local name=$1 dir=$2 text
     text=$(cat)
@@ -55,14 +63,16 @@ run_kaem() {
     (
         set +u
         cd "$dir"
-        . "$TINYCC_SHIMS/kaem-shims.sh"
+        export PATH=$KAEM_PATH
         eval "$text"
     )
 }
 
 # The environment live-bootstrap's steps run in: steps/env and seed.kaem's
-# mes variables (which use its SRCDIR), for ARCH=x86.  steps/env's PATH is ${BINDIR}:/${ARCH_DIR}/bin;
-# the host tools come after it.
+# mes variables (which use its SRCDIR), for ARCH=x86.  steps/env's PATH is
+# ${BINDIR}:/${ARCH_DIR}/bin; where live-bootstrap has stage0's tools in
+# /x86/bin, the kaem text gets the seed-built ones after it.  This script's
+# own commands use the host's.
 ARCH=x86
 PATH=/host/usr/bin
 env_seed=$(grep -E '^(NYACC_PKG|MES_PKG|MES_PREFIX)=' /seed/seed.kaem)
@@ -70,9 +80,10 @@ env_steps=$(grep -E '^[A-Z]+=' /steps/env)
 set +u
 eval "$env_steps"
 eval "$env_seed"
-PATH=$PATH:/host/usr/bin
+KAEM_PATH=$PATH:$TOOLS
+PATH=/host/usr/bin
 set -u
-export ARCH NYACC_PKG MES_PKG MES_PREFIX DISTFILES PREFIX BINDIR LIBDIR INCDIR SRCDIR TMPDIR PATH
+export ARCH NYACC_PKG MES_PKG MES_PREFIX DISTFILES PREFIX BINDIR LIBDIR INCDIR SRCDIR TMPDIR
 
 # mes-0.28: unpack, the arch headers, the header install
 K=/steps/mes-0.28/pass1.kaem

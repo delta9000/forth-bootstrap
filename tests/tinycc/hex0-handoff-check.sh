@@ -25,12 +25,14 @@
 # live-bootstrap's published tcc-0.9.26.x86.checksums (tcc-mes and
 # tcc-boot0 with this route's pins).
 #
-# Host involvement: tinycc/build-first-tcc.sh --prepare and
-# tinycc/lb-replay.sh --prepare unpack and patch the sources (host tar,
-# gzip, python3, bwrap); hex0-seed builds seed-forth and K0; this script
-# cuts boot 2's script from the pinned pass1.kaem, lists the files of the
-# stream, writes K0's memory image, creates the empty drive, starts QEMU
-# twice and reads the drive.  No byte of the drive is written by the host.
+# Host involvement: the sources are unpacked and patched by the tools
+# tinycc/build-tools.sh builds from the seed (tinycc/build-first-tcc.sh
+# --prepare; tinycc/lb-replay.sh --prepare in bwrap, where host bash runs
+# live-bootstrap's kaem text and host grep, awk, sed and cat cut it);
+# hex0-seed builds seed-forth and K0; this script cuts boot 2's script
+# from the pinned pass1.kaem, lists the files of the stream, writes K0's
+# memory image, creates the empty drive, starts QEMU twice and reads the
+# drive.  No byte of the drive is written by the host.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
@@ -44,7 +46,13 @@ QEMU=${QEMU:-qemu-system-x86_64}
 probe() {
     command -v "$QEMU" > /dev/null || { echo "missing: $QEMU"; return 1; }
     command -v bwrap > /dev/null || { echo "missing: bwrap"; return 1; }
+    # lb-replay.sh runs these from the host's /usr, mounted at /host/usr
+    for t in bash grep awk sed cat; do
+        [ -x /usr/bin/$t ] || { echo "missing: /usr/bin/$t"; return 1; }
+    done
     [ -w /dev/kvm ] || { echo "no KVM (/dev/kvm)"; return 1; }
+    [ -f vendor/stage0-posix/mescc-tools-extra/untar.c ] \
+        || { echo "missing vendor/stage0-posix (git submodule update --init --recursive)"; return 1; }
     for a in tcc-0.9.26.tar.gz mes-0.28.tar.gz $LB.tar.gz $BH.tar.gz; do
         [ -f "$IN/$a" ] || { echo "missing $IN/$a (python3 tools/fetch-archives.py $IN/$a)"; return 1; }
     done
@@ -56,29 +64,41 @@ fi
 why=$(probe) || { echo "hex0-handoff-check: cannot run: $why" >&2; exit 1; }
 fail() { echo "hex0-handoff-check: FAIL: $*" >&2; exit 1; }
 
-for a in tcc-0.9.26.tar.gz mes-0.28.tar.gz $LB.tar.gz $BH.tar.gz; do
-    grep -F "  $IN/$a" tinycc/SOURCES | sha256sum --check --quiet - \
-        || fail "$IN/$a: sha256 differs from tinycc/SOURCES"
-done
-rm -rf "$OUT" "$IN/$BH"
+rm -rf "$OUT"
 mkdir -p "$OUT"
-tar -xzf "$IN/$BH.tar.gz" -C "$IN" --no-same-owner \
-    "$BH/builder-hex0-x86-stage1.hex0" "$BH/builder-hex0-x86-stage2.hex0"
 
-# ---- host preparation: sources, boot 2's script, K0's image ----
+# ---- preparation: sources, boot 2's script, K0's image ----
+# The seed-built tools (tinycc/build-tools.sh, run by build-first-tcc.sh)
+# check tinycc/SOURCES's archives, unpack live-bootstrap's tree into
+# build-out/tinycc/lb/ and lay out build-out/tcc-sources/.
 tinycc/build-first-tcc.sh --prepare
-P=$OUT/prep
-mkdir -p "$P"/usr/bin "$P"/usr/lib/mes "$P"/usr/include/mes "$P"/steps "$P"/tmp \
-    "$P"/dev "$P"/seed "$P"/external/distfiles
-tar -xzf "$IN/$LB.tar.gz" -C "$P" --no-same-owner --strip-components=1 \
-    "$LB/steps/env" "$LB/steps/mes-0.28" "$LB/steps/tcc-0.9.26" "$LB/seed/seed.kaem"
-cp "$IN/tcc-0.9.26.tar.gz" "$IN/mes-0.28.tar.gz" "$P/external/distfiles/"
+BIN=build-out/tinycc/bin
+# builder-hex0's two stages: its archive against tinycc/hex0-handoff.SOURCES
+# (not tinycc/SOURCES, which the junction checks whole), then ungz and untar
+"$BIN/sha256sum" --check tinycc/hex0-handoff.SOURCES > /dev/null \
+    || fail "$IN/$BH.tar.gz: sha256 differs from tinycc/hex0-handoff.SOURCES"
+rm -rf "$IN/$BH"
+"$BIN/ungz" --file "$IN/$BH.tar.gz" --output "$OUT/builder-hex0.tar" 2> /dev/null \
+    || fail "ungz failed on $BH.tar.gz"
+(cd "$IN" && ../tinycc/bin/untar --non-strict --file ../tinycc/hex0-handoff/builder-hex0.tar \
+    > /dev/null 2>&1) \
+    || fail "untar failed on $BH.tar"
+# lb-replay.sh --prepare's root is the live-bootstrap tree build-tools.sh
+# unpacked: its steps/ and seed/ are where live-bootstrap's / has them,
+# plus the directories seed.kaem makes and the two distfiles, mounted
+P=build-out/tinycc/lb/$LB
+"$BIN/mkdir" -p "$P"/usr/bin "$P"/usr/lib/mes "$P"/usr/include/mes "$P"/tmp \
+    "$P"/dev "$P"/external/distfiles
 interp=/lib64/ld-linux-x86-64.so.2
 libpath=/host/usr/lib
 for d in /usr/lib64 /usr/lib/x86_64-linux-gnu; do
     [ -d "$d" ] && libpath=$libpath:/host$d
 done
-bwrap --bind "$P" / --ro-bind /usr /host/usr \
+bwrap --bind "$P" / \
+    --ro-bind "$IN/tcc-0.9.26.tar.gz" /external/distfiles/tcc-0.9.26.tar.gz \
+    --ro-bind "$IN/mes-0.28.tar.gz" /external/distfiles/mes-0.28.tar.gz \
+    --ro-bind "$BIN" /forth-bootstrap/bin \
+    --ro-bind /usr /host/usr \
     --ro-bind "$(realpath "$interp")" "$interp" \
     --ro-bind tinycc /forth-bootstrap/tinycc \
     --dev /dev --proc /proc --clearenv --setenv LD_LIBRARY_PATH "$libpath" --chdir / \

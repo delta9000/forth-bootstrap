@@ -18,6 +18,34 @@ create cc-native-name-mprotect s, mprotect
 create cc-native-name-time     s, time
 create cc-native-name-gettimeofday s, gettimeofday
 
+\ cc-native-syscall-any ( -- addr )  Nonzero emits one primitive,
+\ __native_syscall(n, a1, a2, a3, a4, a5, a6): Linux call n with six
+\ arguments, returning rax as Linux gives it (-errno on failure).  It
+\ replaces the named primitives and the traps below, so that a C library
+\ can define read, exit, longjmp and the rest itself.  Off by default, so
+\ that no other native program changes.  tinycc/mes-libc-native.c and
+\ tinycc/m2libc-native.c are written for it.
+variable cc-native-syscall-any
+create cc-native-name-syscall s, __native_syscall
+
+\ cc-native-load ( rex modrm offset -- )  MOV reg, [rsp+offset].
+: cc-native-load
+  rot cc-emit-byte [lit] 139 cc-emit-byte swap cc-emit-byte
+  [lit] 36 cc-emit-byte cc-emit-byte ;
+
+: cc-native-syscall-any-emit
+  cc-native-name-syscall [lit] 16 ty-long [lit] 0 ty-make
+  sk-func swap cc-here-vaddr cc-sym-add drop
+  [lit] 72 [lit] 68 [lit] 8 cc-native-load      \ mov rax, [rsp+8]
+  [lit] 72 [lit] 124 [lit] 16 cc-native-load    \ mov rdi, [rsp+16]
+  [lit] 72 [lit] 116 [lit] 24 cc-native-load    \ mov rsi, [rsp+24]
+  [lit] 72 [lit] 84 [lit] 32 cc-native-load     \ mov rdx, [rsp+32]
+  [lit] 76 [lit] 84 [lit] 40 cc-native-load     \ mov r10, [rsp+40]
+  [lit] 76 [lit] 68 [lit] 48 cc-native-load     \ mov r8, [rsp+48]
+  [lit] 76 [lit] 76 [lit] 56 cc-native-load     \ mov r9, [rsp+56]
+  [lit] 15 cc-emit-byte [lit] 5 cc-emit-byte     \ syscall
+  [lit] 195 cc-emit-byte ;                      \ ret
+
 \ cc-native-sysarg ( stack-byte-offset modrm -- )
 \ MOV a full stack cell into a syscall argument register. Narrow C values
 \ arrive extended by expression evaluation; pointers/size_t/off_t stay 64-bit.
@@ -88,7 +116,8 @@ variable cc-native-trap-length
   [lit] 15 cc-emit-byte [lit] 11 cc-emit-byte ;    \ ud2: never return
 
 : cc-native-runtime
-  cc-native-name-exit     [lit] 4 ty-void [lit] 60 [lit] 1 cc-native-primitive
+  cc-native-syscall-any @ if, cc-native-syscall-any-emit exit, then,
+  cc-native-name-exit    [lit] 4 ty-void [lit] 60 [lit] 1 cc-native-primitive
   cc-native-name-read     [lit] 4 ty-long [lit] 0 [lit] 3 cc-native-primitive
   cc-native-name-write    [lit] 5 ty-long [lit] 1 [lit] 3 cc-native-primitive
   \ open's third stack slot contains mode for O_CREAT/O_TMPFILE. Linux

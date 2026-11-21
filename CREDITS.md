@@ -10,7 +10,7 @@ elsewhere and keeps its own license.
 | What | Where | From | License |
 |---|---|---|---|
 | hex0-seed (229 bytes, the only binary the route starts from) | `vendor/stage0-posix/bootstrap-seeds` | [stage0-posix](https://github.com/oriansj/stage0-posix) / [bootstrap-seeds](https://github.com/oriansj/bootstrap-seeds) | GPL-3.0-or-later |
-| mescc-tools-extra (`mkdir`, `cp`, `rm`, `chmod`, `sha256sum`, `untar`, `ungz`, `unbz2`) and its M2libc, compiled by seed-cc in plumbing stage 1 | `vendor/stage0-posix/mescc-tools-extra` | stage0-posix | GPL-3.0-or-later |
+| mescc-tools-extra (`mkdir`, `cp`, `rm`, `chmod`, `sha256sum`, `untar`, `ungz`, `unbz2`) and its M2libc, compiled by seed-cc in plumbing stage 1; `catm`, `match`, `sha256sum`, `ungz`, `untar` and the rest also by seed Forth's native mode against `vendor/stage0-posix/M2libc` for the TinyCC route (`tinycc/build-tools.sh`) | `vendor/stage0-posix/mescc-tools-extra` | stage0-posix | GPL-3.0-or-later |
 | kaem, compiled by seed-cc as the first shell | `vendor/mescc-tools/Kaem` | [mescc-tools](https://github.com/oriansj/mescc-tools) | GPL-3.0-or-later |
 | M2-Planet, compiled by the Forth compiler for Stage A (and its headers, copied into `tests/cc/` for the compiler's include fallback); two gate fixtures taken from it | `vendor/M2-Planet`, `tests/cc/*.h`, `tests/cc/gates/G4.c`, `tests/cc/gates/M1.c` | [M2-Planet](https://github.com/oriansj/M2-Planet) | GPL-3.0-or-later |
 | Patches for gcc-4.7.4, gcc-10.5.0, musl-1.1.24 and bash-2.05b, each with a provenance header | `chain/patches/gcc64/`, `chain/plumbing/bash-2.05b/missing-defines.patch` | [live-bootstrap](https://github.com/fosslinux/live-bootstrap) b1ceced7, `steps/*/patches` | each patch's SPDX header (the patched project's license) |
@@ -37,6 +37,20 @@ programs built from them keep their upstream licenses.
 | zlib 1.3.1 | zlib |
 | elfutils 0.192 (libelf only) | LGPL-3.0-or-later or GPL-2.0-or-later |
 | Linux 7.2.8 | GPL-2.0 |
+| The TinyCC route (`tinycc/SOURCES`): janneke's TinyCC fork tcc-0.9.26-1147-gee75a10c; GNU Mes 0.28, whose libc (`tinycc/mes-libc.c` lists the files) is compiled into the first tcc; live-bootstrap a49273cb, whose simple-patch, checksum-transcriber, simple-patches and kaem text the route uses | TinyCC: LGPL-2.1-or-later; Mes: GPL-3.0-or-later; live-bootstrap: each file's SPDX header (simple-patch GPL-3.0-or-later, checksum-transcriber MIT) |
+
+`build-out/tinycc/tcc-first` is TinyCC and Mes libc compiled into one
+program, so it is under GPL-3.0-or-later as a whole.  The repository's
+own files that go into it, `tinycc/direct-input.c`, `tinycc/mes-libc.c`
+(a list of Mes's file names) and `tinycc/mes-libc-native.c` (written for
+this route: Mes's function names and signatures, our bodies; no Mes code
+is copied), are MIT.
+
+`tinycc/m2libc-native.c` (MIT, written for this route) stands in for
+M2libc's GPL-3.0-or-later `amd64/linux/unistd.c`, `fcntl.c`,
+`sys/stat.c` and `libc-full.M1`.  It restates their constants, function
+names and signatures and the three-line logic of `getcwd`, `exit` and
+`_start`; the system calls are rewritten in C.
 
 ## People and projects
 
