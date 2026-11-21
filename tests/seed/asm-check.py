@@ -82,7 +82,7 @@ Not verified:
     rule above: the check accepts the one GNU as picks, so a comment is
     proved to name an instruction that encodes as the bytes.
 """
-import argparse, pathlib, re, struct, subprocess, sys, tempfile
+import argparse, pathlib, re, shutil, struct, subprocess, sys, tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 BASE = 0x400000
@@ -419,6 +419,8 @@ def elf_symbols(path):
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--as", dest="assembler", default="as")
+    ap.add_argument("--llvm-mc", dest="llvm_mc", default="llvm-mc",
+                    help="second, independent assembler; skipped if not installed")
     ap.add_argument("--keep", help="also write the generated assembler source here")
     ap.add_argument("seed", nargs="?", default=str(ROOT / "seed/000-seed.hex0"))
     args = ap.parse_args()
@@ -514,6 +516,17 @@ def main():
             sys.exit(f"seed asm-check: {args.assembler} failed on the comments "
                      "(its messages name lines of the generated source; --keep writes it)")
         text, syms, undefined, relocs = elf_symbols(obj)
+        # The same source through LLVM's assembler, a separate implementation:
+        # every byte must agree with GNU as's (and so with the hex).
+        llvm_text = None
+        if shutil.which(args.llvm_mc):
+            lobj = tmp / "seed-llvm.o"
+            lrun = subprocess.run([args.llvm_mc, "-triple=x86_64-unknown-linux-gnu", "-filetype=obj",
+                                   "-o", str(lobj), str(tmp / "seed.S")], capture_output=True, text=True)
+            if lrun.returncode:
+                print(lrun.stderr, end="")
+                sys.exit(f"seed asm-check: {args.llvm_mc} failed on the comments")
+            llvm_text, llvm_syms, _, _ = elf_symbols(lobj)
     if undefined:
         ck.fail(0, f"undefined symbols in the comments: {', '.join(undefined)}")
     if relocs:
@@ -546,6 +559,15 @@ def main():
         lines_by_kind[kind] += 1
     if len(text) != size:
         ck.fail(0, f"as wrote {len(text)} bytes, the hex is {size}")
+    if llvm_text is not None:
+        if llvm_text != text:
+            for lineno, off, data, comment in byte_rows:
+                if llvm_text[off:off + len(data)] != text[off:off + len(data)]:
+                    ck.fail(lineno, f"{comment.split(';')[0].strip()}: as writes {text[off:off + len(data)].hex(' ')},"
+                            f" llvm-mc writes {llvm_text[off:off + len(data)].hex(' ')}")
+                    break
+            if len(llvm_text) != len(text):
+                ck.fail(0, f"llvm-mc wrote {len(llvm_text)} bytes, as {len(text)}")
     built = ROOT / "seed-forth"
     if built.exists() and pathlib.Path(args.seed).resolve() == (ROOT / "seed/000-seed.hex0").resolve():
         ck.expect(built.read_bytes() == image, 0, "image", "this parse of the hex differs from ./seed-forth")
@@ -560,6 +582,10 @@ def main():
     shown = shown.relative_to(ROOT) if shown.is_relative_to(ROOT) else shown
     print(f"seed asm-check: {shown}'s bytes equal {args.assembler} on its comments: "
           f"{covered} of {size} bytes")
+    if llvm_text is not None:
+        print(f"seed asm-check: and {args.llvm_mc} on the same comments writes the same {len(llvm_text)} bytes")
+    else:
+        print(f"seed asm-check: {args.llvm_mc} not found; the second assembler was skipped")
     print(f"  {lines_by_kind['insn']} instructions ({totals['insn']} bytes), "
           f"{lines_by_kind['elf']} ELF fields ({totals['elf']} bytes), "
           f"{lines_by_kind['dict']} dictionary fields in {len(headers)} headers ({totals['dict']} bytes)")
