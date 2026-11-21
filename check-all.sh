@@ -3,7 +3,7 @@
 #
 # Quick steps (under a minute):
 #   01  seed/build.sh: hex0-seed assembles seed/000-seed.hex0 into the
-#       1,091-byte seed-forth
+#       1,051-byte seed-forth
 #   02  ./test.sh: the seed primitives, forth/010-lib.fth and the first
 #       compiler layers
 #   03  tests/asm/hi-check.sh: forth/130-asm.fth assembles and links a small
@@ -25,10 +25,9 @@
 #       as; SKIP without)
 #   09  tests/seed/asm-check.py: seed/000-seed.hex0's bytes equal GNU as on
 #       its comments, its ELF and dictionary fields equal what their
-#       comments state, and its branch notes and addresses add up (needs as;
-#       SKIP without); then, with nasm, seed/check.sh: the hex0 is what
-#       seed/asm2hex0.py writes from seed/seed.asm, and nasm's bytes equal
-#       hex0-seed's
+#       comments state, and its branch notes and addresses add up; with
+#       llvm-mc installed, LLVM's assembler must write the same bytes too
+#       (needs as; SKIP without)
 #   10  tests/pins/check-outputs.sh: seed-cc, seed-ar, Stage A's cc-out-v1,
 #       the K1 recipe runner and K1 equal tests/pins/outputs.sha256 (files a
 #       skipped step did not build are reported, not compared)
@@ -89,7 +88,7 @@ skip() {
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
-run "01-seed" bash -c 'seed/build.sh && [ "$(wc -c < seed-forth)" -eq 1091 ]'
+run "01-seed" bash -c 'seed/build.sh && [ "$(wc -c < seed-forth)" -eq 1051 ]'
 run "02-test" ./test.sh
 run "03-asm" tests/asm/hi-check.sh
 run "04-seed-cc" tests/cc/seed-cc-rebuild-check.sh
@@ -110,7 +109,7 @@ else
     skip "08-k1-build" "missing: strace, as or python3"
 fi
 if have as && have python3; then
-    run "09-seed-asm" sh -c 'python3 tests/seed/asm-check.py && { ! command -v nasm >/dev/null || seed/check.sh; }'
+    run "09-seed-asm" python3 tests/seed/asm-check.py
 else
     skip "09-seed-asm" "missing: as or python3"
 fi

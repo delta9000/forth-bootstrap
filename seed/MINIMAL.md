@@ -269,16 +269,14 @@ with `mask = flag 0=`.
 
 ### How the seed is written
 
-As assembly first: `seed/seed.asm` (NASM), from which `seed/asm2hex0.py`
-writes `seed/000-seed.hex0` in the commented form it has always had, the
-way `kernel/k0/k0.asm` becomes `k0.hex0`.  The hex0 is still what is
-built and still what a reviewer reads; the assembly source exists so that
-offsets, link fields and branch distances are never recomputed by hand,
-which is where an edit to the old file went wrong most easily.  Three
-tools then have to agree on every byte: nasm (via `asm2hex0.py`),
-stage0's hex0 (`seed/check.sh` compares its output with nasm's) and GNU
-as on the hex0's comments (`tests/seed/asm-check.py`, which needed only
-the new memory-map form: sysvar names are offsets from `rbx`).
+The 1,091-byte prototype of section 3 was written as NASM source
+(`seed/seed.asm`) and turned into hex0 by a script.  Section 5 replaced
+that: `seed/000-seed.hex0` is now written directly and is the only source
+of the program.  Offsets, link fields and branch distances are computed by
+hand and written into the comments, and `tests/seed/asm-check.py` is what
+proves them: GNU as on every comment, and LLVM's llvm-mc too when it is
+installed, must write exactly the line's bytes, and every branch note,
+header field, memory-map address and the dictionary chain is checked.
 
 ## 3. The prototype, measured
 
@@ -360,7 +358,8 @@ review of section 4 (`seed-forth` 8a1a5655...):
   `k0: K1 built by seed Forth; handing over`, `k1: seed-forth built by
   hex0-seed` and the K1 PASS line.
 - `tests/seed/asm-check.py`: GNU as on the comments writes 1091 of 1091
-  bytes; `seed/check.sh`: nasm's bytes equal hex0-seed's.
+  bytes; `seed/check.sh` (since removed, with `seed.asm`): nasm's bytes
+  equal hex0-seed's.
 
 Not run: `CHECK_CHAIN=1` and `CHECK_K1=linux`.  Swept instead: every
 place either runs `seed-forth` gives it a ported launcher
@@ -447,3 +446,52 @@ machine code.
 
 Left as it was although it could be smaller: the `"tok?"` message, the
 256-byte check, `\` comments in the reader, `*` and `/` (section 2).
+
+## 5. The hand-written seed: 1,051 bytes
+
+The prototype's design is kept whole: the same 21 words, the same header
+layout (link, flags, nlen, name, which the library and `cc/020` read), the
+same loop and the same memory map.  The file was rewritten directly in
+hex0 with tighter encodings, each of which its line's comment explains.
+Nothing moved into the library and no downstream output changed.
+
+| | 1,091-byte prototype | hand-written |
+|---|---|---|
+| file | 1,091 | 1,051 |
+| ELF headers | 120 | 120 |
+| dictionary header fields | 267 (21 headers) | 267 (21 headers) |
+| code | 704 (222 instructions) | 664 (218 instructions) |
+
+| routine | was | now | change |
+|---|---|---|---|
+| `number` | 74 | 71 | `add qword [rbx+HERE], 8` replaces load, add and store |
+| `fatal`, `end_of_input`, `exit` | 42 | 32 | `push 1` / `pop rax` / `mov edi, eax` (1 is both SYS_write and stdout); `inc edi` for status 2, since syscall keeps rdi; `push 60` / `pop rax` |
+| `key` | 32 | 30 | `lea edx, [rdi+1]`: rdi is 0 there, so edx = 1 |
+| `swap` | 12 | 5 | `xchg rdi, [rbp]` |
+| `0=` | 15 | 8 | `cmp rdi, 1` / `sbb rdi, rdi`: n - 1 borrows only when n = 0 |
+| `:` | 61 | 57 | `mov byte [rbx+STATE], 1` |
+| `;` | 22 | 15 | `inc qword [rbx+HERE]`; `mov byte [rbx+STATE], 0` |
+
+The byte stores to STATE rely on one invariant, stated in the file's
+conventions block and in both comments: STATE only ever holds 0 or 1.  The
+seed writes only 0 and 1, and every library and launcher write is a whole
+cell of 0 (`0 state !`), so STATE's upper seven bytes are never set.
+
+Considered and not done:
+
+- Moving `*` and `/` to Forth (49 bytes).  The library has no shifts, so
+  multiplication would be repeated doubling and addition, and division a
+  bit-at-a-time loop on top of `0<`, which the library itself builds from
+  `/`.  Both would be needed in the library and again in each launcher
+  that uses them, before `cc/020` replaces them with native code, and the
+  compiler divides constantly (`,4`, the byte writers).  About 30 lines of
+  Forth in four places, and slower loads, for 49 bytes: kept in the seed.
+- A 4-byte link field (21 x 4 = 84 bytes): every address is below 4 GiB,
+  but the library, the launchers and `cc/020` read the 8-byte layout.  Not
+  done.
+- Overlapping the ELF headers: as before, not done.
+
+Checked: `tests/seed/asm-check.py` gives "1051 of 1051 bytes" from GNU as
+and the same 1,051 bytes from llvm-mc; the check-all, TinyCC and hand-off
+results are in the commit that made the change.
+
