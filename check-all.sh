@@ -51,11 +51,16 @@
 #                   (tinycc/README.md): its encoders against GNU as, no
 #                   x86-64 encoder reached, the run-time corpus against
 #                   gcc -m32, the junction with the i386 first tcc and
-#                   tools under strace, and the gcc -m32 stand-in; then
-#                   the i386 kaem seed Forth builds from
-#                   vendor/mescc-tools/Kaem: its own tests on Linux, and
-#                   on builder-hex0 the exit statuses of the programs it
-#                   starts (under a minute; needs what CHECK_TINYCC needs,
+#                   tools under strace, and the gcc -m32 stand-in.  Then
+#                   the i386 host (forth/i386/CONTRACT.md): its stand-ins
+#                   against the x86-64 files and its bytes against GNU as,
+#                   and the high-half vectors; the i386 kaem seed Forth
+#                   builds from vendor/mescc-tools/Kaem, with its own
+#                   tests on Linux and, on builder-hex0, the exit statuses
+#                   of the programs it starts; and, with an i386 seed
+#                   (./seed-forth-i386), the first tcc, the tools and kaem
+#                   built by it, byte for byte the x86-64 seed's, under
+#                   strace (about a minute; needs what CHECK_TINYCC needs,
 #                   gcc -m32, as, objcopy, strace and python3, and for the
 #                   two builder-hex0 boots QEMU, KVM and the archive of
 #                   tinycc/hex0-handoff.SOURCES; SKIP without)
@@ -157,11 +162,17 @@ if [ "${CHECK_I386:-0}" = 1 ]; then
         run "16-i386-corpus" tests/cc/i386/run-corpus.sh
         run "17-i386-junction" tests/tinycc/i386-syscall-check.sh
         run "18-i386-standin" tests/tinycc/i386-standin-check.sh
+        run "20-i386-host" sh -c 'tests/forth/i386/standin-check.sh && python3 tests/forth/i386/asm-check.py && tests/forth/i386/high-halves-check.sh'
         run "21-i386-kaem" tests/tinycc/i386-kaem-check.sh
         if why=$(tests/tinycc/i386-kaem-boot-check.sh --probe); then
             run "22-i386-kaem-boot" tests/tinycc/i386-kaem-boot-check.sh
         else
             skip "22-i386-kaem-boot" "$why"
+        fi
+        if why=$(tests/tinycc/i386-seed-check.sh --probe); then
+            run "23-i386-seed" tests/tinycc/i386-seed-check.sh
+        else
+            skip "23-i386-seed" "$why"
         fi
     fi
 fi
