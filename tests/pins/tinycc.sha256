@@ -1,8 +1,16 @@
 # tests/pins/tinycc.sha256 -- sha256 of what the TinyCC route builds that
-# live-bootstrap does not publish.
+# live-bootstrap does not publish.  Not part of tests/pins/outputs.sha256
+# because only CHECK_TINYCC=1 builds the junction files.
 #   tinycc/tcc-first   build-out/tinycc/tcc-first, the first tcc, compiled by
 #                      seed Forth (tinycc/build-first-tcc.sh, 790,384 bytes);
 #                      the same in two checkouts at different paths
+#   tinycc/junction/usr/bin/tcc-boot0
+#                      build-out/tinycc/junction-root/usr/bin/tcc-boot0, what
+#                      the first tcc makes of tcc.c in live-bootstrap's
+#                      pass1.kaem (tests/tinycc/junction-check.sh).  MesCC's
+#                      tcc-mes makes ea464b2f...; from boot1 on the two
+#                      routes have the same bytes.
 # When a change is meant to alter one, update its line in the same commit
 # and say why.
 7b2efd95a84f1d7c83369db586ffc113a8931c7c417b6d7854f7e577b42f4d97  tinycc/tcc-first
+4e3e525a06ba9aac5b8095cf543e0840b2692a35b122682bedebc0c03effd06b  tinycc/junction/usr/bin/tcc-boot0
