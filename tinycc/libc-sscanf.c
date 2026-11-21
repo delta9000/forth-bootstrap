@@ -7,7 +7,7 @@
    tcc-0.9.26-1147-gee75a10c calls it once, in libtcc.c, to read TCC_VERSION
    into __TINYC__:
        sscanf(TCC_VERSION, "%d.%d.%d", &a, &b, &c);
-   tinycc/direct-input.c includes this file after libc64/libc.c, so the
+   tinycc/direct-input.c includes this file after pnut's libc.c, so the
    first tcc is compiled from tcc's source as live-bootstrap has it, with no
    patch of ours.
 

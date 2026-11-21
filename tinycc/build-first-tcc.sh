@@ -9,18 +9,27 @@
 # The only program that runs to build it is seed-forth (1,772 bytes, from
 # seed/000-seed.hex0), reading forth/010-lib.fth, the compiler layers,
 # tinycc/tcc-compile.fth and the C source on stdin.  No host compiler,
-# preprocessor, assembler or linker takes part.  Host tools do the source
-# preparation only: sha256sum checks the archives, tar and gzip unpack them,
-# python3 -I tinycc/simple-patch.py applies live-bootstrap's simple-patches.
+# preprocessor, assembler or linker takes part.
+#
+# The source preparation is done by the tools tinycc/build-tools.sh builds
+# from the seed (seed-cc, from stage0-posix's and live-bootstrap's C): its
+# sha256sum checks the archives against tinycc/SOURCES, ungz and untar
+# unpack them, simple-patch applies live-bootstrap's simple-patches and catm
+# writes config.h and copies our two files.  The host programs left are
+# bash, which runs this script, rm and mkdir -p, which clear and make
+# build-out directories, and cat, which joins the Forth input (the
+# layers, the driver and direct-input.c) into seed-forth's stdin, plus
+# sha256sum, sed and cut to compare the result with its pin.
 #
 # The source tree, build-out/tcc-sources/:
 #   tcc-0.9.26-1147-gee75a10c/  tinycc-inputs/tcc-0.9.26.tar.gz with what
 #       live-bootstrap's steps/tcc-0.9.26/pass1.kaem does before it runs
 #       MesCC: its two simple-patches to tcctools.c (from the pinned
 #       live-bootstrap tree) and an empty config.h.  Nothing else.
-#   libc64/  pnut's portable_libc/ (tinycc-inputs/pnut-<commit>.tar.gz) as
-#       published, compiled into the same image.  seed-forth's six libc
-#       patches are for its x86_64 boot stages and are not needed here.
+#   pnut-<commit>/  tinycc-inputs/pnut-<commit>.tar.gz, whole (untar has no
+#       member selection); only portable_libc/ is read, as published, and
+#       compiled into the same image.  seed-forth's six libc patches are for
+#       its x86_64 boot stages and are not needed here.
 #   libc-sscanf.c  tinycc/libc-sscanf.c, the sscanf pnut's libc lacks
 #   direct-input.c  tinycc/direct-input.c
 #
@@ -39,31 +48,36 @@ LB=live-bootstrap-a49273cbb5c381b851198bc1e53c294702f4f7c9
 
 fail() { echo "build-first-tcc: $*" >&2; exit 1; }
 
-# The archives, against tinycc/SOURCES
-for a in tcc-0.9.26.tar.gz $PNUT.tar.gz $LB.tar.gz; do
-    [ -f "$IN/$a" ] || fail "$IN/$a missing; run python3 tools/fetch-archives.py $IN/$a"
-    grep -F "  $IN/$a" tinycc/SOURCES | sha256sum --check --quiet - \
-        || fail "$IN/$a: sha256 differs from tinycc/SOURCES"
-done
+# The tools; they check the archives against tinycc/SOURCES and unpack
+# live-bootstrap's tree into build-out/tinycc/lb/
+tinycc/build-tools.sh
+BIN=build-out/tinycc/bin
 
-rm -rf "$SRC" "$OUT/simple-patches"
-mkdir -p "$SRC" "$OUT"
+rm -rf "$SRC"
+mkdir -p "$SRC"
 
-# tcc: unpack, live-bootstrap's own changes, then ours
-tar -xzf "$IN/tcc-0.9.26.tar.gz" -C "$SRC" --no-same-owner "$TCC_PKG"
-tar -xzf "$IN/$LB.tar.gz" -C "$OUT" --no-same-owner --strip-components=3 \
-    "$LB/steps/tcc-0.9.26/simple-patches"
+# tcc: unpack, then what pass1.kaem does before MesCC runs
+"$BIN/ungz" --file "$IN/tcc-0.9.26.tar.gz" --output "$SRC/tcc.tar" 2> /dev/null \
+    || fail "ungz failed on tcc-0.9.26.tar.gz"
+(cd "$SRC" && ../tinycc/bin/untar --non-strict --file tcc.tar > /dev/null 2>&1) \
+    || fail "untar failed on tcc.tar"
+SP=$OUT/lb/$LB/steps/tcc-0.9.26/simple-patches
 for p in remove-fileopen addback-fileopen; do
-    python3 -I tinycc/simple-patch.py "$SRC/$TCC_PKG/tcctools.c" \
-        "$OUT/simple-patches/$p.before" "$OUT/simple-patches/$p.after"
+    "$BIN/simple-patch" "$SRC/$TCC_PKG/tcctools.c" "$SP/$p.before" "$SP/$p.after" \
+        || fail "simple-patch $p failed"
 done
-: > "$SRC/$TCC_PKG/config.h"
+"$BIN/catm" "$SRC/$TCC_PKG/config.h"
 
 # portable libc
-tar -xzf "$IN/$PNUT.tar.gz" -C "$SRC" --no-same-owner --strip-components=1 "$PNUT/portable_libc"
-mv "$SRC/portable_libc" "$SRC/libc64"
+"$BIN/ungz" --file "$IN/$PNUT.tar.gz" --output "$SRC/pnut.tar" 2> /dev/null \
+    || fail "ungz failed on $PNUT.tar.gz"
+(cd "$SRC" && ../tinycc/bin/untar --non-strict --file pnut.tar > /dev/null 2>&1) \
+    || fail "untar failed on pnut.tar"
+"$BIN/rm" "$SRC/tcc.tar"
+"$BIN/rm" "$SRC/pnut.tar"
 
-cp tinycc/direct-input.c tinycc/libc-sscanf.c "$SRC/"
+"$BIN/catm" "$SRC/direct-input.c" tinycc/direct-input.c
+"$BIN/catm" "$SRC/libc-sscanf.c" tinycc/libc-sscanf.c
 
 # Compile.  Native mode loads 020 to 119 except 081 (seed-forth's
 # tools/tcc-start.fth list); 120's main is not loaded.
@@ -82,7 +96,7 @@ if [ "$rc" != 0 ] || [ -s "$OUT/compile.stdout" ] || [ ! -s "$OUT/tcc-first" ]; 
     head -c 2000 "$OUT/compile.stdout" >&2
     fail "seed-forth exited $rc (cc/ error codes are the exit status)"
 fi
-chmod 755 "$OUT/tcc-first"
+"$BIN/chmod" 755 "$OUT/tcc-first"
 
 echo "build-first-tcc: $(wc -c < "$OUT/tcc-first") bytes"
 sha256sum "$OUT/tcc-first"

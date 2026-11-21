@@ -13,7 +13,7 @@
 \ as 8-byte bit patterns only (cc-bootstrap-floatbits), the syscall
 \ primitives from cc/119-cc-native-runtime.fth.  The paths are relative to
 \ the repository root, so the output does not depend on where the checkout
-\ is; the [lit] 36 after each is its length.
+\ is; the [lit] after each is its length.
 true cc-target-lp64 !
 true cc-prep-direct !
 [lit] 1 cc-bootstrap-floatbits !
@@ -21,8 +21,9 @@ true cc-prep-direct !
 create tcc-output s, build-out/tinycc/tcc-first [lit] 0 c,
 create tcc-source s, build-out/tcc-sources/direct-input.c
 tcc-source [lit] 36 cc-prep-source-name
-create tcc-include s, build-out/tcc-sources/libc64/include
-tcc-include [lit] 36 cc-prep-add-include
+create tcc-include
+  s, build-out/tcc-sources/pnut-abc34a5207b1373d0a4e3dcb3d3d6df6e22ae23d/portable_libc/include
+tcc-include [lit] 89 cc-prep-add-include
 variable tcc-fd
 variable tcc-pointer
 variable tcc-count

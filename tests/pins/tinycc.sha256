@@ -12,7 +12,24 @@
 #                      routes have the same bytes.  It differs from what
 #                      gcc-built stand-ins make (c1696e57...) only in the -g
 #                      directory string (see tinycc/direct-input.c).
+#   tinycc/bin-boot/*, tinycc/bin/*
+#                      build-out/tinycc/bin-boot/ and bin/, the source
+#                      preparation tools seed-cc builds (tinycc/build-tools.sh);
+#                      the same in two checkouts at different paths
 # When a change is meant to alter one, update its line in the same commit
 # and say why.
 3c11f52b2937bdfbd7e9197cdfe79cc57e84058a9b9c4067602e1f6279649bca  tinycc/tcc-first
 4e3e525a06ba9aac5b8095cf543e0840b2692a35b122682bedebc0c03effd06b  tinycc/junction/usr/bin/tcc-boot0
+7a1643c7de35691fe89bcd807bad786890b3fbe7f1858e3c9f3eb842000c2d60  tinycc/bin-boot/ungz
+019f164646d6ca38d9058957eb70489f996fb9c5d39fd214840fc18cb6d81fac  tinycc/bin-boot/untar
+e265a0a35a1fba70de55e9486e70093161c37975d2c5d90b809fe2b41259e2e8  tinycc/bin/catm
+c0fef799e7afa0c539098f29c4e5d960de3a08e7ea3ba5c8ffcee577ec9bf642  tinycc/bin/checksum-transcriber
+9b175321398e6678dcae5fe9d981f9e5d9b8907f7da32914a4dd31f640674065  tinycc/bin/chmod
+5a943a67235e74c3ccf44c45413c774eefc52399876068b345ed2ec595614e5f  tinycc/bin/cp
+94ec3a6d739b995eb0658b5a697e5564340ee834af59d1345640108e99da9d42  tinycc/bin/match
+b8a781f95e5c3ce9fbf2a9e38ab312cbaabdeb86721bcc8a74a4676ac75aa87c  tinycc/bin/mkdir
+a32baa5496f087ce9c1e56f40cf7ac0f88560d36798523d93797c69c5c8efe6f  tinycc/bin/rm
+61d61401ce89c1ed6993e145f7d632a311fd8dd61b0f47bdc769394efe794c7a  tinycc/bin/sha256sum
+f25a7fdc729c7b83c4dab5ceef10b6a6375532b45ecde40deae93287505b6a28  tinycc/bin/simple-patch
+acc3f468487b5fe159e8dd22efff84a834b7422abb74712d1f7fccb024a9efc9  tinycc/bin/ungz
+420174717cf32c1dbca1fef1b4d93578dd68894be201e69a2af15fd060b17203  tinycc/bin/untar

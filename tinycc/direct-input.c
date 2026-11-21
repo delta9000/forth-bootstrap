@@ -50,6 +50,6 @@
 #define ONE_SOURCE 1
 #define CONFIG_TCCDIR "/usr/lib/mes/tcc"
 #define __intptr_t_defined 1
-#include "libc64/libc.c"
+#include "pnut-abc34a5207b1373d0a4e3dcb3d3d6df6e22ae23d/portable_libc/libc.c"
 #include "libc-sscanf.c"
 #include "tcc-0.9.26-1147-gee75a10c/tcc.c"

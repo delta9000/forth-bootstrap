@@ -33,6 +33,67 @@ The source it compiles:
 - tcc-mes's defines for x86 (`direct-input.c`), so the compiler looks for
   headers and libraries where tcc-mes does.
 
+## Source preparation
+
+`tinycc/build-tools.sh` (run by `build-first-tcc.sh`) builds the programs
+that check, unpack and patch the sources, with no host compiler:
+seed-cc, which seed Forth builds (`cc/driver/seed-cc-start.fth`, pinned in
+`tests/pins/outputs.sha256`), compiles them against
+`chain/runtime/gcc-seed`, as `chain/plumbing/stage1.kaem` does:
+
+| program | source |
+|---|---|
+| `sha256sum` `catm` `mkdir` `cp` `chmod` `rm` `match` | stage0-posix `mescc-tools-extra`, unchanged |
+| `ungz` | `mescc-tools-extra`, with `tools/ungz-unsigned-bytes` |
+| `untar` | `mescc-tools-extra`, with `tools/untar-ustar-prefix` |
+| `simple-patch` | live-bootstrap `steps/simple-patch-1.0/src`, unchanged (`tools/simple-patch-unit.c` adds two headers) |
+| `checksum-transcriber` | live-bootstrap `steps/checksum-transcriber-1.0/src`, unchanged |
+
+Their sha256 are pinned in `tests/pins/tinycc.sha256`; two checkouts at
+different paths built the same bytes.
+
+The two changes of ours are simple-patch before/after pairs:
+- `ungz-unsigned-bytes`: `stored()` reads a stored block's length bytes as
+  plain `char` and compares them with `~len & 0xff`.  Plain `char` is
+  signed in gcc-seed, so a byte of 0x80 or more fails ("puff() failed with
+  return code -2").  The pnut archive has such blocks.  `bits()` already
+  masks with `0xFF`; the patch masks these four reads the same way.
+- `untar-ustar-prefix`: untar reads only the 100-byte name field.  GitHub's
+  archive of live-bootstrap stores 200 long paths as ustar prefix plus
+  name, among them `steps/tcc-0.9.26/simple-patches/*`.  Stock untar writes
+  those to the bare name in the current directory, and tcc-0.9.27's files
+  of the same names then overwrite them.  The patch joins prefix and name.
+
+simple-patch is in the live-bootstrap archive, so stock ungz and untar
+(`build-out/tinycc/bin-boot/`) unpack that archive first; its
+`simple-patch.c` path fits the name field.  The patched tools then unpack
+it again into `build-out/tinycc/lb/`.  With host `tar` as the reference,
+the seed tools' trees of the live-bootstrap, pnut and tcc archives
+compared equal under `diff -r` (symlinks included), apart from untar's
+`pax_global_header` file.
+
+Native mode was asked for and not used.  The tools would need a libc that
+is not inside an archive they must unpack: pnut's libc is in the pnut
+archive, and its 25 MB bump heap cannot hold ungz's whole-file buffers for
+that 36 MB archive.  M2libc's system calls are M1 inline assembly, which
+the Forth compiler does not read.  seed-cc with gcc-seed is in the
+repository and already builds these programs for the GCC chain.
+
+Host programs left, from `strace -f -e trace=execve` over
+`tests/tinycc/junction-check.sh`:
+- bash runs the scripts; `rm -rf`, `mkdir -p`, `mktemp`, `dirname` and
+  `realpath` handle build-out paths; `cat` joins the Forth input into
+  seed-forth's stdin; `sha256sum`, `sed`, `cut`, `grep` and `wc` compare
+  results with pins and print sizes.  None of them reads or writes a source
+  file.
+- `bwrap` makes the junction root.  Inside it, the kaem text runs in bash
+  with steps/env's PATH (the root's own `/usr/bin`, where the replay
+  installs its tcc, and `/x86/bin`, which does not exist) followed by the
+  seed-built tools, and nothing from the host.  `lb-replay.sh`
+  uses the host's `grep`, `awk`, `sed` and `cat` to cut live-bootstrap's
+  kaem files and print them.
+- `tools/fetch-archives.py` (python3) downloads the archives.
+
 ## The junction
 
 `tests/tinycc/junction-check.sh`, also `CHECK_TINYCC=1 ./check-all.sh`,
@@ -65,8 +126,9 @@ bytes from tcc-boot1 on.
 **What it does not prove:**
 - The i386 stages run on the host's Linux kernel through its 32-bit
   support, not under K0 or K1.  K1 loads only x86_64 ELF.
-- Host bash and coreutils stand in for kaem and the stage0-posix tools
-  (`tinycc/kaem-shims.sh`).
+- Host bash stands in for kaem.  The other commands of the kaem text are
+  the programs live-bootstrap uses, built by seed-cc (above); two of them
+  carry a patch of ours.
 - MesCC itself was not run.  Its column above is live-bootstrap's
   published file.
 
@@ -94,11 +156,21 @@ tcc-boot1 `b9dce87d…` already, so the boot1 line does not match although
 ## Inputs
 
 `tinycc/SOURCES` and `MANIFEST.sha256` pin four archives under
-`build-out/tinycc-inputs/`:
-- `tcc-0.9.26.tar.gz` and `mes-0.28.tar.gz`, with the URLs and sha256 of
-  live-bootstrap's `sources` files;
-- pnut at `abc34a52`;
-- live-bootstrap at `a49273cb`.
+`build-out/tinycc-inputs/`.  `tinycc/SOURCES` has no comments, because the
+seed-built `sha256sum --check` reads it as it is:
+- `tcc-0.9.26.tar.gz`: janneke's `tcc-0.9.26-1147-gee75a10c`, with the
+  name, URL and sha256 of live-bootstrap's `steps/tcc-0.9.26/sources`;
+- `mes-0.28.tar.gz`: GNU Mes 0.28, as `steps/mes-0.28/sources` pins it.
+  Its headers and libc source are what the junction compiles;
+- pnut at `abc34a52`, the commit seed-forth vendored.  Only
+  `portable_libc/` is read, the libc compiled into the first tcc;
+- live-bootstrap at `a49273cb`: the simple-patches, simple-patch and
+  checksum-transcriber, and the kaem text and checksums of the junction.
+
+GitHub generates the pnut and live-bootstrap archives from the commit and
+does not promise their bytes stay the same.  If one changes, the commit in
+its name is the identity of the source: compare `git archive` of that
+commit with the new archive's contents before moving its pin.
 
 `python3 tools/fetch-archives.py build-out/tinycc-inputs/<name>` downloads
 them.
