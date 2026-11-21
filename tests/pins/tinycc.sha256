@@ -1,0 +1,60 @@
+# tests/pins/tinycc.sha256 -- sha256 of what the TinyCC route builds that
+# live-bootstrap does not publish.  Not part of tests/pins/outputs.sha256
+# because only CHECK_TINYCC=1 builds the junction files.
+#   tinycc/tcc-first   build-out/tinycc/tcc-first, the first tcc, compiled by
+#                      seed Forth with Mes libc (tinycc/build-first-tcc.sh,
+#                      856,568 bytes);
+#                      the same in two checkouts at different paths
+#   tinycc/junction/usr/bin/tcc-boot0
+#                      build-out/tinycc/junction-root/usr/bin/tcc-boot0, what
+#                      the first tcc makes of tcc.c in live-bootstrap's
+#                      pass1.kaem (tests/tinycc/junction-check.sh).  MesCC's
+#                      tcc-mes makes ea464b2f...; from boot1 on the two
+#                      routes have the same bytes.  It equals what the
+#                      junction study's stand-ins built with gcc, tcc 0.9.27
+#                      and seed-cc make (c1696e57...).
+#   tinycc/bin-boot/*, tinycc/bin/*
+#                      build-out/tinycc/bin-boot/ and bin/, the source
+#                      preparation tools seed Forth builds in native mode
+#                      against M2libc (tinycc/build-tools.sh);
+#                      the same in two checkouts at different paths
+#   tinycc/hex0-handoff/boot1/...
+#                      what boot 1 of tests/tinycc/hex0-handoff-check.sh
+#                      hands to boot 2 besides tcc-mes and tcc-boot0: the
+#                      mes libc tcc-mes makes (all but libc.a equal what
+#                      live-bootstrap publishes after tcc-boot2) and the i386
+#                      kaem, cp, chmod, match, rm and hex0-export the first
+#                      tcc builds against it.  The old first tcc (7b2efd95,
+#                      pnut's libc) gave the same bytes in the host
+#                      junction (tinycc/lb-replay.sh stopped before
+#                      "# Install") and under K0; the first tcc with Mes
+#                      libc (d9e97270) gives them under K0.
+# When a change is meant to alter one, update its line in the same commit
+# and say why.
+d9e97270f8d39587b2ef57d675cf733aa239b11f288c75d6b2fcc4adf7019fec  tinycc/tcc-first
+c1696e57f25b77315a05d84b4e1a75002112cbd656156522c97be7ecd182c495  tinycc/junction/usr/bin/tcc-boot0
+71e4ff873a45c3a820166a2bf23d8ec2e0e3aab80192a9fd6ec3ab6ae495e17d  tinycc/bin-boot/ungz
+026a67a0c9f87fbfa5255237243f41610bcf4f53efcd3f715019081b703517a2  tinycc/bin-boot/untar
+a7f208c6401a7f5ef65dcf8585e9430290f0450f846528955231d252dc0b8126  tinycc/bin/catm
+4824a0ee8d45e75693e19e7cf2877f876e752ab62da4881dc6870bfc811b63f9  tinycc/bin/checksum-transcriber
+a343a053c2e14688d8de8e673d07a154d969a9b51bb12fccedb4c409c68ad10b  tinycc/bin/chmod
+29e26ae823f702af5b21f3ef4d1e59157e3ac3d444a84f3a754f000c50c6d74a  tinycc/bin/cp
+20b3735492a93222d33cc9caaa65d84eb343e32b6b6a65c20ef38d47a4a9af35  tinycc/bin/match
+0c511f41157ad07507bc23b1f5575fefcbaaee9d5090e1ed8b1b6bee8c009f26  tinycc/bin/mkdir
+8c7ff72c666928bb2a11c5cbc1fedee72acf51237208e4f9fabf6a711d82c2a1  tinycc/bin/rm
+6a665dc621af9c801c5fbefb034df3b48945fbd8a03a3e2940a752ce472f0329  tinycc/bin/sha256sum
+ecaa91caf41baec5a83433fd3119569e01aaa7971c0a32f9f1cde85b9d4145d8  tinycc/bin/simple-patch
+ba8a06172889a3e59c94cd50810db2513c78cf38445b7616efa5fd7f1fb71d25  tinycc/bin/ungz
+8d405aadcdce3ade00b9016bee8867d1ea9e89af551a051ceb8985d63bca7e21  tinycc/bin/untar
+76d280e0733f2c84aad180968167d789a825ac56526bddba4f100d6d74851027  tinycc/hex0-handoff/boot1/usr/lib/mes/crt1.o
+09d4f9821a2566f7e56381a19259c41bd97f3c5ed83f490705acbfd1139a7736  tinycc/hex0-handoff/boot1/usr/lib/mes/crti.o
+461ca1494737fab86fe1c1d3addeaf9d0ece413e353abcdea8674db3f700cda3  tinycc/hex0-handoff/boot1/usr/lib/mes/crtn.o
+84d12efe0d114d1c41eeeb4d3d73bc1a6f1ac551eee5acf933c055aaafafdbc7  tinycc/hex0-handoff/boot1/usr/lib/mes/libc.a
+12c07ae103e7e3b390150a79e5c600d88de14e9bb73a066f6342582729ef5a3f  tinycc/hex0-handoff/boot1/usr/lib/mes/libgetopt.a
+136f97c356445ef95c35ae1b6fb2f7a0546e3cf47b45cb4ee79d0a8f29cd04b4  tinycc/hex0-handoff/boot1/usr/lib/mes/tcc/libtcc1.a
+3b1ce3100e780e51e1d68b25a451e363b9aaf78f982194426cd7be37f4e8c4db  tinycc/hex0-handoff/boot1/usr/bin/kaem
+1b0c4cda107805d4f5ecd4b108874a5a4f1a512d9344e07141061e3fccf2360a  tinycc/hex0-handoff/boot1/usr/bin/cp
+04371ba28e47b13c0a835a18e58ded4f211516bfba98c518cf36a31d0c00528e  tinycc/hex0-handoff/boot1/usr/bin/chmod
+73dcfc1038ef762320d00a716e3a82f24cc79e38567a0a5161b65b1c4dffcd06  tinycc/hex0-handoff/boot1/usr/bin/match
+0bbaa390cf9d536da80f16d6748cca48b26cb70a7facef1f518135241ea7746f  tinycc/hex0-handoff/boot1/usr/bin/rm
+498dea62744eed530314e87c4864d0b84d7d676f0bfba6b9f52ceb3fe9bb851a  tinycc/hex0-handoff/boot1/usr/bin/hex0-export
