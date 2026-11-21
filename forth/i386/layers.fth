@@ -23,10 +23,8 @@ include cc/100-cc-expr.fth
 include cc/i386/100-divide.fth
 include cc/110-cc-decl.fth
 include cc/112-cc-stmt.fth
-include cc/114-cc-func.fth
 include cc/115-cc-native.fth
 include forth/i386/115-nzero.fth
-include cc/116-cc-prog.fth
 include cc/117-cc-native-program.fth
 include cc/i386/117-entry.fth
 include cc/118-cc-native-init.fth

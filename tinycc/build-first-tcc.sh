@@ -97,11 +97,12 @@ if [ "${1:-}" = --prepare ]; then
     exit 0
 fi
 
-# Compile.  Native mode loads 020 to 119 except 081 (seed-forth's
-# tools/tcc-start.fth list); 120's main is not loaded.
+# Compile.  Native mode loads 020 to 119 except 081 (object files) and 114
+# and 116 (the M2-Planet subset's functions and driver); 120's main is not
+# loaded.
 [ -x seed-forth ] || seed/build.sh > /dev/null
 layers=(forth/010-lib.fth)
-for n in 020 030 040 050 060 070 080 090 100 110 112 114 115 116 117 118 119; do
+for n in 020 030 040 050 060 070 080 090 100 110 112 115 117 118 119; do
     layers+=(cc/$n-*.fth)
 done
 rm -f "$OUT/tcc-first" "$OUT/compile.input"

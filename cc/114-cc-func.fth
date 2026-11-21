@@ -16,19 +16,6 @@ variable cc-fn-name-len
 variable cc-fn-param-count                        \ # params in current function
 variable cc-fn-prior-sym-id                       \ prior sk-func id for fwd-fixup walk; -1 if none
 
-\ Pre-baked literal "main" for cc-is-main? — laid out as 4 raw bytes (no length
-\ prefix here, because cc-is-main? only consumes 4 bytes).
-create cc-main-name-bytes  s, main
-
-\ cc-is-main? ( name-addr name-len -- f )  -1 if (addr, len) names "main".
-: cc-is-main?                                     ( addr len -- f )
-  dup [lit] 4 = if,
-    drop                                          ( addr )
-    cc-main-name-bytes swap [lit] 4 bytes-eq
-  else,
-    drop drop [lit] 0
-  then, ;
-
 \ cc-block-end? ( -- f )  After cc-next-token-keep, returns -1 if current
 \ token is '}'.  Helper used by the function body loop.
 : cc-block-end?

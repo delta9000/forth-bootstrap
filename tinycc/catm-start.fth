@@ -60,7 +60,8 @@
 : write 0 0 0 1 syscall6 ;
 : close 0 0 0 0 0 3 syscall6 ;
 \ The files, as build-tools.sh joins them for the other tools: the
-\ Forth library and compiler layers 020 to 119 without 081, catm's names,
+\ Forth library and the native-mode compiler layers (020 to 119 without
+\ 081, 114 and 116), catm's names,
 \ the driver, then the C source on the compiler's stdin.
 create out-path s0, build-out/tinycc/catm.input
 create f00 s0, forth/010-lib.fth
@@ -75,19 +76,17 @@ create f08 s0, cc/090-cc-emit.fth
 create f09 s0, cc/100-cc-expr.fth
 create f10 s0, cc/110-cc-decl.fth
 create f11 s0, cc/112-cc-stmt.fth
-create f12 s0, cc/114-cc-func.fth
-create f13 s0, cc/115-cc-native.fth
-create f14 s0, cc/116-cc-prog.fth
-create f15 s0, cc/117-cc-native-program.fth
-create f16 s0, cc/118-cc-native-init.fth
-create f17 s0, cc/119-cc-native-runtime.fth
-create f18 s0, tinycc/tools/catm.fth
-create f19 s0, tinycc/tool-compile.fth
-create f20 s0, tinycc/m2libc-native.c
-create f21 s0, vendor/stage0-posix/mescc-tools-extra/catm.c
+create f12 s0, cc/115-cc-native.fth
+create f13 s0, cc/117-cc-native-program.fth
+create f14 s0, cc/118-cc-native-init.fth
+create f15 s0, cc/119-cc-native-runtime.fth
+create f16 s0, tinycc/tools/catm.fth
+create f17 s0, tinycc/tool-compile.fth
+create f18 s0, tinycc/m2libc-native.c
+create f19 s0, vendor/stage0-posix/mescc-tools-extra/catm.c
 create file-list
   f00 , f01 , f02 , f03 , f04 , f05 , f06 , f07 , f08 , f09 , f10 ,
-  f11 , f12 , f13 , f14 , f15 , f16 , f17 , f18 , f19 , f20 , f21 ,
+  f11 , f12 , f13 , f14 , f15 , f16 , f17 , f18 , f19 ,
   0 ,
 variable out-fd
 variable in-fd

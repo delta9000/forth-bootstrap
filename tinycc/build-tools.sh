@@ -69,9 +69,9 @@ fail() { echo "build-tools: $*" >&2; exit 1; }
 rm -rf "$BIN" "$BOOT" "$OUT/lb-boot" "$OUT/lb" "$TS"
 mkdir -p "$BIN" "$BOOT" "$OUT/lb-boot" "$OUT/lb" "$TS"
 
-# Native mode loads 020 to 119 except 081, as for the first tcc.
+# Native mode loads 020 to 119 except 081, 114 and 116, as for the first tcc.
 layers=(forth/010-lib.fth)
-for n in 020 030 040 050 060 070 080 090 100 110 112 114 115 116 117 118 119; do
+for n in 020 030 040 050 060 070 080 090 100 110 112 115 117 118 119; do
     layers+=(cc/$n-*.fth)
 done
 

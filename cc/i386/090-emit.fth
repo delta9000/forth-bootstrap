@@ -575,7 +575,7 @@
 \ ===========================================================================
 
 \ cc-emit-global-ref ( slot -- )  The pair := the global's address, through
-\ a placeholder that cc-finalize-globals (116) patches.
+\ a placeholder that cc-finalize-globals (110) patches.
 : cc-emit-global-ref
   x{ b8 } cc-out-pos @ [lit] 0 cc-emit-4le        \ mov eax, imm32
   swap cc-gfixup-add

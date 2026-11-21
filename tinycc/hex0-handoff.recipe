@@ -19,7 +19,7 @@
 text /tmp/empty ""
 
 # ---- 1: the first tcc ----
-cat /tmp/tcc.input /forth/010-lib.fth /cc/020-cc-arena.fth /cc/030-cc-io.fth /cc/040-cc-prep.fth /cc/050-cc-lex.fth /cc/060-cc-types.fth /cc/070-cc-sym.fth /cc/080-cc-elf.fth /cc/090-cc-emit.fth /cc/100-cc-expr.fth /cc/110-cc-decl.fth /cc/112-cc-stmt.fth /cc/114-cc-func.fth /cc/115-cc-native.fth /cc/116-cc-prog.fth /cc/117-cc-native-program.fth /cc/118-cc-native-init.fth /cc/119-cc-native-runtime.fth /tinycc/tcc-compile.fth /build-out/tcc-sources/direct-input.c
+cat /tmp/tcc.input /forth/010-lib.fth /cc/020-cc-arena.fth /cc/030-cc-io.fth /cc/040-cc-prep.fth /cc/050-cc-lex.fth /cc/060-cc-types.fth /cc/070-cc-sym.fth /cc/080-cc-elf.fth /cc/090-cc-emit.fth /cc/100-cc-expr.fth /cc/110-cc-decl.fth /cc/112-cc-stmt.fth /cc/115-cc-native.fth /cc/117-cc-native-program.fth /cc/118-cc-native-init.fth /cc/119-cc-native-runtime.fth /tinycc/tcc-compile.fth /build-out/tcc-sources/direct-input.c
 run 0 /tmp/tcc.input /tmp/tcc.out - /seed-forth
 same /tmp/empty /tmp/tcc.out
 say "hex0-handoff: the first tcc, built by seed Forth under K0:"

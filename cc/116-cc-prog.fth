@@ -474,46 +474,6 @@ variable cc-gdecl-ptr-depth
     [lit] 205 cc-die
   then, ;
 
-\ cc-finalize-globals ( -- )  After the entire program has been parsed and
-\ all functions emitted, append cc-globals-buf to cc-out-buf, place the bss
-\ after it, and patch every recorded fixup to point at the now-known global
-\ vaddrs.
-\
-\ cc-globals-base-vaddr is set to cc-base-vaddr + (cc-out-pos at the moment
-\ globals are appended).  The bss starts at the next 8-aligned vaddr (the
-\ file is padded with zeros to reach it), and cc-bss-size tells
-\ cc-finalize-elf how much memory it adds.  Then each fixup's imm64
-\ placeholder is overwritten with the slot's vaddr: cc-globals-base-vaddr
-\ + slot for a data slot, cc-bss-base-vaddr + (slot - cc-bss-flag) for a
-\ bss one.
-: cc-finalize-globals
-  cc-here-vaddr cc-globals-base-vaddr !
-  \ Append cc-globals-pos bytes from cc-globals-buf to cc-out-buf.
-  [lit] 0
-  begin, dup cc-globals-pos @ < while,
-    dup cc-globals-buf + c@ cc-emit-byte
-    1+
-  repeat, drop
-  \ Align the bss, if there is one.
-  cc-bss-pos @ if,
-    begin, cc-out-pos @ [lit] 7 and while, [lit] 0 cc-emit-byte repeat,
-  then,
-  cc-here-vaddr cc-bss-base-vaddr !
-  cc-bss-pos @ cc-bss-size !
-  \ Patch each fixup.  i walks 0..cc-gfixup-count-1.
-  [lit] 0
-  begin, dup cc-gfixup-count @ < while,
-    dup cc-gfixup-slot     cell[] @                \ slot
-    dup cc-bss-flag < if,
-      cc-globals-base-vaddr @ +                     \ vaddr = base + slot
-    else,
-      cc-bss-flag - cc-bss-base-vaddr @ +           \ vaddr = bss base + offset
-    then,
-    over cc-gfixup-out-pos cell[] @                \ patch-offset
-    cc-out-patch-address
-    1+
-  repeat, drop ;
-
 \ cc-struct-def-ahead? ( -- f )  The current token is `struct`.  True iff
 \ the next two are TAG '{' — a struct definition, not a declaration that
 \ uses the type.  Restores the lexer state.
@@ -611,15 +571,6 @@ variable cc-gdecl-ptr-depth
 
   [lit]  15 cc-emit-byte
   [lit]   5 cc-emit-byte ;                        \ syscall
-
-\ cc-patch-call-main ( -- )  Compute and store the call's rel32.
-\ rel32 = main_vaddr - vaddr_of_next_instr
-\       = main_vaddr - (cc-base-vaddr + cc-call-main-patch + 4)
-: cc-patch-call-main
-  cc-main-vaddr @
-  cc-base-vaddr cc-call-main-patch @ + [lit] 4 + -
-  cc-call-main-patch @
-  cc-out-patch-4le ;
 
 \ ===========================================================================
 \ Top-level driver
@@ -844,29 +795,6 @@ create cc-name-intptr_t  s, intptr_t
   cc-name-size_t   [lit] 6  sk-typedef [lit] 0  ty-int [lit] 0 ty-make  cc-sym-add drop
   cc-name-ssize_t  [lit] 7  sk-typedef [lit] 0  ty-int [lit] 0 ty-make  cc-sym-add drop
   cc-name-intptr_t [lit] 8  sk-typedef [lit] 0  ty-int [lit] 0 ty-make  cc-sym-add drop ;
-
-\ cc-check-fns-defined ( -- )  After the whole program: a function that was
-\ called or used as a value but never defined still has pending call or
-\ address fixups — each would run a rel32 of 0 (falling through to the next
-\ instruction) or load address 0.  Die 206 instead.  Then die 207 if there
-\ is no main for the entry stub to call.  memset is registered above with
-\ no body, so a program that uses it dies here too: this compiler has no
-\ memset to link.
-: cc-check-fns-defined
-  [lit] 0                                         ( id )
-  begin, dup cc-sym-count @ < while,
-    dup cc-sym-kind-of sk-func = if,
-      dup cc-sym-call-fixups @  over cc-sym-addr-fixups @  or if,
-        cc-target-lp64 @ if,
-          dup cc-sym-name-addr cell[] @ over cc-sym-name-len cell[] @ cc-err-write
-          cc-die-end [lit] 1 cc-err-write
-        then,
-        [lit] 206 cc-die
-      then,
-    then,
-    1+
-  repeat, drop
-  cc-main-vaddr @ 0= if, [lit] 207 cc-die then, ;
 
 \ cc-parse-program ( -- )  Emit entry stub, emit libc shims, register the
 \ late shims, the one external prototype and built-in typedefs, parse all

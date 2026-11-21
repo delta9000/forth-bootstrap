@@ -120,9 +120,9 @@ has read it already, section 6), with `forth/i386/020-cc-arena.fth` for
     cc/i386/065-ilp32-types.fth                       cc/070-cc-sym.fth
     cc/i386/080-elf32.fth     cc/090-cc-emit.fth      cc/i386/090-emit.fth
     cc/100-cc-expr.fth        cc/i386/100-divide.fth
-    cc/110-cc-decl.fth        cc/112-cc-stmt.fth      cc/114-cc-func.fth
+    cc/110-cc-decl.fth        cc/112-cc-stmt.fth
     cc/115-cc-native.fth      forth/i386/115-nzero.fth
-    cc/116-cc-prog.fth        cc/117-cc-native-program.fth
+    cc/117-cc-native-program.fth
     cc/i386/117-entry.fth     cc/118-cc-native-init.fth
     cc/i386/119-runtime.fth
 
