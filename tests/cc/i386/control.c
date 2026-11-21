@@ -28,6 +28,12 @@ apply (int (*f) (int), int v)
   return f (v);
 }
 
+/* A 4-byte function pointer in memory, with other objects after it. */
+int (*chosen) (int) = square;
+int after_chosen = -1;
+struct handler { int (*run) (int); int tag; };
+struct handler handlers[2] = { { twice, 7 }, { square, 8 } };
+
 char
 as_char (int v)
 {
@@ -101,6 +107,11 @@ main (int argc, char **argv)
   show ("pointer", f (21));
   f = square;
   show ("pointer2", (*f) (5));
+  show ("global-pointer", chosen (9));
+  chosen = twice;
+  show ("global-pointer2", chosen (9) + after_chosen);
+  show ("member-pointer", handlers[1].run (handlers[0].tag));
+  show ("member-pointer2", handlers[0].run (handlers[1].tag));
   show ("as-char", as_char (0x1234567f + 1));
   show ("as-ushort", as_ushort (-2));
   for (i = -2; i < 4; i = i + 1)

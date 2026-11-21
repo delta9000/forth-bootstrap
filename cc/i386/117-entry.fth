@@ -16,7 +16,8 @@
 \    esp, and a program that reads an uninitialized local (tcc's getcwd
 \    buffer, which ends up in its debug output) would depend on them.  The
 \    stub zeroes cc-entry-stack-zero bytes below esp, after the two system
-\    calls, which write there themselves.
+\    calls, which write there themselves.  The first tcc needs far less:
+\    the whole junction replay passes with a 48 KiB stack limit.
 \ 3. The initializers of globals run (118), then main (argc, argv), each
 \    argument in an 8-byte slot, argc nearest the return address.  The
 \    kernel left argc at [esp] and argv's first element at [esp+4].
