@@ -33,9 +33,10 @@ GCC 4.0.4, GCC 10.5.0 and Linux (`chain/`).  `README.md` has the map,
   files in step with it.
 - Repository paths are root-relative everywhere, and K1's root is the
   repository root, so the guest uses the same paths with a leading `/`.
-- No AI attribution in commits, PRs or files: no Co-Authored-By trailers,
-  session links or "generated with" lines.  The AI credit lives only in
-  HISTORY.md's section on how seed-forth was built.
+- AI use is disclosed plainly, once: the README and PR descriptions say
+  that most of the code was written with AI models under the owner's
+  direction, and HISTORY.md records how.  No Co-Authored-By trailers,
+  session links or "generated with" lines in commits or files.
 
 ## Checks
 

@@ -1,5 +1,71 @@
 # forth-bootstrap
 
+forth-bootstrap builds a C compiler from a 229-byte binary seed, with as
+little hand-written code as it can manage, and checks the result against
+binaries that other people built by a different path.
+
+stage0-posix's `hex0-seed` assembles a 1,772-byte Forth written as
+commented hex0.  A C compiler written in that Forth compiles TinyCC 0.9.26
+(janneke's bootstrappable fork, the source live-bootstrap's own
+`tcc-0.9.26` step builds) together with GNU Mes's C library.  That tcc
+takes the place of the copy MesCC would build, and live-bootstrap's step
+runs on from there, on live-bootstrap's own kernel, builder-hex0.  From `tcc-boot1` on, every
+binary the step produces is byte-identical to the one live-bootstrap
+publishes: `/usr/bin/tcc` is `b9dce87d...`, and `libc.a`, `libgetopt.a`,
+the crt files and `libtcc1.a` match too.  live-bootstrap reaches those
+binaries through M2-Planet and GNU Mes; this route uses neither.
+
+```
+hex0-seed (229 bytes)
+ ├─ K0 (kernel/k0/k0.hex0, 1,461 bytes)            boot 1, x86_64, under QEMU
+ │   └─ seed-forth (seed/000-seed.hex0, 1,772 bytes)
+ │       └─ Forth library (forth/010-lib.fth)
+ │           └─ C compiler in Forth, native mode (cc/020-119)
+ │               ├─ ungz, untar, sha256sum, simple-patch, ... against M2libc
+ │               └─ tcc 0.9.26 + Mes libc                  (tinycc/)
+ │                   └─ tcc-boot0, Mes libc for i386, kaem, written to disk
+ └─ builder-hex0 (live-bootstrap's)                 boot 2, i386
+     └─ live-bootstrap's steps/tcc-0.9.26: tcc-boot1, tcc  = live-bootstrap's
+```
+
+Why it is built this way:
+
+- What has to be trusted should be small enough to read.  To reach that
+  tcc, this route's own source (the seed, the Forth library, the
+  compiler's native-mode layers, two libc shims and K0) is about 9,500
+  lines.  The stage0-posix, M2-Planet, Mes and MesCC path to the same
+  compiler is about 35,000.  Both counts leave out comments and blank
+  lines, and the inputs the two routes share (Mes libc, M2libc, stage0's
+  tool sources, builder-hex0).
+- A match is evidence; a build that only works is not.  Two paths that
+  share no compiler, written by different people in different languages,
+  produce the same `tcc`.  A compromised compiler on either path would have
+  to be reproduced exactly on the other to go unnoticed.
+- Existing, small, published components are used where they exist:
+  builder-hex0 for the i386 stages, Mes's and stage0's C libraries as
+  sources, live-bootstrap's own step scripts.  Each one this route does not
+  rewrite is code nobody has to review again for it.
+- Every byte of the seed is checked against GNU `as` on its own comments
+  (`tests/seed/asm-check.py`), so the seed can be read as assembly.
+
+`tinycc/README.md` describes the route, its pins and what the host still
+does.  `CHECK_HEX0_HANDOFF=1 ./check-all.sh` runs both boots (about a
+minute with KVM); `CHECK_TINYCC=1` replays the same step in a sandbox on the
+host kernel (seconds).
+
+Most of this code was written with AI models under my direction;
+HISTORY.md records how.  I am reviewing it chapter by chapter through the
+book.
+
+## The GCC route
+
+The route this repository was first built for goes on to GCC and Linux
+without TinyCC or Mes, and the sections from Names onward describe it.  It
+needs a far larger compiler and a C runtime, and several of its packages
+run `configure` scripts and parsers shipped pre-generated in their release
+archives.  It is kept, and still checked, as a recorded result while that
+code is removed; it is no longer the route offered for trust.
+
 From a 229-byte hex0 program to a Linux kernel, with no compiler from
 outside: every compiler that builds the route is itself built by the route.
 stage0-posix's `hex0-seed` assembles a 1,772-byte Forth; a C compiler
