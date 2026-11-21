@@ -348,6 +348,7 @@ vendor/stage0-posix/mescc-tools-extra/untar.c
 # climb to gcc-10.5.0 and Linux.
 LINUX = """
 MANIFEST.sha256
+chain/gcc-direct/binutils-2.30.generated
 chain/gcc-direct/binutils.sh
 chain/gcc-direct/census.sh
 chain/gcc-direct/chain-lib.sh
