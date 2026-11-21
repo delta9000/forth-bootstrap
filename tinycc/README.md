@@ -329,8 +329,86 @@ Checks, all on the host through its IA32 support (`CHECK_I386=1
   encoder of `cc/090-cc-emit.fth` or REX prefix of a later layer is
   reached when the first tcc is compiled.
 
-Not done here: the i386 seed, running any of this on builder-hex0, and
-the one-boot route.
+Not done here: the i386 seed.
+
+## One boot on builder-hex0
+
+`tests/tinycc/i386-one-boot-check.sh`, also `CHECK_I386_BOOT=1
+./check-all.sh`, runs live-bootstrap's whole tcc-0.9.26 step on
+builder-hex0 in one QEMU boot of 15 to 17 s with KVM, from the i386 first tcc
+and the i386 tools.  It is an experiment on the way to a one-boot route:
+the programs on the disk are still built on the host.
+
+**The disk.**  `tinycc/i386-one-boot-disk.py` writes it in the layout of
+live-bootstrap's `lib/generator.py`: builder-hex0's stage 1 (assembled by
+hex0-seed), its stage-2 hex0 source, zeros to sector 175, then:
+- the directories live-bootstrap's `seed.kaem` and disk have, and ours:
+  `/x86/bin`, `/external/distfiles`, `/first`;
+- `/usr/bin/tcc-mes`, the i386 first tcc (`92d11438…`);
+- `/x86/bin/`, the second directory of `steps/env`'s PATH, with the eleven
+  i386 tools of `tinycc/build-tools-i386.sh` and `kaem`;
+- `/external/distfiles/` with the three archives of `tinycc/SOURCES`, and
+  that file with their paths in the boot;
+- `/hex0-export.c` (`tinycc/hex0-export.c`) and the script, `/kaem.run`;
+- the command `/x86/bin/kaem --verbose`.
+
+**kaem is host-built.**  The i386 first tcc compiles
+`vendor/mescc-tools/Kaem` against the Mes libc it has just made, as boot 1
+of the hand-off does under K0, but here on the host's Linux kernel through
+its IA32 support, in the bwrap root of `tests/tinycc/junction-check.sh
+--i386`.  It has the bytes of the hand-off's kaem (`3b1ce310…`).
+
+**The script** (`build-out/tinycc/i386-one-boot/i386-one-boot.kaem`) is
+live-bootstrap's text, the lines `tinycc/lb-replay.sh` runs on the host,
+cut at the same markers:
+1. `steps/env`'s and `seed.kaem`'s variables.
+2. Ours: `sha256sum -c` of the three archives; `ungz` and `untar` of
+   live-bootstrap's archive in `/`; `cp` of the five files of it that
+   pass1.kaem reads (`sources` and the four simple-patch files) to
+   `/steps/tcc-0.9.26/`.  builder-hex0 cannot rename a directory, and
+   tcc's `-g` records the working directory, so the build has to be at
+   live-bootstrap's path.
+3. Of `steps/mes-0.28/pass1.kaem`: the unpacking and the header install.
+4. `steps/tcc-0.9.26/pass1.kaem` from "# Vars" to "# Checksums", without
+   the two MesCC commands and the `cp` and `chmod` that install their
+   tcc-mes: the archive check, `ungz`, `untar`, the two `simple-patch`
+   lines, then tcc-mes, tcc-boot0, tcc-boot1 and tcc-boot2.
+5. Ours, before "# Install": `cp` of the six library files tcc-mes made to
+   `/first`, because the later stages overwrite them, and `tcc-mes -static`
+   of `hex0-export`.  Ours, last: `hex0-export /dev/hda` with the files
+   below.
+
+The host reads the drive (`tinycc/hex0-records.py`) and hashes:
+
+| file | expected | the boot |
+|---|---|---|
+| `/usr/bin/tcc-mes` | `92d11438…` (pinned; MesCC's is `2b15c85f…`) | same |
+| `/usr/bin/tcc-boot0` | `c1696e57…` (pinned; MesCC's is `ea464b2f…`) | same |
+| `/usr/bin/tcc-boot1` | `d9116def…` (live-bootstrap) | same |
+| `/usr/bin/tcc` | `b9dce87d…` (live-bootstrap) | same |
+| `/usr/lib/mes/libc.a` | `a6172e52…` (live-bootstrap) | same |
+| `/usr/lib/mes/libgetopt.a`, `crt1.o`, `crti.o`, `crtn.o`, `tcc/libtcc1.a` | live-bootstrap's | same |
+| `/first/libc.a` | `84d12efe…` (pinned, `hex0-handoff/boot1`) | same |
+| `/first/crt1.o`, `crti.o`, `crtn.o`, `libtcc1.a`, `libgetopt.a` | pinned, `hex0-handoff/boot1` | same |
+| `/x86/bin/kaem` | `3b1ce310…` (pinned, `hex0-handoff/boot1`) | same |
+| `/usr/bin/hex0-export` | `498dea62…` (pinned, `hex0-handoff/boot1`) | same |
+
+**What it shows.**  The Forth compiler's i386 programs run on builder-hex0
+as they run on Linux: the first tcc and the tools make the
+same bytes there, with no change to the back end, the entry stub or the
+two system-call layers.  The M2libc-built `sha256sum` hashes correctly in
+the boot, which the Mes-libc one of the hand-off does not.
+
+**What it does not show.**
+- No program on the disk has more than 0x20000 bytes of bss (the first
+  tcc has 80,592), so builder-hex0 starts each with its break above the
+  bss and the entry stub's brk is never made in this boot.
+- The host builds every program on the disk: the x86-64 seed-forth
+  compiles the first tcc and the tools, and the first tcc compiles kaem
+  under Linux.
+- The host cuts the script from the pinned kaem files (python3), checks
+  and unpacks builder-hex0's archive with the seed-built tools, runs
+  hex0-seed for stage 1, writes the disk, starts QEMU and reads the drive.
 
 ## What does not reproduce
 

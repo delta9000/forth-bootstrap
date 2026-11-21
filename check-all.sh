@@ -54,6 +54,14 @@
 #                   tools under strace, and the gcc -m32 stand-in (under a
 #                   minute; needs what CHECK_TINYCC needs, gcc -m32, as,
 #                   objcopy, strace and python3; SKIP without)
+#   CHECK_I386_BOOT=1  tests/tinycc/i386-one-boot-check.sh: builder-hex0
+#                   boots a disk with the i386 first tcc, the i386 tools,
+#                   a kaem and the archives, and in that one boot unpacks
+#                   the sources and runs pass1.kaem to live-bootstrap's
+#                   published tcc and libraries (under half a minute with KVM;
+#                   needs what CHECK_TINYCC needs, QEMU, KVM, python3 and
+#                   the archive of tinycc/hex0-handoff.SOURCES; SKIP
+#                   without them)
 #   CHECK_HEX0_HANDOFF=1  tests/tinycc/hex0-handoff-check.sh: K0 runs seed
 #                   Forth, which builds the first tcc; the first tcc makes
 #                   tcc-boot0 and mes libc and writes live-bootstrap's
@@ -144,6 +152,13 @@ if [ "${CHECK_I386:-0}" = 1 ]; then
         run "16-i386-corpus" tests/cc/i386/run-corpus.sh
         run "17-i386-junction" tests/tinycc/i386-syscall-check.sh
         run "18-i386-standin" tests/tinycc/i386-standin-check.sh
+    fi
+fi
+if [ "${CHECK_I386_BOOT:-0}" = 1 ]; then
+    if why=$(tests/tinycc/i386-one-boot-check.sh --probe); then
+        run "19-i386-one-boot" tests/tinycc/i386-one-boot-check.sh
+    else
+        skip "19-i386-one-boot" "$why"
     fi
 fi
 if [ "${CHECK_HEX0_HANDOFF:-0}" = 1 ]; then

@@ -274,7 +274,8 @@ it: not on an SSD.
 
 `./check-all.sh` runs the quick checks; `CHECK_CHAIN=1` and
 `CHECK_K1=smoke|linux` add the long ones, `CHECK_TINYCC=1` the TinyCC
-junction and `CHECK_I386=1` the i386 back end (`tinycc/README.md`).
+junction, `CHECK_I386=1` the i386 back end and `CHECK_I386_BOOT=1` its
+programs on builder-hex0 (`tinycc/README.md`).
 
 ## Reading order
 

@@ -35,7 +35,10 @@
 #                      pnut's libc) gave the same bytes in the host
 #                      junction (tinycc/lb-replay.sh stopped before
 #                      "# Install") and under K0; the first tcc with Mes
-#                      libc (d9e97270) gives them under K0.
+#                      libc (d9e97270) gives them under K0.  The i386 first
+#                      tcc (92d11438) gives the same libc, kaem and
+#                      hex0-export on Linux and on builder-hex0
+#                      (tests/tinycc/i386-one-boot-check.sh).
 # When a change is meant to alter one, update its line in the same commit
 # and say why.
 d9e97270f8d39587b2ef57d675cf733aa239b11f288c75d6b2fcc4adf7019fec  tinycc/tcc-first
