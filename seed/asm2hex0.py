@@ -149,7 +149,7 @@ def main():
                 elif op in labels:
                     ops[i] = f"0x{ORG + labels[op]:X}"
             code = mnemonic + (" " + ", ".join(ops) if ops else "")
-        emit(data, code + (f" ; {note}" if note else ""))
+        emit(data, f"{code:<28} ; {note}" if note else code)
 
     text = re.sub(r"\n{3,}", "\n\n", "\n".join(lines).strip("\n")) + "\n"
     out.write_text(text)

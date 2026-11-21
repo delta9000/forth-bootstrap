@@ -27,7 +27,7 @@
 ;; left out and where it went.
 ;;
 ;; How to read this file: the two ELF headers, then the code in the order
-;; it runs: _start, the read-evaluate loop (repl) and the routines it
+;; it runs: _start, the read-evaluate loop (repl) and the routines only it
 ;; calls, then the 21 words.  A word is its dictionary header (link,
 ;; flags, nlen, name) directly followed by its machine code, so a word's
 ;; execution token (xt) is the address of its code.  Every line is one
@@ -194,13 +194,6 @@ exit:                           ; exit(edi); never returns
         mov eax, 60             ; SYS_exit
         syscall
 
-read_char:                      ; ( -- ) al = the next input byte, 0 at end of input.  Keeps rcx.
-        push rcx                ; key's syscall overwrites rcx
-        call key_code           ; ( -- c )
-        pop rcx
-        mov eax, edi            ; al = c
-        jmp drop_code           ; ( c -- ) and return to our caller
-
 compile_call:                   ; ( xt -- ) lay down CALL xt (E8 rel32) at HERE
         mov rax, [rbx+HERE]
         mov byte [rax], 0xE8    ; the CALL opcode
@@ -219,7 +212,8 @@ lit_code:                       ; ( -- n ) push the 8-byte cell after the CALL, 
         jmp rax                 ; resume there
 
 ;; ===== The 21 words =====
-;; The reader first: token and the word it reads through, key.
+;; The reader first: token, its helper read_char, and the word they read
+;; through, key.
 
 HEADER token, "token", 0
 token_code:                     ; ( -- c-addr u ) the next token from stdin, in the TIB; u = 0 at end of input
@@ -266,18 +260,27 @@ token_code:                     ; ( -- c-addr u ) the next token from stdin, in 
         mov rdi, rcx            ; u = length
         ret
 
+read_char:                      ; ( -- ) al = the next input byte, 0 at end of input.  Keeps rcx.
+        push rcx                ; key's syscall overwrites rcx
+        call key_code           ; ( -- c )
+        pop rcx
+        mov eax, edi            ; al = c
+        jmp drop_code           ; ( c -- ) and return to our caller
+
 HEADER key, "key", 0
 key_code:                       ; ( -- c ) read one byte from stdin; 0 at end of input
         call dup_code           ; push the old TOS
         xor eax, eax            ; SYS_read
-        xor edi, edi            ; fd 0 (stdin); also c = 0, kept if nothing is read
+        xor edi, edi            ; fd 0 (stdin)
         lea rsi, [rbx+KEYBUF]   ; buf
         mov edx, 1              ; count 1
         syscall                 ; overwrites rcx and r11
         test rax, rax
-        jle .done               ; 0 bytes = end of input (negative = error): c = 0
+        jle .end                ; 0 bytes read = end of input; negative = error, taken as the same
         movzx edi, byte [rsi]   ; c = the byte
-.done:
+        ret
+.end:
+        xor edi, edi            ; c = 0
         ret
 
 HEADER find, "find", 0
@@ -308,7 +311,7 @@ find_code:                      ; ( c-addr u -- xt | 0 ) look a name up in the d
         jmp .next
 .hit:
         mov [rbx+LAST_FOUND], rdx
-        lea rdi, [rdx+rdi+10]   ; xt = header + 10 + nlen
+        lea rdi, [rdx+rdi+10]   ; xt = header + 10 + nlen (rdi is u, and u = nlen here)
         ret
 .miss:
         xor edi, edi            ; not found: 0

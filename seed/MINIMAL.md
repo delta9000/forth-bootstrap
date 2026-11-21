@@ -265,19 +265,19 @@ the new memory-map form: sysvar names are offsets from `rbx`).
 
 | | 1,772-byte seed | this seed |
 |---|---|---|
-| file | 1,772 | 1,092 |
+| file | 1,772 | 1,091 |
 | ELF headers | 120 | 120 |
 | dictionary header fields | 421 (32 headers) | 267 (21 headers) |
-| code | 1,231 | 705 |
-| instructions (lines of machine code) | 338 | 220 |
+| code | 1,231 | 704 |
+| instructions (lines of machine code) | 338 | 222 |
 | words with a header | 32 | 21 |
 
-Where the 705 bytes of code are:
+Where the 704 bytes of code are:
 
 | routine | bytes | | routine | bytes |
 |---|---|---|---|---|
-| `_start` | 26 | | `token` | 82 |
-| `repl` | 61 | | `key` | 29 |
+| `_start` | 26 | | `token` | 78 |
+| `repl` | 61 | | `key` | 32 |
 | `number` | 74 | | `find` | 64 |
 | `fatal` | 33 | | `:` | 61 |
 | `end_of_input`, `exit` | 9 | | `;` | 22 |
@@ -321,7 +321,8 @@ address the processor mispredicts.  `./check-all.sh` takes 29.9 s with
 either seed.  HERE is 0x40F2xx after `cc/020` (0x40F0xx before), below
 the 0x410000 that `skip-vm-pages` needs.
 
-Every oracle, on a clean `build-out`, with `seed-forth` 9c1de563...:
+Every oracle, on a clean `build-out`, with the seed as it is after the
+review of section 4 (`seed-forth` c7d82c51...):
 
 - `./check-all.sh`: 10 OK, 0 SKIP, 0 FAIL; `check-outputs: 5 as pinned,
   0 differ, 0 not built` (seed-cc, seed-ar, Stage A's `cc-out-v1`, the K1
@@ -331,7 +332,7 @@ Every oracle, on a clean `build-out`, with `seed-forth` 9c1de563...:
   six libraries the same as live-bootstrap's.
 - `kernel/k1/run-chain.sh --direct-smoke` (the seed under K0 in QEMU):
   PASS.
-- `tests/seed/asm-check.py`: GNU as on the comments writes 1092 of 1092
+- `tests/seed/asm-check.py`: GNU as on the comments writes 1091 of 1091
   bytes; `seed/check.sh`: nasm's bytes equal hex0-seed's.
 
 Not run: `CHECK_CHAIN=1` and `CHECK_K1=linux`.
@@ -341,3 +342,66 @@ quotes `seed/000-seed.hex0`, `forth/010-lib.fth` and
 `cc/020-cc-arena.fth` byte for byte, and its seed chapters teach the 32
 primitives in the old order; `HISTORY.md` and the results table in
 `README.md` still describe the 1,772-byte seed as history.
+
+## 4. Readability review
+
+The seed was read top to bottom, in the hex0, as a reviewer who trusts
+nothing would read it.  What was changed, and where size and clarity
+pulled against each other:
+
+Changed for clarity, at a cost in bytes:
+
+- `key` zeroed `rdi` once for two purposes: the fd argument, and the
+  answer at end of input.  It now has its own `xor edi, edi` on an
+  end-of-input path (+3 bytes).
+- `read_char` sat among the loop's routines; it moved next to `token`,
+  its only caller (and `token`'s jump to `fatal` became short, -4 bytes).
+
+Chosen for size, and why it is still clear enough:
+
+- `rbx` as the sysvar page (about 75 bytes).  One more reserved register,
+  stated in the conventions block and in `cc/020`'s note on native words.
+  The lines get shorter and name what they touch: `mov rax, [rbx+HERE]`.
+- `jmp drop_code` at the end of `>r`, `!`, `c!`, `compile_call` and
+  `read_char`, and `call dup_code` at the start of `key`, `state`, `r>`,
+  `lit` and `token` (3 to 6 bytes each).  Each such line carries the stack
+  effect; the alternative is the same two instructions written out ten
+  more times.
+- `test ch, ch` for "length reached 256" (4 bytes less than `cmp ecx,
+  256`).  The old seed had the same line with `bh`; its comment says what
+  `ch` is.
+- `number` starts from the 0 that `find` left on the stack instead of
+  zeroing a register.  The routine's stack comment, `( 0 -- n | )`, is
+  that fact.
+- Whitespace is one compare, `cmp al, 0x20`, with end of input (0) falling
+  on the whitespace side; the two loops that would spin on it test for 0
+  first.  The header comment of `token` says so.  Four compares, as
+  before, would cost about 14 bytes more.
+- `cmp eax, 9` / `ja` after subtracting '0' rejects bytes on both sides of
+  the digits with one unsigned compare; the line says so.
+
+Chosen for clarity over size:
+
+- `find` compares names with a plain indexed loop (20 bytes) instead of
+  `repe cmpsb` with two registers saved around it (15), whose result for
+  an empty name depends on flags left by an earlier compare.
+- `0=` is `test`, `sete`, `movzx`, `neg` (15 bytes), not `cmp rdi, 1` /
+  `sbb rdi, rdi` (7).
+- Pointers are moved with 64-bit instructions (`add rbp, 8`) although
+  every address fits in 32 bits; only constants and counters use the
+  32-bit forms, and the conventions block says what those do to the upper
+  half.
+- No entry-state assumptions except the zero-filled segment (ELF's
+  definition of p_memsz > p_filesz, relied on for STATE and LAST_FOUND).
+  The registers are set, not assumed.
+- The ELF headers stay two full, separate structures.
+
+In the library, the two definitions that a reader has to stop at are
+`: execute  >r ;` and `0branch`.  Both are short, both have the
+explanation next to them, and both are Forth that `test.sh` exercises
+(every `if,` and loop in the repository goes through `0branch` until
+`cc/020` lays inline jumps); in the old seed they were 12 and 28 bytes of
+machine code.
+
+Left as it was although it could be smaller: the `"tok?"` message, the
+256-byte check, `\` comments in the reader, `*` and `/` (section 2).

@@ -2,7 +2,7 @@
 
 From a 229-byte hex0 program to a Linux kernel, with no compiler from
 outside: every compiler that builds the route is itself built by the route.
-stage0-posix's `hex0-seed` assembles a 1,092-byte Forth; a C compiler
+stage0-posix's `hex0-seed` assembles a 1,091-byte Forth; a C compiler
 written in that Forth builds a C driver, a shell and the first Unix tools;
 those build GCC 4.0.4 until it reproduces itself, then GCC 10.5.0, then
 Linux 7.2.8.  The whole run can happen inside two small kernels under QEMU:
@@ -13,7 +13,7 @@ The terms in the tree below are defined under Names.
 
 ```
 hex0-seed (229 bytes)
- └─ seed-forth (seed/000-seed.hex0, 1,092 bytes)
+ └─ seed-forth (seed/000-seed.hex0, 1,091 bytes)
      └─ Forth library (forth/010-lib.fth)
          └─ C compiler in Forth (cc/020-141) ── seed-cc, seed-ar (cc/driver/)
              └─ kaem, mescc-tools-extra, make 3.82, sed, grep, gawk, coreutils,
@@ -147,7 +147,7 @@ The steps below run them one at a time, and then the long runs.
 **1. The seed and the Forth** (seconds):
 
 ```sh
-seed/build.sh                      # seed-forth, 1,092 bytes
+seed/build.sh                      # seed-forth, 1,091 bytes
 ./test.sh                          # seed primitives, 010-lib.fth, the first compiler layers
 tests/asm/hi-check.sh              # 130-asm.fth assembles a small M1 program; it prints "hi"
 python3 tests/seed/asm-check.py    # 000-seed.hex0's bytes equal GNU as on its comments (needs as)

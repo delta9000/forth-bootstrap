@@ -1,6 +1,6 @@
 # seed/
 
-`000-seed.hex0` is the whole starting program: a 1,092-byte x86-64 Linux
+`000-seed.hex0` is the whole starting program: a 1,091-byte x86-64 Linux
 ELF written as commented hexadecimal, one instruction per line with its
 assembly as a comment. stage0-posix's 229-byte `hex0-seed` turns it into
 `seed-forth` byte for byte (`build.sh`). It is a Forth with two stacks

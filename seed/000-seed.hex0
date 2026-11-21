@@ -16,7 +16,7 @@
 ;; left out and where it went.
 ;;
 ;; How to read this file: the two ELF headers, then the code in the order
-;; it runs: _start, the read-evaluate loop (repl) and the routines it
+;; it runs: _start, the read-evaluate loop (repl) and the routines only it
 ;; calls, then the 21 words.  A word is its dictionary header (link,
 ;; flags, nlen, name) directly followed by its machine code, so a word's
 ;; execution token (xt) is the address of its code.  Every line is one
@@ -59,7 +59,7 @@
 00 00 00 00 00 00 00 00                   ; p_offset = 0
 00 00 40 00 00 00 00 00                   ; p_vaddr  = 0x400000
 00 00 40 00 00 00 00 00                   ; p_paddr  = 0x400000 (ignored on Linux)
-44 04 00 00 00 00 00 00                   ; p_filesz = 1092 (the whole file)
+43 04 00 00 00 00 00 00                   ; p_filesz = 1091 (the whole file)
 00 00 00 01 00 00 00 00                   ; p_memsz  = 0x1000000 (16 MiB; the kernel zero-fills past the file)
 00 10 00 00 00 00 00 00                   ; p_align  = 0x1000
 
@@ -83,34 +83,34 @@
 ;; A write to a 32-bit register (mov edi, 2) clears the upper half of the
 ;; 64-bit one, so it is used where the value fits in 32 bits.
 ;; ----- _start @ 0x078  entry point: the two stacks' registers and the sysvars -----
-BD 00 10 41 00                            ; mov ebp, 0x411000 ; data-stack base (empty: TOS holds nothing yet)
-BB 00 30 41 00                            ; mov ebx, 0x413000 ; the sysvar page
-48 C7 43 08 23 04 40 00                   ; mov qword [rbx+LATEST], 0x400423 (; header) ; the last header in this file
+BD 00 10 41 00                            ; mov ebp, 0x411000            ; data-stack base (empty: TOS holds nothing yet)
+BB 00 30 41 00                            ; mov ebx, 0x413000            ; the sysvar page
+48 C7 43 08 22 04 40 00                   ; mov qword [rbx+LATEST], 0x400422 (; header) ; the last header in this file
 48 C7 43 10 00 10 40 00                   ; mov qword [rbx+HERE], 0x401000
 ;; STATE and LAST_FOUND start at 0: the page is past the end of the file,
 ;; and the kernel zero-fills the segment from p_filesz to p_memsz.
 ;; Execution continues into repl.
 
 ;; ----- repl @ 0x092  read a token, find it, run or compile it; loop.  Never returns. -----
-E8 F2 00 00 00                            ; call token_code  (rel32 = 0x189 - 0x097) ; ( -- c-addr u )
+E8 E4 00 00 00                            ; call token_code  (rel32 = 0x17B - 0x097) ; ( -- c-addr u )
 48 85 FF                                  ; test rdi, rdi
 0F 84 9A 00 00 00                         ; jz end_of_input  (rel32 = 0x13A - 0x0A0) ; u = 0: nothing left to read
-57                                        ; push rdi ; keep u for number, in case find misses
-E8 6D 01 00 00                            ; call find_code  (rel32 = 0x213 - 0x0A6) ; ( c-addr u -- xt | 0 )
-59                                        ; pop rcx ; rcx = u
+57                                        ; push rdi                     ; keep u for number, in case find misses
+E8 6C 01 00 00                            ; call find_code  (rel32 = 0x212 - 0x0A6) ; ( c-addr u -- xt | 0 )
+59                                        ; pop rcx                      ; rcx = u
 48 85 FF                                  ; test rdi, rdi
 74 23                                     ; jz number  (rel8 = 0x0CF - 0x0AC) ; not a word: it has to be a number
 48 8B 43 18                               ; mov rax, [rbx+LAST_FOUND]
-F6 40 08 01                               ; test byte [rax+8], 1 ; the flags byte: IMMEDIATE?
+F6 40 08 01                               ; test byte [rax+8], 1         ; the flags byte: IMMEDIATE?
 75 0D                                     ; jnz .execute  (rel8 = 0x0C3 - 0x0B6) ; yes: run it now, in either mode
 48 83 3B 00                               ; cmp qword [rbx+STATE], 0
 74 07                                     ; je .execute  (rel8 = 0x0C3 - 0x0BC) ; interpreting: run it
-E8 90 00 00 00                            ; call compile_call  (rel32 = 0x151 - 0x0C1) ; ( xt -- ) compiling: CALL xt at HERE
+E8 82 00 00 00                            ; call compile_call  (rel32 = 0x143 - 0x0C1) ; ( xt -- ) compiling: CALL xt at HERE
 EB CF                                     ; jmp repl  (rel8 = 0x092 - 0x0C3)
 ;; .execute:
-48 89 F8                                  ; mov rax, rdi ; rax = xt
-E8 AC 01 00 00                            ; call drop_code  (rel32 = 0x277 - 0x0CB) ; ( xt -- )
-FF D0                                     ; call rax ; run the word; it returns here
+48 89 F8                                  ; mov rax, rdi                 ; rax = xt
+E8 AB 01 00 00                            ; call drop_code  (rel32 = 0x276 - 0x0CB) ; ( xt -- )
+FF D0                                     ; call rax                     ; run the word; it returns here
 EB C3                                     ; jmp repl  (rel8 = 0x092 - 0x0CF)
 
 ;; ----- number @ 0x0CF  ( 0 -- n | ) the token as unsigned decimal; rcx = its length.  Jumps back to repl. -----
@@ -118,82 +118,76 @@ EB C3                                     ; jmp repl  (rel8 = 0x092 - 0x0CF)
 ;; n = n*10 + digit for each byte.  A byte that is not a digit is fatal;
 ;; a value past 64 bits wraps.  Interpreting, n stays on the stack.
 ;; Compiling, CALL lit and the cell n are laid at HERE.
-31 D2                                     ; xor edx, edx ; rdx = index of the next byte
+31 D2                                     ; xor edx, edx                 ; rdx = index of the next byte
 ;; .digit:
 0F B6 44 13 40                            ; movzx eax, byte [rbx+rdx+TIB]
-83 E8 30                                  ; sub eax, 0x30 ; - '0'
+83 E8 30                                  ; sub eax, 0x30                ; - '0'
 83 F8 09                                  ; cmp eax, 9
 77 3B                                     ; ja fatal  (rel8 = 0x119 - 0x0DE) ; unsigned compare: also true for bytes below '0'
-48 6B FF 0A                               ; imul rdi, rdi, 10 ; n * 10
-48 01 C7                                  ; add rdi, rax ; + digit
+48 6B FF 0A                               ; imul rdi, rdi, 10            ; n * 10
+48 01 C7                                  ; add rdi, rax                 ; + digit
 FF C2                                     ; inc edx
 39 CA                                     ; cmp edx, ecx
 75 E6                                     ; jne .digit  (rel8 = 0x0D1 - 0x0EB)
 48 83 3B 00                               ; cmp qword [rbx+STATE], 0
 74 A1                                     ; je repl  (rel8 = 0x092 - 0x0F1) ; interpreting: n stays on the stack
-E8 6A 01 00 00                            ; call dup_code  (rel32 = 0x260 - 0x0F6) ; ( n -- n n )
-BF 6B 01 40 00                            ; mov edi, 0x40016B ; ( n lit ) TOS = lit's address
-E8 51 00 00 00                            ; call compile_call  (rel32 = 0x151 - 0x100) ; ( n lit -- n ) CALL lit at HERE
+E8 69 01 00 00                            ; call dup_code  (rel32 = 0x25F - 0x0F6) ; ( n -- n n )
+BF 5D 01 40 00                            ; mov edi, 0x40015D            ; ( n lit ) TOS = lit's address
+E8 43 00 00 00                            ; call compile_call  (rel32 = 0x143 - 0x100) ; ( n lit -- n ) CALL lit at HERE
 48 8B 43 10                               ; mov rax, [rbx+HERE]
-48 89 38                                  ; mov [rax], rdi ; the cell n, right after the CALL
+48 89 38                                  ; mov [rax], rdi               ; the cell n, right after the CALL
 48 83 C0 08                               ; add rax, 8
-48 89 43 10                               ; mov [rbx+HERE], rax ; HERE += 8
-E8 63 01 00 00                            ; call drop_code  (rel32 = 0x277 - 0x114) ; ( n -- )
+48 89 43 10                               ; mov [rbx+HERE], rax          ; HERE += 8
+E8 62 01 00 00                            ; call drop_code  (rel32 = 0x276 - 0x114) ; ( n -- )
 E9 79 FF FF FF                            ; jmp repl  (rel32 = 0x092 - 0x119)
 
 ;; ----- fatal @ 0x119  write the token and "?\n" to stdout, then exit(2); rcx = the token's length -----
 ;; The seed's only error: a token that is neither a word nor a decimal
 ;; number, or one 256 bytes long (too long for a header's nlen byte).
 66 C7 44 0B 40 3F 0A                      ; mov word [rbx+rcx+TIB], 0x0A3F ; '?' and newline after the token
-8D 51 02                                  ; lea edx, [rcx+2] ; count = length + 2
-48 8D 73 40                               ; lea rsi, [rbx+TIB] ; buf = the token
-BF 01 00 00 00                            ; mov edi, 1 ; fd 1 (stdout)
-B8 01 00 00 00                            ; mov eax, 1 ; SYS_write
+8D 51 02                                  ; lea edx, [rcx+2]             ; count = length + 2
+48 8D 73 40                               ; lea rsi, [rbx+TIB]           ; buf = the token
+BF 01 00 00 00                            ; mov edi, 1                   ; fd 1 (stdout)
+B8 01 00 00 00                            ; mov eax, 1                   ; SYS_write
 0F 05                                     ; syscall
-BF 02 00 00 00                            ; mov edi, 2 ; status 2: bad input
+BF 02 00 00 00                            ; mov edi, 2                   ; status 2: bad input
 EB 02                                     ; jmp exit  (rel8 = 0x13C - 0x13A)
 
 ;; ----- end_of_input @ 0x13A  exit(0) -----
-31 FF                                     ; xor edi, edi ; status 0
+31 FF                                     ; xor edi, edi                 ; status 0
 ;; Execution continues into exit.
 
 ;; ----- exit @ 0x13C  exit(edi); never returns -----
-B8 3C 00 00 00                            ; mov eax, 60 ; SYS_exit
+B8 3C 00 00 00                            ; mov eax, 60                  ; SYS_exit
 0F 05                                     ; syscall
 
-;; ----- read_char @ 0x143  ( -- ) al = the next input byte, 0 at end of input.  Keeps rcx. -----
-51                                        ; push rcx ; key's syscall overwrites rcx
-E8 9F 00 00 00                            ; call key_code  (rel32 = 0x1E8 - 0x149) ; ( -- c )
-59                                        ; pop rcx
-89 F8                                     ; mov eax, edi ; al = c
-E9 26 01 00 00                            ; jmp drop_code  (rel32 = 0x277 - 0x151) ; ( c -- ) and return to our caller
-
-;; ----- compile_call @ 0x151  ( xt -- ) lay down CALL xt (E8 rel32) at HERE -----
+;; ----- compile_call @ 0x143  ( xt -- ) lay down CALL xt (E8 rel32) at HERE -----
 48 8B 43 10                               ; mov rax, [rbx+HERE]
-C6 00 E8                                  ; mov byte [rax], 0xE8 ; the CALL opcode
-48 83 C0 05                               ; add rax, 5 ; rax = the address after the CALL
-48 89 43 10                               ; mov [rbx+HERE], rax ; HERE += 5
-48 29 C7                                  ; sub rdi, rax ; rel32 = xt - the address after the CALL
+C6 00 E8                                  ; mov byte [rax], 0xE8         ; the CALL opcode
+48 83 C0 05                               ; add rax, 5                   ; rax = the address after the CALL
+48 89 43 10                               ; mov [rbx+HERE], rax          ; HERE += 5
+48 29 C7                                  ; sub rdi, rax                 ; rel32 = xt - the address after the CALL
 89 78 FC                                  ; mov [rax-4], edi
-E9 0C 01 00 00                            ; jmp drop_code  (rel32 = 0x277 - 0x16B) ; ( xt -- ) and return to our caller
+E9 19 01 00 00                            ; jmp drop_code  (rel32 = 0x276 - 0x15D) ; ( xt -- ) and return to our caller
 
-;; ----- lit_code @ 0x16B  ( -- n ) push the 8-byte cell after the CALL, resume after the cell -----
+;; ----- lit_code @ 0x15D  ( -- n ) push the 8-byte cell after the CALL, resume after the cell -----
 ;; What number compiles a CALL to.  Not a dictionary word.
-58                                        ; pop rax ; rax = our return address = the cell
-E8 EF 00 00 00                            ; call dup_code  (rel32 = 0x260 - 0x171) ; push the old TOS
-48 8B 38                                  ; mov rdi, [rax] ; TOS = the cell
-48 83 C0 08                               ; add rax, 8 ; step past it
-FF E0                                     ; jmp rax ; resume there
+58                                        ; pop rax                      ; rax = our return address = the cell
+E8 FC 00 00 00                            ; call dup_code  (rel32 = 0x25F - 0x163) ; push the old TOS
+48 8B 38                                  ; mov rdi, [rax]               ; TOS = the cell
+48 83 C0 08                               ; add rax, 8                   ; step past it
+FF E0                                     ; jmp rax                      ; resume there
 
 ;; ===== The 21 words =====
-;; The reader first: token and the word it reads through, key.
+;; The reader first: token, its helper read_char, and the word they read
+;; through, key.
 
-;; --- token @ 0x17A --- header
+;; --- token @ 0x16C --- header
 00 00 00 00 00 00 00 00                   ; link  = 0 (end of chain)
 00                                        ; flags = 0
 05                                        ; nlen  = 5
 74 6F 6B 65 6E                            ; name  = "token"
-;; ----- token_code @ 0x189  ( -- c-addr u ) the next token from stdin, in the TIB; u = 0 at end of input -----
+;; ----- token_code @ 0x17B  ( -- c-addr u ) the next token from stdin, in the TIB; u = 0 at end of input -----
 ;; Skips whitespace, then copies bytes to the TIB until whitespace or end
 ;; of input.  Whitespace is any byte up to space (0x20): tab, newline and
 ;; carriage return are below it, and so is key's 0 for end of input, which
@@ -203,124 +197,133 @@ FF E0                                     ; jmp rax ; resume there
 ;; dictionary entry point, so a library that replaces key (cc/020) is read
 ;; through its replacement.
 ;; .restart:
-31 C9                                     ; xor ecx, ecx ; rcx = length so far
+31 C9                                     ; xor ecx, ecx                 ; rcx = length so far
 ;; .skip:
-E8 B3 FF FF FF                            ; call read_char  (rel32 = 0x143 - 0x190) ; al = the next byte
+E8 47 00 00 00                            ; call read_char  (rel32 = 0x1C9 - 0x182) ; al = the next byte
 84 C0                                     ; test al, al
-74 35                                     ; jz .done  (rel8 = 0x1C9 - 0x194) ; end of input before a token: u = 0
+74 31                                     ; jz .done  (rel8 = 0x1B7 - 0x186) ; end of input before a token: u = 0
 3C 20                                     ; cmp al, 0x20
-76 F3                                     ; jbe .skip  (rel8 = 0x18B - 0x198) ; whitespace: keep skipping
+76 F3                                     ; jbe .skip  (rel8 = 0x17D - 0x18A) ; whitespace: keep skipping
 ;; .store:
-88 44 0B 40                               ; mov [rbx+rcx+TIB], al ; TIB[length] = the byte
+88 44 0B 40                               ; mov [rbx+rcx+TIB], al        ; TIB[length] = the byte
 FF C1                                     ; inc ecx
-84 ED                                     ; test ch, ch ; ch = bits 8-15 of rcx: non-zero once length is 256
-0F 85 73 FF FF FF                         ; jnz fatal  (rel32 = 0x119 - 0x1A6)
-E8 98 FF FF FF                            ; call read_char  (rel32 = 0x143 - 0x1AB)
+84 ED                                     ; test ch, ch                  ; ch = bits 8-15 of rcx: non-zero once length is 256
+75 85                                     ; jnz fatal  (rel8 = 0x119 - 0x194)
+E8 30 00 00 00                            ; call read_char  (rel32 = 0x1C9 - 0x199)
 3C 20                                     ; cmp al, 0x20
-77 E9                                     ; ja .store  (rel8 = 0x198 - 0x1AF) ; not whitespace or end of input: part of the token
+77 ED                                     ; ja .store  (rel8 = 0x18A - 0x19D) ; not whitespace or end of input: part of the token
 ;; The token is complete; al holds the byte that ended it.
 83 F9 01                                  ; cmp ecx, 1
-75 15                                     ; jne .done  (rel8 = 0x1C9 - 0x1B4)
-80 7B 40 5C                               ; cmp byte [rbx+TIB], 0x5C ; is the token exactly '\'?
-75 0F                                     ; jne .done  (rel8 = 0x1C9 - 0x1BA)
+75 15                                     ; jne .done  (rel8 = 0x1B7 - 0x1A2)
+80 7B 40 5C                               ; cmp byte [rbx+TIB], 0x5C     ; is the token exactly '\'?
+75 0F                                     ; jne .done  (rel8 = 0x1B7 - 0x1A8)
 ;; .comment:
-3C 0A                                     ; cmp al, 0x0A ; reached the newline?
-74 CB                                     ; je .restart  (rel8 = 0x189 - 0x1BE) ; comment over: read the next token
+3C 0A                                     ; cmp al, 0x0A                 ; reached the newline?
+74 CF                                     ; je .restart  (rel8 = 0x17B - 0x1AC) ; comment over: read the next token
 84 C0                                     ; test al, al
-74 C7                                     ; jz .restart  (rel8 = 0x189 - 0x1C2) ; end of input: start over (and return u = 0)
-E8 7C FF FF FF                            ; call read_char  (rel32 = 0x143 - 0x1C7)
-EB F1                                     ; jmp .comment  (rel8 = 0x1BA - 0x1C9)
+74 CB                                     ; jz .restart  (rel8 = 0x17B - 0x1B0) ; end of input: start over (and return u = 0)
+E8 14 00 00 00                            ; call read_char  (rel32 = 0x1C9 - 0x1B5)
+EB F1                                     ; jmp .comment  (rel8 = 0x1A8 - 0x1B7)
 ;; .done:
-E8 92 00 00 00                            ; call dup_code  (rel32 = 0x260 - 0x1CE) ; push the old TOS
-48 8D 7B 40                               ; lea rdi, [rbx+TIB] ; c-addr = the TIB
-E8 89 00 00 00                            ; call dup_code  (rel32 = 0x260 - 0x1D7) ; push c-addr
-48 89 CF                                  ; mov rdi, rcx ; u = length
+E8 A3 00 00 00                            ; call dup_code  (rel32 = 0x25F - 0x1BC) ; push the old TOS
+48 8D 7B 40                               ; lea rdi, [rbx+TIB]           ; c-addr = the TIB
+E8 9A 00 00 00                            ; call dup_code  (rel32 = 0x25F - 0x1C5) ; push c-addr
+48 89 CF                                  ; mov rdi, rcx                 ; u = length
 C3                                        ; ret
 
-;; --- key @ 0x1DB --- header
-7A 01 40 00 00 00 00 00                   ; link  = 0x40017A (token)
+;; ----- read_char @ 0x1C9  ( -- ) al = the next input byte, 0 at end of input.  Keeps rcx. -----
+51                                        ; push rcx                     ; key's syscall overwrites rcx
+E8 15 00 00 00                            ; call key_code  (rel32 = 0x1E4 - 0x1CF) ; ( -- c )
+59                                        ; pop rcx
+89 F8                                     ; mov eax, edi                 ; al = c
+E9 9F 00 00 00                            ; jmp drop_code  (rel32 = 0x276 - 0x1D7) ; ( c -- ) and return to our caller
+
+;; --- key @ 0x1D7 --- header
+6C 01 40 00 00 00 00 00                   ; link  = 0x40016C (token)
 00                                        ; flags = 0
 03                                        ; nlen  = 3
 6B 65 79                                  ; name  = "key"
-;; ----- key_code @ 0x1E8  ( -- c ) read one byte from stdin; 0 at end of input -----
-E8 73 00 00 00                            ; call dup_code  (rel32 = 0x260 - 0x1ED) ; push the old TOS
-31 C0                                     ; xor eax, eax ; SYS_read
-31 FF                                     ; xor edi, edi ; fd 0 (stdin); also c = 0, kept if nothing is read
-48 8D 73 20                               ; lea rsi, [rbx+KEYBUF] ; buf
-BA 01 00 00 00                            ; mov edx, 1 ; count 1
-0F 05                                     ; syscall ; overwrites rcx and r11
+;; ----- key_code @ 0x1E4  ( -- c ) read one byte from stdin; 0 at end of input -----
+E8 76 00 00 00                            ; call dup_code  (rel32 = 0x25F - 0x1E9) ; push the old TOS
+31 C0                                     ; xor eax, eax                 ; SYS_read
+31 FF                                     ; xor edi, edi                 ; fd 0 (stdin)
+48 8D 73 20                               ; lea rsi, [rbx+KEYBUF]        ; buf
+BA 01 00 00 00                            ; mov edx, 1                   ; count 1
+0F 05                                     ; syscall                      ; overwrites rcx and r11
 48 85 C0                                  ; test rax, rax
-7E 03                                     ; jle .done  (rel8 = 0x204 - 0x201) ; 0 bytes = end of input (negative = error): c = 0
-0F B6 3E                                  ; movzx edi, byte [rsi] ; c = the byte
-;; .done:
+7E 04                                     ; jle .end  (rel8 = 0x201 - 0x1FD) ; 0 bytes read = end of input; negative = error, taken as the same
+0F B6 3E                                  ; movzx edi, byte [rsi]        ; c = the byte
+C3                                        ; ret
+;; .end:
+31 FF                                     ; xor edi, edi                 ; c = 0
 C3                                        ; ret
 
-;; --- find @ 0x205 --- header
-DB 01 40 00 00 00 00 00                   ; link  = 0x4001DB (key)
+;; --- find @ 0x204 --- header
+D7 01 40 00 00 00 00 00                   ; link  = 0x4001D7 (key)
 00                                        ; flags = 0
 04                                        ; nlen  = 4
 66 69 6E 64                               ; name  = "find"
-;; ----- find_code @ 0x213  ( c-addr u -- xt | 0 ) look a name up in the dictionary -----
+;; ----- find_code @ 0x212  ( c-addr u -- xt | 0 ) look a name up in the dictionary -----
 ;; Walks the chain of headers from LATEST.  On a hit, stores the header's
 ;; address in LAST_FOUND (repl reads its flags byte) and returns the xt:
 ;; the first byte after the name, which is where the word's code starts.
-48 8B 75 00                               ; mov rsi, [rbp] ; rsi = c-addr
-48 83 C5 08                               ; add rbp, 8 ; pop it; rdi = u
-48 8B 53 08                               ; mov rdx, [rbx+LATEST] ; rdx = the newest header
+48 8B 75 00                               ; mov rsi, [rbp]               ; rsi = c-addr
+48 83 C5 08                               ; add rbp, 8                   ; pop it; rdi = u
+48 8B 53 08                               ; mov rdx, [rbx+LATEST]        ; rdx = the newest header
 ;; .next:
 48 85 D2                                  ; test rdx, rdx
-74 2C                                     ; jz .miss  (rel8 = 0x250 - 0x224) ; link 0: end of the chain
-0F B6 42 09                               ; movzx eax, byte [rdx+9] ; nlen
+74 2C                                     ; jz .miss  (rel8 = 0x24F - 0x223) ; link 0: end of the chain
+0F B6 42 09                               ; movzx eax, byte [rdx+9]      ; nlen
 48 39 F8                                  ; cmp rax, rdi
-75 14                                     ; jne .skip  (rel8 = 0x241 - 0x22D) ; lengths differ
-31 C0                                     ; xor eax, eax ; rax = index of the next byte to compare
+75 14                                     ; jne .skip  (rel8 = 0x240 - 0x22C) ; lengths differ
+31 C0                                     ; xor eax, eax                 ; rax = index of the next byte to compare
 ;; .bytes:
 48 39 F8                                  ; cmp rax, rdi
-74 12                                     ; je .hit  (rel8 = 0x246 - 0x234) ; all u bytes matched
-8A 4C 02 0A                               ; mov cl, [rdx+rax+10] ; a byte of the header's name
-3A 0C 06                                  ; cmp cl, [rsi+rax] ; the same byte of the token
-75 04                                     ; jne .skip  (rel8 = 0x241 - 0x23D)
+74 12                                     ; je .hit  (rel8 = 0x245 - 0x233) ; all u bytes matched
+8A 4C 02 0A                               ; mov cl, [rdx+rax+10]         ; a byte of the header's name
+3A 0C 06                                  ; cmp cl, [rsi+rax]            ; the same byte of the token
+75 04                                     ; jne .skip  (rel8 = 0x240 - 0x23C)
 FF C0                                     ; inc eax
-EB EE                                     ; jmp .bytes  (rel8 = 0x22F - 0x241)
+EB EE                                     ; jmp .bytes  (rel8 = 0x22E - 0x240)
 ;; .skip:
-48 8B 12                                  ; mov rdx, [rdx] ; follow the link to the header before
-EB D9                                     ; jmp .next  (rel8 = 0x21F - 0x246)
+48 8B 12                                  ; mov rdx, [rdx]               ; follow the link to the header before
+EB D9                                     ; jmp .next  (rel8 = 0x21E - 0x245)
 ;; .hit:
 48 89 53 18                               ; mov [rbx+LAST_FOUND], rdx
-48 8D 7C 3A 0A                            ; lea rdi, [rdx+rdi+10] ; xt = header + 10 + nlen
+48 8D 7C 3A 0A                            ; lea rdi, [rdx+rdi+10]        ; xt = header + 10 + nlen (rdi is u, and u = nlen here)
 C3                                        ; ret
 ;; .miss:
-31 FF                                     ; xor edi, edi ; not found: 0
+31 FF                                     ; xor edi, edi                 ; not found: 0
 C3                                        ; ret
 
 ;; The data stack.
 
-;; --- dup @ 0x253 --- header
-05 02 40 00 00 00 00 00                   ; link  = 0x400205 (find)
+;; --- dup @ 0x252 --- header
+04 02 40 00 00 00 00 00                   ; link  = 0x400204 (find)
 00                                        ; flags = 0
 03                                        ; nlen  = 3
 64 75 70                                  ; name  = "dup"
-;; ----- dup_code @ 0x260  ( a -- a a ) -----
+;; ----- dup_code @ 0x25F  ( a -- a a ) -----
 48 83 ED 08                               ; sub rbp, 8
 48 89 7D 00                               ; mov [rbp], rdi
 C3                                        ; ret
 
-;; --- drop @ 0x269 --- header
-53 02 40 00 00 00 00 00                   ; link  = 0x400253 (dup)
+;; --- drop @ 0x268 --- header
+52 02 40 00 00 00 00 00                   ; link  = 0x400252 (dup)
 00                                        ; flags = 0
 04                                        ; nlen  = 4
 64 72 6F 70                               ; name  = "drop"
-;; ----- drop_code @ 0x277  ( a -- ) -----
+;; ----- drop_code @ 0x276  ( a -- ) -----
 48 8B 7D 00                               ; mov rdi, [rbp]
 48 83 C5 08                               ; add rbp, 8
 C3                                        ; ret
 
-;; --- swap @ 0x280 --- header
-69 02 40 00 00 00 00 00                   ; link  = 0x400269 (drop)
+;; --- swap @ 0x27F --- header
+68 02 40 00 00 00 00 00                   ; link  = 0x400268 (drop)
 00                                        ; flags = 0
 04                                        ; nlen  = 4
 73 77 61 70                               ; name  = "swap"
-;; ----- swap_code @ 0x28E  ( a b -- b a ) -----
+;; ----- swap_code @ 0x28D  ( a b -- b a ) -----
 48 8B 45 00                               ; mov rax, [rbp]
 48 89 7D 00                               ; mov [rbp], rdi
 48 89 C7                                  ; mov rdi, rax
@@ -329,197 +332,197 @@ C3                                        ; ret
 ;; The return stack.  These are CALLed, so their own return address is on
 ;; top of it; they take it off first and go back through it at the end.
 
-;; --- >r @ 0x29A --- header
-80 02 40 00 00 00 00 00                   ; link  = 0x400280 (swap)
+;; --- >r @ 0x299 --- header
+7F 02 40 00 00 00 00 00                   ; link  = 0x40027F (swap)
 00                                        ; flags = 0
 02                                        ; nlen  = 2
 3E 72                                     ; name  = ">r"
-;; ----- to_r_code @ 0x2A6  ( n -- ; R: -- n ) -----
-58                                        ; pop rax ; our return address
-57                                        ; push rdi ; n onto the return stack
-50                                        ; push rax ; return address back on top
-EB CC                                     ; jmp drop_code  (rel8 = 0x277 - 0x2AB) ; ( n -- ) and return to our caller
+;; ----- to_r_code @ 0x2A5  ( n -- ; R: -- n ) -----
+58                                        ; pop rax                      ; our return address
+57                                        ; push rdi                     ; n onto the return stack
+50                                        ; push rax                     ; return address back on top
+EB CC                                     ; jmp drop_code  (rel8 = 0x276 - 0x2AA) ; ( n -- ) and return to our caller
 
-;; --- r> @ 0x2AB --- header
-9A 02 40 00 00 00 00 00                   ; link  = 0x40029A (>r)
+;; --- r> @ 0x2AA --- header
+99 02 40 00 00 00 00 00                   ; link  = 0x400299 (>r)
 00                                        ; flags = 0
 02                                        ; nlen  = 2
 72 3E                                     ; name  = "r>"
-;; ----- r_from_code @ 0x2B7  ( -- n ; R: n -- ) -----
-58                                        ; pop rax ; our return address
-E8 A3 FF FF FF                            ; call dup_code  (rel32 = 0x260 - 0x2BD) ; push the old TOS
-5F                                        ; pop rdi ; TOS = n, off the return stack
-FF E0                                     ; jmp rax ; return to our caller
+;; ----- r_from_code @ 0x2B6  ( -- n ; R: n -- ) -----
+58                                        ; pop rax                      ; our return address
+E8 A3 FF FF FF                            ; call dup_code  (rel32 = 0x25F - 0x2BC) ; push the old TOS
+5F                                        ; pop rdi                      ; TOS = n, off the return stack
+FF E0                                     ; jmp rax                      ; return to our caller
 
 ;; Memory.
 
-;; --- @ @ 0x2C0 --- header
-AB 02 40 00 00 00 00 00                   ; link  = 0x4002AB (r>)
+;; --- @ @ 0x2BF --- header
+AA 02 40 00 00 00 00 00                   ; link  = 0x4002AA (r>)
 00                                        ; flags = 0
 01                                        ; nlen  = 1
 40                                        ; name  = "@"
-;; ----- fetch_code @ 0x2CB  ( addr -- v ) -----
+;; ----- fetch_code @ 0x2CA  ( addr -- v ) -----
 48 8B 3F                                  ; mov rdi, [rdi]
 C3                                        ; ret
 
-;; --- ! @ 0x2CF --- header
-C0 02 40 00 00 00 00 00                   ; link  = 0x4002C0 (@)
+;; --- ! @ 0x2CE --- header
+BF 02 40 00 00 00 00 00                   ; link  = 0x4002BF (@)
 00                                        ; flags = 0
 01                                        ; nlen  = 1
 21                                        ; name  = "!"
-;; ----- store_code @ 0x2DA  ( v addr -- ) -----
-48 8B 45 00                               ; mov rax, [rbp] ; rax = v
-48 89 07                                  ; mov [rdi], rax ; *addr = v
-48 83 C5 08                               ; add rbp, 8 ; pop v
-EB 90                                     ; jmp drop_code  (rel8 = 0x277 - 0x2E7) ; ( addr -- ) and return to our caller
+;; ----- store_code @ 0x2D9  ( v addr -- ) -----
+48 8B 45 00                               ; mov rax, [rbp]               ; rax = v
+48 89 07                                  ; mov [rdi], rax               ; *addr = v
+48 83 C5 08                               ; add rbp, 8                   ; pop v
+EB 90                                     ; jmp drop_code  (rel8 = 0x276 - 0x2E6) ; ( addr -- ) and return to our caller
 
-;; --- c@ @ 0x2E7 --- header
-CF 02 40 00 00 00 00 00                   ; link  = 0x4002CF (!)
+;; --- c@ @ 0x2E6 --- header
+CE 02 40 00 00 00 00 00                   ; link  = 0x4002CE (!)
 00                                        ; flags = 0
 02                                        ; nlen  = 2
 63 40                                     ; name  = "c@"
-;; ----- cfetch_code @ 0x2F3  ( addr -- b ) -----
+;; ----- cfetch_code @ 0x2F2  ( addr -- b ) -----
 0F B6 3F                                  ; movzx edi, byte [rdi]
 C3                                        ; ret
 
-;; --- c! @ 0x2F7 --- header
-E7 02 40 00 00 00 00 00                   ; link  = 0x4002E7 (c@)
+;; --- c! @ 0x2F6 --- header
+E6 02 40 00 00 00 00 00                   ; link  = 0x4002E6 (c@)
 00                                        ; flags = 0
 02                                        ; nlen  = 2
 63 21                                     ; name  = "c!"
-;; ----- cstore_code @ 0x303  ( b addr -- ) -----
-48 8B 45 00                               ; mov rax, [rbp] ; rax = b
-88 07                                     ; mov [rdi], al ; store the low byte only
-48 83 C5 08                               ; add rbp, 8 ; pop b
-E9 65 FF FF FF                            ; jmp drop_code  (rel32 = 0x277 - 0x312) ; ( addr -- ) and return to our caller
+;; ----- cstore_code @ 0x302  ( b addr -- ) -----
+48 8B 45 00                               ; mov rax, [rbp]               ; rax = b
+88 07                                     ; mov [rdi], al                ; store the low byte only
+48 83 C5 08                               ; add rbp, 8                   ; pop b
+E9 65 FF FF FF                            ; jmp drop_code  (rel32 = 0x276 - 0x311) ; ( addr -- ) and return to our caller
 
 ;; Arithmetic and logic.
 
-;; --- + @ 0x312 --- header
-F7 02 40 00 00 00 00 00                   ; link  = 0x4002F7 (c!)
+;; --- + @ 0x311 --- header
+F6 02 40 00 00 00 00 00                   ; link  = 0x4002F6 (c!)
 00                                        ; flags = 0
 01                                        ; nlen  = 1
 2B                                        ; name  = "+"
-;; ----- plus_code @ 0x31D  ( a b -- a+b ) -----
+;; ----- plus_code @ 0x31C  ( a b -- a+b ) -----
 48 03 7D 00                               ; add rdi, [rbp]
 48 83 C5 08                               ; add rbp, 8
 C3                                        ; ret
 
-;; --- nand @ 0x326 --- header
-12 03 40 00 00 00 00 00                   ; link  = 0x400312 (+)
+;; --- nand @ 0x325 --- header
+11 03 40 00 00 00 00 00                   ; link  = 0x400311 (+)
 00                                        ; flags = 0
 04                                        ; nlen  = 4
 6E 61 6E 64                               ; name  = "nand"
-;; ----- nand_code @ 0x334  ( a b -- ~(a&b) ) -----
+;; ----- nand_code @ 0x333  ( a b -- ~(a&b) ) -----
 48 23 7D 00                               ; and rdi, [rbp]
 48 F7 D7                                  ; not rdi
 48 83 C5 08                               ; add rbp, 8
 C3                                        ; ret
 
-;; --- 0= @ 0x340 --- header
-26 03 40 00 00 00 00 00                   ; link  = 0x400326 (nand)
+;; --- 0= @ 0x33F --- header
+25 03 40 00 00 00 00 00                   ; link  = 0x400325 (nand)
 00                                        ; flags = 0
 02                                        ; nlen  = 2
 30 3D                                     ; name  = "0="
-;; ----- zeq_code @ 0x34C  ( n -- flag ) -1 if n = 0, else 0 -----
+;; ----- zeq_code @ 0x34B  ( n -- flag ) -1 if n = 0, else 0 -----
 48 85 FF                                  ; test rdi, rdi
-40 0F 94 C7                               ; sete dil ; dil = 1 if n = 0, else 0
+40 0F 94 C7                               ; sete dil                     ; dil = 1 if n = 0, else 0
 40 0F B6 FF                               ; movzx edi, dil
-48 F7 DF                                  ; neg rdi ; 1 -> -1 (Forth true)
+48 F7 DF                                  ; neg rdi                      ; 1 -> -1 (Forth true)
 C3                                        ; ret
 
-;; --- * @ 0x35B --- header
-40 03 40 00 00 00 00 00                   ; link  = 0x400340 (0=)
+;; --- * @ 0x35A --- header
+3F 03 40 00 00 00 00 00                   ; link  = 0x40033F (0=)
 00                                        ; flags = 0
 01                                        ; nlen  = 1
 2A                                        ; name  = "*"
-;; ----- star_code @ 0x366  ( a b -- a*b ) low 64 bits of the product -----
+;; ----- star_code @ 0x365  ( a b -- a*b ) low 64 bits of the product -----
 48 0F AF 7D 00                            ; imul rdi, [rbp]
 48 83 C5 08                               ; add rbp, 8
 C3                                        ; ret
 
-;; --- / @ 0x370 --- header
-5B 03 40 00 00 00 00 00                   ; link  = 0x40035B (*)
+;; --- / @ 0x36F --- header
+5A 03 40 00 00 00 00 00                   ; link  = 0x40035A (*)
 00                                        ; flags = 0
 01                                        ; nlen  = 1
 2F                                        ; name  = "/"
-;; ----- divide_code @ 0x37B  ( a b -- a/b ) unsigned 64-bit divide -----
+;; ----- divide_code @ 0x37A  ( a b -- a/b ) unsigned 64-bit divide -----
 ;; rdx:rax / rdi -> rax = quotient, rdx = remainder.  rdx is zeroed, so the
 ;; dividend is 64-bit.  b = 0 traps (SIGFPE); callers must not pass it.
-48 8B 45 00                               ; mov rax, [rbp] ; rax = a (dividend)
-31 D2                                     ; xor edx, edx ; high half = 0
-48 F7 F7                                  ; div rdi ; rdx:rax / rdi
-48 89 C7                                  ; mov rdi, rax ; TOS = quotient
-48 83 C5 08                               ; add rbp, 8 ; pop a
+48 8B 45 00                               ; mov rax, [rbp]               ; rax = a (dividend)
+31 D2                                     ; xor edx, edx                 ; high half = 0
+48 F7 F7                                  ; div rdi                      ; rdx:rax / rdi
+48 89 C7                                  ; mov rdi, rax                 ; TOS = quotient
+48 83 C5 08                               ; add rbp, 8                   ; pop a
 C3                                        ; ret
 
 ;; The operating system.
 
-;; --- syscall6 @ 0x38C --- header
-70 03 40 00 00 00 00 00                   ; link  = 0x400370 (/)
+;; --- syscall6 @ 0x38B --- header
+6F 03 40 00 00 00 00 00                   ; link  = 0x40036F (/)
 00                                        ; flags = 0
 08                                        ; nlen  = 8
 73 79 73 63 61 6C 6C 36                   ; name  = "syscall6"
-;; ----- syscall6_code @ 0x39E  ( a b c d e f n -- rax ) -----
+;; ----- syscall6_code @ 0x39D  ( a b c d e f n -- rax ) -----
 ;; Linux x86-64: rax=n, rdi=a, rsi=b, rdx=c, r10=d, r8=e, r9=f.
 ;; Pops the six arguments; the new TOS is the syscall's return value.
-48 89 F8                                  ; mov rax, rdi ; rax = n (syscall number)
-4C 8B 4D 00                               ; mov r9, [rbp] ; f
-4C 8B 45 08                               ; mov r8, [rbp+8] ; e
-4C 8B 55 10                               ; mov r10, [rbp+16] ; d
-48 8B 55 18                               ; mov rdx, [rbp+24] ; c
-48 8B 75 20                               ; mov rsi, [rbp+32] ; b
-48 8B 7D 28                               ; mov rdi, [rbp+40] ; a
-0F 05                                     ; syscall ; overwrites rcx and r11
-48 83 C5 30                               ; add rbp, 48 ; pop the 6 argument cells
-48 89 C7                                  ; mov rdi, rax ; TOS = result
+48 89 F8                                  ; mov rax, rdi                 ; rax = n (syscall number)
+4C 8B 4D 00                               ; mov r9, [rbp]                ; f
+4C 8B 45 08                               ; mov r8, [rbp+8]              ; e
+4C 8B 55 10                               ; mov r10, [rbp+16]            ; d
+48 8B 55 18                               ; mov rdx, [rbp+24]            ; c
+48 8B 75 20                               ; mov rsi, [rbp+32]            ; b
+48 8B 7D 28                               ; mov rdi, [rbp+40]            ; a
+0F 05                                     ; syscall                      ; overwrites rcx and r11
+48 83 C5 30                               ; add rbp, 48                  ; pop the 6 argument cells
+48 89 C7                                  ; mov rdi, rax                 ; TOS = result
 C3                                        ; ret
 
 ;; The compiler: state gives the library the sysvar page, : and ; make
 ;; definitions.
 
-;; --- state @ 0x3C3 --- header
-8C 03 40 00 00 00 00 00                   ; link  = 0x40038C (syscall6)
+;; --- state @ 0x3C2 --- header
+8B 03 40 00 00 00 00 00                   ; link  = 0x40038B (syscall6)
 00                                        ; flags = 0
 05                                        ; nlen  = 5
 73 74 61 74 65                            ; name  = "state"
-;; ----- state_code @ 0x3D2  ( -- addr ) address of STATE, which is the sysvar page -----
-E8 89 FE FF FF                            ; call dup_code  (rel32 = 0x260 - 0x3D7) ; push the old TOS
+;; ----- state_code @ 0x3D1  ( -- addr ) address of STATE, which is the sysvar page -----
+E8 89 FE FF FF                            ; call dup_code  (rel32 = 0x25F - 0x3D6) ; push the old TOS
 48 89 DF                                  ; mov rdi, rbx
 C3                                        ; ret
 
-;; --- : @ 0x3DB --- header
-C3 03 40 00 00 00 00 00                   ; link  = 0x4003C3 (state)
+;; --- : @ 0x3DA --- header
+C2 03 40 00 00 00 00 00                   ; link  = 0x4003C2 (state)
 00                                        ; flags = 0
 01                                        ; nlen  = 1
 3A                                        ; name  = ":"
-;; ----- colon_code @ 0x3E6  ( -- ) read a name, lay down its header at HERE, STATE = 1 -----
-E8 9E FD FF FF                            ; call token_code  (rel32 = 0x189 - 0x3EB) ; ( -- c-addr u )
-48 8B 53 10                               ; mov rdx, [rbx+HERE] ; rdx = the new header
+;; ----- colon_code @ 0x3E5  ( -- ) read a name, lay down its header at HERE, STATE = 1 -----
+E8 91 FD FF FF                            ; call token_code  (rel32 = 0x17B - 0x3EA) ; ( -- c-addr u )
+48 8B 53 10                               ; mov rdx, [rbx+HERE]          ; rdx = the new header
 48 8B 43 08                               ; mov rax, [rbx+LATEST]
-48 89 02                                  ; mov [rdx], rax ; link  = the newest header so far
-C6 42 08 00                               ; mov byte [rdx+8], 0 ; flags = 0
-40 88 7A 09                               ; mov [rdx+9], dil ; nlen  = u
-48 89 53 08                               ; mov [rbx+LATEST], rdx ; the new header is the newest
-48 89 F9                                  ; mov rcx, rdi ; count = u
-48 8B 75 00                               ; mov rsi, [rbp] ; from = c-addr
-48 8D 7A 0A                               ; lea rdi, [rdx+10] ; to = the name field
-F3 A4                                     ; rep movsb ; copy the name; rdi ends just past it
-48 89 7B 10                               ; mov [rbx+HERE], rdi ; HERE = header + 10 + u
-48 8B 7D 08                               ; mov rdi, [rbp+8] ; drop c-addr and u
+48 89 02                                  ; mov [rdx], rax               ; link  = the newest header so far
+C6 42 08 00                               ; mov byte [rdx+8], 0          ; flags = 0
+40 88 7A 09                               ; mov [rdx+9], dil             ; nlen  = u
+48 89 53 08                               ; mov [rbx+LATEST], rdx        ; the new header is the newest
+48 89 F9                                  ; mov rcx, rdi                 ; count = u
+48 8B 75 00                               ; mov rsi, [rbp]               ; from = c-addr
+48 8D 7A 0A                               ; lea rdi, [rdx+10]            ; to = the name field
+F3 A4                                     ; rep movsb                    ; copy the name; rdi ends just past it
+48 89 7B 10                               ; mov [rbx+HERE], rdi          ; HERE = header + 10 + u
+48 8B 7D 08                               ; mov rdi, [rbp+8]             ; drop c-addr and u
 48 83 C5 10                               ; add rbp, 16
 48 C7 03 01 00 00 00                      ; mov qword [rbx+STATE], 1
 C3                                        ; ret
 
-;; --- ; @ 0x423 --- header  IMMEDIATE
-DB 03 40 00 00 00 00 00                   ; link  = 0x4003DB (:)
+;; --- ; @ 0x422 --- header  IMMEDIATE
+DA 03 40 00 00 00 00 00                   ; link  = 0x4003DA (:)
 01                                        ; flags = 1 (IMMEDIATE)
 01                                        ; nlen  = 1
 3B                                        ; name  = ";"
-;; ----- semicolon_code @ 0x42E  ( -- ) IMMEDIATE: append ret, STATE = 0 -----
+;; ----- semicolon_code @ 0x42D  ( -- ) IMMEDIATE: append ret, STATE = 0 -----
 48 8B 43 10                               ; mov rax, [rbx+HERE]
-C6 00 C3                                  ; mov byte [rax], 0xC3 ; the ret opcode
+C6 00 C3                                  ; mov byte [rax], 0xC3         ; the ret opcode
 48 FF C0                                  ; inc rax
-48 89 43 10                               ; mov [rbx+HERE], rax ; HERE += 1
+48 89 43 10                               ; mov [rbx+HERE], rax          ; HERE += 1
 48 C7 03 00 00 00 00                      ; mov qword [rbx+STATE], 0
 C3                                        ; ret

@@ -17,7 +17,8 @@
 \ native word gets a fresh header (code:), and native! turns the first
 \ definition into a jump to it, so every word compiled earlier, in
 \ 010-lib.fth too, runs the new code.  TOS is in rdi and the data stack
-\ grows down from rbp, as in the seed's +.
+\ grows down from rbp, as in the seed's +; rbx holds the seed's sysvar page
+\ and no native word may change it.
 : code:  : 0 state ! ;                   \ header only; c, lays the body
 : native!  ( old new -- )                \ old's first bytes: JMP rel32 new
   over 5 + -  swap                       \ rel32 first: old may be - itself
