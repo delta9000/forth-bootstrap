@@ -65,13 +65,16 @@
 #                   two builder-hex0 boots QEMU, KVM and the archive of
 #                   tinycc/hex0-handoff.SOURCES; SKIP without)
 #   CHECK_I386_BOOT=1  tests/tinycc/i386-one-boot-check.sh: builder-hex0
-#                   boots a disk with the i386 first tcc, the i386 tools,
-#                   a kaem and the archives, and in that one boot unpacks
-#                   the sources and runs pass1.kaem to live-bootstrap's
-#                   published tcc and libraries (under half a minute with KVM;
-#                   needs what CHECK_TINYCC needs, QEMU, KVM, python3 and
-#                   the archive of tinycc/hex0-handoff.SOURCES; SKIP
-#                   without them)
+#                   boots a disk of sources with no program on it.  Its
+#                   built-in hex0 assembles the i386 seed and
+#                   kaem-optional-seed; the seed compiles kaem, the tools
+#                   and the first tcc; the tools unpack the archives; and
+#                   pass1.kaem runs to live-bootstrap's published tcc and
+#                   libraries.  The 33 files the boot exports equal the
+#                   pins and the host's seed (under half a minute with
+#                   KVM; needs QEMU, KVM, python3, the vendor/stage0-posix
+#                   submodule and the archives of tinycc/SOURCES and
+#                   tinycc/hex0-handoff.SOURCES; SKIP without them)
 #   CHECK_I386_SEED=1  the i386 seed alone (seed/i386/SPEC.md 13.1):
 #                   seed/i386/build.sh assembles seed/i386/000-seed.hex0
 #                   into the 1191-byte seed-forth-i386; its comments equal

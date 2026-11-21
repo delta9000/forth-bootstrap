@@ -1,39 +1,50 @@
 #!/usr/bin/env bash
-# tests/tinycc/i386-one-boot-check.sh -- live-bootstrap's whole tcc-0.9.26
-# step on its own kernel, builder-hex0, in one QEMU boot, from the i386
-# first tcc and the i386 tools.
+# tests/tinycc/i386-one-boot-check.sh -- from two hex0 sources to
+# live-bootstrap's tcc-0.9.26 on builder-hex0, in one QEMU boot, with no
+# program on the disk.
 #
 #     tests/tinycc/i386-one-boot-check.sh        (CHECK_I386_BOOT=1 ./check-all.sh)
 #     tests/tinycc/i386-one-boot-check.sh --probe    exit 0 when this can run here
 #
-# The disk (tinycc/i386-one-boot-disk.py) holds builder-hex0's two stages,
-# the first tcc as /usr/bin/tcc-mes, the eleven tools and a kaem in
-# /x86/bin, the three archives of tinycc/SOURCES, tinycc/hex0-export.c and
-# the script, /kaem.run.  builder-hex0 (stage 1 assembled by hex0-seed,
-# stage 2 compiled from hex0 by stage 1) reads them and starts kaem.  The
-# script checks and unpacks the archives, installs mes-0.28's headers and
-# runs live-bootstrap's steps/tcc-0.9.26/pass1.kaem from "# Vars" to
-# "# Checksums", less the MesCC commands: tcc-mes makes mes libc and
-# tcc-boot0, and tcc-boot0, tcc-boot1 and tcc-boot2 follow.  tcc-mes also
-# builds tinycc/hex0-export.c, which at the end writes the files compared
-# below to /dev/hda; builder-hex0 writes that file to the drive's first
-# sectors when its stream ends.
+# The disk (tinycc/i386-one-boot-disk.py) holds builder-hex0's two stages
+# and then only sources: the i386 seed and stage0-posix's kaem-minimal as
+# hex0, the Forth library and compiler, the C of kaem, M2libc and the
+# tools, the three archives of tinycc/SOURCES, and two scripts.  In the
+# boot (forth/i386/CONTRACT.md, section 7):
+#   1. builder-hex0's built-in hex0 assembles /seed-forth-i386 and
+#      /kaem-optional-seed;
+#   2. kaem-optional-seed runs /boot/seed.kaem: the seed compiles
+#      vendor/mescc-tools/Kaem into /x86/bin/kaem (eight arguments), and
+#      that kaem runs /kaem.run;
+#   3. the seed compiles the eleven tools; they check and unpack the
+#      archives and prepare the first tcc's sources; the seed compiles the
+#      first tcc, /usr/bin/tcc-mes.  All of this before the first cd;
+#   4. live-bootstrap's text: the mes-0.28 header install and
+#      steps/tcc-0.9.26/pass1.kaem from "# Vars" to "# Checksums", less the
+#      MesCC commands: tcc-mes makes mes libc and tcc-boot0, and tcc-boot0,
+#      tcc-boot1 and tcc-boot2 follow;
+#   5. tcc-mes builds tinycc/hex0-export.c, which writes the files compared
+#      below to /dev/hda; builder-hex0 writes that file to the drive's
+#      first sectors when its stream ends.
 #
-# This script compares what the boot exported: the ten files of
-# live-bootstrap's tcc-0.9.26.x86.checksums (tcc-mes and tcc-boot0 with
-# this route's pins), and with tests/pins/tinycc.sha256 what tcc-mes made
-# before the later stages overwrote it (kept under /first), kaem and
-# hex0-export.
+# This script compares what the boot exported:
+#   - the ten files of live-bootstrap's tcc-0.9.26.x86.checksums (tcc-mes
+#     and tcc-boot0 with this route's pins);
+#   - with tests/pins/tinycc.sha256: what tcc-mes made before the later
+#     stages overwrote it (kept under /first), hex0-export, kaem, the eleven
+#     tools and the stock ungz and untar.  Those pins are what the x86-64
+#     seed builds on the host, so the seed in the boot and the x86-64 seed
+#     on Linux compile the same bytes;
+#   - /seed-forth-i386 with ./seed-forth-i386, which hex0-seed assembles on
+#     the host from the same source, and /kaem-optional-seed with the
+#     binary stage0-posix publishes.
 #
-# Built on the host, not in the boot: seed-forth (the x86-64 one) compiles
-# the first tcc and the tools (tinycc/build-first-tcc-i386.sh,
-# tinycc/build-tools-i386.sh).  kaem is HOST-BUILT in a second sense: the
-# i386 first tcc compiles vendor/mescc-tools/Kaem on the host's kernel,
-# through its IA32 support, in the bwrap root where
-# tests/tinycc/junction-check.sh --i386 has just made mes libc with it.
-# The host also cuts the script from the pinned kaem files, checks and
-# unpacks builder-hex0's archive with the seed-built tools, assembles stage
-# 1 with hex0-seed, writes the disk, starts QEMU and reads the drive.
+# What the host does: it cuts /kaem.run from the pinned kaem files
+# (python3) of live-bootstrap's tree, which the seed-built tools of
+# tinycc/build-tools.sh unpacked; checks and unpacks builder-hex0's archive
+# with those tools; runs hex0-seed for stage 1 and for the reference seed;
+# writes the disk; starts QEMU; reads the drive and compares hashes.  It
+# builds nothing that goes on the disk.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
@@ -45,12 +56,13 @@ HEX0=vendor/stage0-posix/bootstrap-seeds/POSIX/AMD64/hex0-seed
 QEMU=${QEMU:-qemu-system-x86_64}
 
 probe() {
-    tests/tinycc/junction-check.sh --probe || return 1
+    [ -x "$HEX0" ] || { echo "missing: $HEX0 (the vendor/stage0-posix submodule)"; return 1; }
     command -v "$QEMU" > /dev/null || { echo "missing: $QEMU"; return 1; }
     command -v python3 > /dev/null || { echo "missing: python3"; return 1; }
     [ -w /dev/kvm ] || { echo "no KVM (/dev/kvm)"; return 1; }
-    [ -f "$IN/$BH.tar.gz" ] \
-        || { echo "missing $IN/$BH.tar.gz (python3 tools/fetch-archives.py $IN/$BH.tar.gz)"; return 1; }
+    for a in tcc-0.9.26.tar.gz mes-0.28.tar.gz $LB.tar.gz $BH.tar.gz; do
+        [ -f "$IN/$a" ] || { echo "missing $IN/$a (python3 tools/fetch-archives.py $IN/$a)"; return 1; }
+    done
 }
 if [ "${1:-}" = --probe ]; then
     probe
@@ -63,24 +75,9 @@ pin() { sed -n "s|^\([0-9a-f]\{64\}\)  $1\$|\1|p" tests/pins/tinycc.sha256; }
 rm -rf "$OUT"
 mkdir -p "$OUT"
 
-# ---- on the host: the first tcc, the tools and kaem ----
-# The replay builds the first tcc and the tools as pinned and stops when
-# the first tcc has made mes libc in build-out/tinycc/junction-root; there
-# it compiles kaem with the command of tinycc/hex0-handoff.recipe.
-JUNCTION_FIRST_ONLY=1 tests/tinycc/junction-check.sh --i386 > "$OUT/junction.log" 2>&1 \
-    || { tail -20 "$OUT/junction.log" >&2; fail "junction-check.sh --i386 (log: $OUT/junction.log)"; }
-bwrap --bind build-out/tinycc/junction-root / --ro-bind vendor /vendor --bind "$OUT" /out \
-    --clearenv --chdir / \
-    /usr/bin/tcc-mes -static -L /usr/lib/mes -o /out/kaem \
-    /vendor/mescc-tools/Kaem/kaem.c /vendor/mescc-tools/Kaem/variable.c \
-    /vendor/mescc-tools/Kaem/kaem_globals.c /vendor/mescc-tools/M2libc/bootstrappable.c \
-    || fail "the first tcc did not build kaem"
-got=$(sha256sum "$OUT/kaem" | cut -d' ' -f1)
-[ "$got" = "$(pin tinycc/hex0-handoff/boot1/usr/bin/kaem)" ] \
-    || fail "the host-built kaem is $got, not the one K0's boot builds (tests/pins/tinycc.sha256)"
-echo "i386-one-boot-check: kaem, host-built by the i386 first tcc, as pinned"
-
-# ---- on the host: builder-hex0's stage 1 and the disk ----
+# ---- on the host: live-bootstrap's tree, builder-hex0's stages, the disk ----
+tinycc/build-tools.sh | tail -1
+seed/i386/build.sh > /dev/null
 BIN=build-out/tinycc/bin
 "$BIN/sha256sum" --check tinycc/hex0-handoff.SOURCES > /dev/null \
     || fail "$IN/$BH.tar.gz: sha256 differs from tinycc/hex0-handoff.SOURCES"
@@ -91,7 +88,7 @@ rm -rf "$IN/$BH"
     > /dev/null 2>&1) \
     || fail "untar failed on $BH.tar"
 "$HEX0" "$IN/$BH/builder-hex0-x86-stage1.hex0" "$OUT/stage1.bin"
-python3 -I tinycc/i386-one-boot-disk.py "$OUT" "$OUT/stage1.bin" "$OUT/kaem"
+python3 -I tinycc/i386-one-boot-disk.py "$OUT" "$OUT/stage1.bin"
 
 # ---- the boot: builder-hex0, as live-bootstrap's rootfs.py starts it ----
 # A command that is not there stops the machine without ending QEMU, hence
@@ -102,17 +99,24 @@ timeout 600 "$QEMU" -enable-kvm -m 4096M -smp 1 -drive file="$OUT/disk.img",form
     -machine kernel-irqchip=split -no-reboot -nographic < /dev/null > "$OUT/boot.log" 2>&1 || rc=$?
 echo "i386-one-boot-check: the boot (builder-hex0) qemu exit $rc after $(($(date +%s) - start)) s"
 [ "$rc" = 0 ] || { tail -20 "$OUT/boot.log" >&2; fail "the boot (log: $OUT/boot.log)"; }
+tr -d '\r' < "$OUT/boot.log" > "$OUT/boot.txt"
+# kaem-optional-seed echoes each command after " +> "; the console wraps at
+# 80 columns, so only the first line of the seed's command is looked for.
+grep -aqF ' +> /seed-forth-i386 /forth/i386/010-lib.fth /tinycc/i386-seed/tool.fth /x86/bin' "$OUT/boot.txt" \
+    || fail "kaem-optional-seed did not start the seed on kaem (log: $OUT/boot.log)"
 # sha256sum -c in the boot: our line for the three archives, pass1.kaem's for tcc's
-echo "i386-one-boot-check: $(tr -d '\r' < "$OUT/boot.log" | grep -ac ': OK$') archive checksums OK in the boot"
-tr -d '\r' < "$OUT/boot.log" | grep -aE '^(tcc version|Build finished)' || true
+echo "i386-one-boot-check: $(grep -ac ': OK$' "$OUT/boot.txt") archive checksums OK in the boot"
+grep -aE '^(tcc version|Build finished)' "$OUT/boot.txt" || true
 
 # ---- what the boot exported ----
 python3 -I tinycc/hex0-records.py "$OUT/disk.img" 0 > "$OUT/export.sha256"
 grep -qxF '# end: end' "$OUT/export.sha256" || { tail -20 "$OUT/boot.log" >&2; fail "no export from the boot"; }
 bad=0
+checked=0
 check() {    # PATH WANT WORD NOTE: one line, WORD when PATH's sha256 is WANT
     local got
     got=$(sed -n "s|^\([0-9a-f]\{64\}\)  $1\$|\1|p" "$OUT/export.sha256")
+    checked=$((checked + 1))
     if [ -n "$got" ] && [ "$got" = "$2" ]; then
         echo "  $3  $got  $1${4:+ ($4)}"
     else
@@ -120,12 +124,26 @@ check() {    # PATH WANT WORD NOTE: one line, WORD when PATH's sha256 is WANT
         bad=$((bad + 1))
     fi
 }
+echo "i386-one-boot-check: the two programs the built-in hex0 assembled"
+check /seed-forth-i386 "$(sha256sum seed-forth-i386 | cut -d' ' -f1)" same \
+    "hex0-seed's ./seed-forth-i386 on the host"
+check /kaem-optional-seed \
+    "$(sha256sum vendor/stage0-posix/bootstrap-seeds/POSIX/x86/kaem-optional-seed | cut -d' ' -f1)" same \
+    "stage0-posix's published kaem-optional-seed"
+echo "i386-one-boot-check: what the seed compiled in the boot, against tests/pins/tinycc.sha256"
+check /x86/bin/kaem "$(pin tinycc/kaem-i386)" "pin "
+for t in ungz untar; do
+    check /boot/$t "$(pin tinycc/bin-boot-i386/$t)" "pin " "stage0-posix's source as published"
+done
+for t in $(sed -n 's|^/x86/bin/||p' "$OUT/export.list" | grep -vx kaem); do
+    check /x86/bin/$t "$(pin tinycc/bin-i386/$t)" "pin "
+done
 echo "i386-one-boot-check: the boot's files against live-bootstrap's steps/tcc-0.9.26/tcc-0.9.26.x86.checksums"
 while read -r want path; do
     case $path in
         /usr/bin/tcc-mes)
             check $path "$(pin tinycc/tcc-first-i386)" "pin " \
-                "MesCC's is ${want:0:8}...; equals tests/pins/tinycc.sha256" ;;
+                "compiled by the seed; MesCC's is ${want:0:8}...; equals tests/pins/tinycc.sha256" ;;
         /usr/bin/tcc-boot0)
             check $path "$(pin tinycc/junction/usr/bin/tcc-boot0)" "pin " \
                 "MesCC's is ${want:0:8}...; equals tests/pins/tinycc.sha256" ;;
@@ -136,7 +154,8 @@ echo "i386-one-boot-check: what tcc-mes made in the boot, against tests/pins/tin
 for f in crt1.o crti.o crtn.o libc.a tcc/libtcc1.a libgetopt.a; do
     check /first/${f##*/} "$(pin tinycc/hex0-handoff/boot1/usr/lib/mes/$f)" "pin "
 done
-check /x86/bin/kaem "$(pin tinycc/hex0-handoff/boot1/usr/bin/kaem)" "pin "
 check /usr/bin/hex0-export "$(pin tinycc/hex0-handoff/boot1/usr/bin/hex0-export)" "pin "
+[ "$checked" = "$(wc -l < "$OUT/export.list")" ] || fail "$checked files compared, $(wc -l < "$OUT/export.list") exported"
 [ "$bad" = 0 ] || fail "$bad file(s) differ (log: $OUT/boot.log)"
-echo "i386-one-boot-check: OK, live-bootstrap's published tcc-0.9.26 reached on builder-hex0 in one boot"
+echo "i386-one-boot-check: OK, $checked files; live-bootstrap's published tcc-0.9.26 reached on builder-hex0"
+echo "  in one boot, from sources: no program on the disk"
