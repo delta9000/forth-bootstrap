@@ -1,0 +1,12 @@
+# The disk of tests/seed/i386/boot-check.sh, for tests/builder-hex0/mkdisk.py.
+# Host paths are relative to build-out/builder-hex0-probe/, where
+# tests/builder-hex0/boot.sh works.
+d /seed
+d /seed/i386
+f ../../seed/i386/000-seed.hex0 /seed/i386/000-seed.hex0
+f ../../tests/seed/i386/boot.fth /boot.fth
+f ../../tests/seed/i386/boot-fatal.fth /fatal.fth
+x hex0 /seed/i386/000-seed.hex0 /seed-forth-i386
+x /seed-forth-i386 /boot.fth
+x /seed-forth-i386 /fatal.fth
+x /seed-forth-i386 /no-such-file
