@@ -2,6 +2,7 @@
 # tinycc/build-first-tcc.sh -- seed Forth compiles the first tcc.
 #
 #     tinycc/build-first-tcc.sh        (from anywhere; works in the repo root)
+#     tinycc/build-first-tcc.sh --prepare   only the source tree, no compile
 #
 # Writes build-out/tinycc/tcc-first: janneke's tcc-0.9.26-1147-gee75a10c
 # targeting i386, the compiler live-bootstrap builds with MesCC as
@@ -67,6 +68,11 @@ tar -xzf "$IN/$PNUT.tar.gz" -C "$SRC" --no-same-owner --strip-components=1 "$PNU
 mv "$SRC/portable_libc" "$SRC/libc64"
 
 cp tinycc/direct-input.c "$SRC/direct-input.c"
+# --prepare: stop here; tests/tinycc/hex0-handoff-check.sh compiles under K0
+if [ "${1:-}" = --prepare ]; then
+    echo "build-first-tcc: sources prepared in $SRC"
+    exit 0
+fi
 
 # Compile.  Native mode loads 020 to 119 except 081 (seed-forth's
 # tools/tcc-start.fth list); 120's main is not loaded.

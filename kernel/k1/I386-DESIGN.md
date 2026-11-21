@@ -1,6 +1,9 @@
 # Running the junction's i386 stages without the host kernel: three designs
 
-For review; nothing here is implemented.  The measurements behind it are
+Status: option 3 is implemented with choice 1 (K0 writes the disk) as
+`tests/tinycc/hex0-handoff-check.sh`; `tinycc/README.md` describes it.
+What the implementation found that this text did not know is marked
+"Measured since" below.  Written for review before any of it existed.  The measurements behind it are
 in `kernel/k1/I386.md`.  The question is which kernel runs tcc-boot0,
 tcc-boot1 and tcc-boot2 (i386, `int 0x80`, mes libc) once the x86-64 part
 (seed Forth, the Forth compiler, the first tcc and its runs as `tcc-mes`)
@@ -35,6 +38,10 @@ ungz --file h.gz --output h2             # matched gzip -d
 untar --file t.tar                       # matched tar
 ```
 
+Measured since: that `sha256sum` exits 0 but its hashes are wrong ("abc"
+gives `709e80c8…`); so is the one the final tcc builds.  The hand-off
+hashes boot 2's results on the host instead.
+
 Traced, that kaem and those tools use 16 i386 calls: the ten above minus
 stat64, plus fork 2, waitpid 7, execve 11, chdir 12, chmod 15, access 33
 and mkdir 39.  With the stages' stat64 that is 17 for the whole i386
@@ -53,7 +60,8 @@ is.  A first try at the native-mode `ungz` stopped with cc error 93 (an
 undeclared identifier, `cc/100-cc-expr.fth`); it was not pursued.  The
 pivot's plan to delete seed-cc decides which of the two is available.
 
-**K0 and the x86-64 part.**  K0 (`kernel/k0/k0.asm`, 1,313 bytes)
+**K0 and the x86-64 part.**  K0 (`kernel/k0/k0.asm`, 1,313 bytes then;
+1,435 with the hand-off's two changes)
 implements read, write, open, close, lstat, lseek, mmap, dup2, fork,
 execve, exit, wait4, getcwd, chdir, rename, mkdir and unlink.  The x86-64
 programs need:
@@ -226,7 +234,8 @@ number.  Against the measured list:
 **Disk format.**  It boots from a BIOS disk: sector 0 is the
 `builder-hex0-x86-stage1.hex0` binary (a 192-byte-code MBR), followed by
 the stage-2 hex0 source, which stage 1 compiles at boot, padded to a
-sector.  From sector 160 the kernel reads a text stream as a shell's
+sector.  From sector 175 (0xAF in stage 2; the two stages fill 175
+sectors) the kernel reads a text stream as a shell's
 stdin: `src 0 DIR` makes a directory, `src N PATH` followed by N bytes
 makes a file, `hex0 IN OUT` assembles, and any other line runs a program
 with at most one argument.  live-bootstrap's `lib/generator.py`
@@ -238,6 +247,16 @@ its console is BIOS int 10h teletype.  Whether that output reaches a
 serial log under QEMU (SeaBIOS's serial console) was not checked here;
 the boot-2 checks need some way to report, or a final `f` flush of a
 result file to the disk.
+
+Measured since: with `-nographic` SeaBIOS copies int 10h output to the
+serial port, so the console reaches QEMU's stdout (wrapped at 80
+columns).  live-bootstrap's own kernel-bootstrap disk, written by their
+`Generator` with the manifest cut after `build: tcc-0.9.26`, ran from
+hex0 through stage0-posix, mes-0.28 and tcc-0.9.26 in 5 min 56 s under
+KVM and printed `OK` for all ten lines of tcc-0.9.26.x86.checksums.  When
+the stream ends builder-hex0 writes the file `/dev/hda`, if one exists,
+to the disk from sector 0 and reboots; the hand-off exports its results
+that way.  `cd /` fails in builder-hex0 (no entry for the root).
 
 **Could a K0 run write it?**  The stream is trivial to produce (`src N
 path\n` and the bytes), and the stage-1 binary can be assembled under K0
@@ -255,6 +274,17 @@ choices:
    stage-1/stage-2 bytes.  The host then copies guest output into the
    next guest's input, which the K1 route has not needed so far; the
    guest prints the stream's sha256 and the host and boot 2 check it.
+
+Measured since: choice 1 took 37 instructions and a table entry (call
+248 takes an fd, not a memory range: the file's data and size are in
+K0's file table).  A second K0 change was needed: K0 did not clear a
+new program's stack, and the first tcc's `-g` reads its getcwd buffer
+although pnut's getcwd fails and leaves it unwritten, so tcc-boot0
+recorded four bytes of an earlier program's stack ("qm\xa3\xe7/" for
+"/") and was `f0327572…`, not `4e3e525a…`.  K0's execve now zeroes the
+8 MiB below the new stack (4 instructions).  K0 also does not resolve
+`..`, which kaem's `#include "../M2libc/bootstrappable.h"` needs; the
+boot-1 recipe copies the header to the literal name tcc asks for.
 
 **Two-boot hand-over.**
 
