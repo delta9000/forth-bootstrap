@@ -21,7 +21,8 @@
 #
 # How a code is found.  The layers are read as Forth tokens, with `\` and
 # `( ... )` comments dropped, so a call split over two lines still counts:
-#   1. `[lit] C W`, where W is a word that dies with its last argument:
+#   1. `C W` (or `[lit] C W`, before the library interpreter took over),
+#      where W is a word that dies with its last argument:
 #      cc-die and cc-check-cap themselves, the wrappers that hand their code
 #      to one of them (cc-va-die, cc-obj-bound, cc-workspace-map,
 #      cc-read-all), and the library's `die`, which cc-f64-fail in
@@ -29,7 +30,7 @@
 #   2. The hand-kept list `indirect` below: codes stored as the
 #      preprocessor sink's die code and raised later by cc-prep-emit-byte.
 #      The script checks each entry against the source, and fails on a
-#      `[lit] C` before cc-pp-sink-push or `cc-pp-out-code !` that the list
+#      literal C before cc-pp-sink-push or `cc-pp-out-code !` that the list
 #      does not name.
 # Every other call of those words takes its code from the stack or a
 # variable.  Those forwarding sites are pinned in `forwarding` by file and
@@ -121,14 +122,14 @@ scan() {
             }
             if (prev1 == ":") word = tok
             else if (tok in dw && prev1 != ":" && prev1 != "'\''") {
-                if (prev2 == "[lit]" && prev1 ~ /^[0-9]+$/)
+                if (prev1 ~ /^[0-9]+$/)
                     print "LIT", prev1, FILENAME ":" FNR
                 else
                     print "FWD", FILENAME "|" line
             }
-            else if (tok == "cc-pp-sink-push" && prev2 == "[lit]" && prev1 ~ /^[0-9]+$/)
+            else if (tok == "cc-pp-sink-push" && prev1 ~ /^[0-9]+$/)
                 print "IND", prev1, FILENAME ":" FNR, word
-            else if (tok == "!" && prev1 == "cc-pp-out-code" && pl2 == "[lit]" && prev2 ~ /^[0-9]+$/)
+            else if (tok == "!" && prev1 == "cc-pp-out-code" && prev2 ~ /^[0-9]+$/)
                 print "IND", prev2, FILENAME ":" FNR, word
             pl2 = prev2; prev2 = prev1; prev1 = tok
         }
@@ -204,7 +205,7 @@ if [ "$verbose" = 1 ]; then
             "$(tr ' ' '\n' <<< "${src_of[$c]}" | sed 's/:.*//' | sort -u | tr '\n' ' ')"
     done
 fi
-echo "check-coverage: $n_all error codes ($n_lit at a [lit] call, $(count "${indirect[*]/|*/}") indirect)"
+echo "check-coverage: $n_all error codes ($n_lit at a literal call, $(count "${indirect[*]/|*/}") indirect)"
 echo "  tested by a die gate: $n_tested"
 echo "  unreachable from C:   $(count "$unr")"
 echo "  untested, to do:      $(count "$todo_codes")"
