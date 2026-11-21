@@ -25,6 +25,11 @@
 #                      the same in two checkouts at different paths
 #   tinycc/bin-i386/*  build-out/tinycc/bin-i386/, the same tools compiled
 #                      by the i386 back end (tinycc/build-tools-i386.sh)
+#   tinycc/bin-boot-i386/*
+#                      build-out/tinycc/bin-boot-i386/, ungz and untar from
+#                      stage0-posix's sources as published, compiled by the
+#                      i386 back end; the one-boot route unpacks
+#                      live-bootstrap's archive with them once
 #   tinycc/kaem-i386   build-out/tinycc/kaem-i386, vendor/mescc-tools/Kaem
 #                      compiled like those tools, with the process calls
 #                      of tinycc/m2libc-kaem-i386.c (99,008 bytes).  Not
@@ -86,3 +91,5 @@ afd5abe1964175f3771a1fe5f32ed7022db820813842e89c222d4e2c4ff14f69  tinycc/bin-i38
 41645a9a31b1d3ca76a4f2a5f31e079b38f6cf06df3329b2499e35eaddf4cdc5  tinycc/bin-i386/ungz
 3482feab3c18e57edf0fe054ecfff329733556a85ea4126bd9b0d27a6e589bbf  tinycc/bin-i386/untar
 d87baff1bb5b541036c6b95a8833f20eb4a5cc14109f8b048f490e5ac3a3993f  tinycc/kaem-i386
+0d73f9f7b560eff35ada46d38b4f4e20996e09aa9a8079863bee8ce74b72d42a  tinycc/bin-boot-i386/ungz
+8adace2143659da7c7ca149f0e2a096e96947e6fc33b404497957bca626fe602  tinycc/bin-boot-i386/untar

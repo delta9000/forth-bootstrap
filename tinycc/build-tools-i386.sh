@@ -13,7 +13,10 @@
 # 0x80 and for builder-hex0.
 #
 # Also writes build-out/tinycc/kaem-i386: vendor/mescc-tools/Kaem built the
-# same way, with tinycc/m2libc-kaem-i386.c ahead of its three files.
+# same way, with tinycc/m2libc-kaem-i386.c ahead of its three files; and
+# build-out/tinycc/bin-boot-i386/: ungz and untar from stage0-posix's
+# sources as published, which the one-boot route uses once, to reach
+# simple-patch's source before it can patch them.
 #
 # build-tools.sh runs first: it checks the archives, unpacks
 # live-bootstrap's tree and patches ungz.c and untar.c, and its catm joins
@@ -29,6 +32,7 @@ cd "$(dirname "$0")/.."
 OUT=build-out/tinycc
 BIN=$OUT/bin
 BIN32=$OUT/bin-i386
+BOOT32=$OUT/bin-boot-i386
 TS=$OUT/tools-src
 X=vendor/stage0-posix/mescc-tools-extra
 LB=live-bootstrap-a49273cbb5c381b851198bc1e53c294702f4f7c9
@@ -36,8 +40,8 @@ LB=live-bootstrap-a49273cbb5c381b851198bc1e53c294702f4f7c9
 fail() { echo "build-tools-i386: $*" >&2; exit 1; }
 
 tinycc/build-tools.sh
-rm -rf "$BIN32"
-mkdir -p "$BIN32"
+rm -rf "$BIN32" "$BOOT32"
+mkdir -p "$BIN32" "$BOOT32"
 mapfile -t layers < <(cc/i386/layers.sh)
 
 # compile OUT SOURCE...: seed-forth compiles the SOURCEs, one after another
@@ -64,6 +68,7 @@ for t in catm sha256sum mkdir cp chmod rm match; do
     tool $t "$X/$t.c"
 done
 for t in ungz untar; do
+    compile "$BOOT32/$t" "$X/$t.c"
     tool $t "$TS/$t.c"
 done
 tool simple-patch "$OUT/lb/$LB/steps/simple-patch-1.0/src/simple-patch.c"
@@ -77,7 +82,7 @@ compile "$OUT/kaem-i386" tinycc/m2libc-kaem-i386.c "$K/variable.c" "$K/kaem_glob
 
 # The pins
 bad=0
-for f in "$BIN32"/* "$OUT/kaem-i386"; do
+for f in "$BOOT32"/* "$BIN32"/* "$OUT/kaem-i386"; do
     name=tinycc/${f#"$OUT/"}
     want=$(sed -n "s|^\([0-9a-f]\{64\}\)  $name\$|\1|p" tests/pins/tinycc.sha256)
     got=$(sha256sum "$f" | cut -d' ' -f1)
@@ -87,4 +92,4 @@ for f in "$BIN32"/* "$OUT/kaem-i386"; do
     fi
 done
 [ "$bad" = 0 ] || fail "$bad program(s) differ from tests/pins/tinycc.sha256"
-echo "build-tools-i386: build-out/tinycc/bin-i386 and kaem-i386 as pinned in tests/pins/tinycc.sha256"
+echo "build-tools-i386: build-out/tinycc/bin-boot-i386, bin-i386 and kaem-i386 as pinned in tests/pins/tinycc.sha256"
