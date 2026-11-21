@@ -1,0 +1,7 @@
+#ifdef PNUT_CC
+  // forth-bootstrap (tinycc/libc-getcwd.after): _getcwd is the Linux getcwd
+  // call that cc/119-cc-native-runtime.fth emits when tinycc/tcc-compile.fth
+  // sets cc-native-getcwd.  It returns a byte count or -1, not a pointer.
+  if ((long) _getcwd(buf, size) < 0) return NULL;
+  return buf;
+#else

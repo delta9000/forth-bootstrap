@@ -2,24 +2,24 @@
 # live-bootstrap does not publish.  Not part of tests/pins/outputs.sha256
 # because only CHECK_TINYCC=1 builds the junction files.
 #   tinycc/tcc-first   build-out/tinycc/tcc-first, the first tcc, compiled by
-#                      seed Forth (tinycc/build-first-tcc.sh, 792,624 bytes);
+#                      seed Forth (tinycc/build-first-tcc.sh, 792,776 bytes);
 #                      the same in two checkouts at different paths
 #   tinycc/junction/usr/bin/tcc-boot0
 #                      build-out/tinycc/junction-root/usr/bin/tcc-boot0, what
 #                      the first tcc makes of tcc.c in live-bootstrap's
 #                      pass1.kaem (tests/tinycc/junction-check.sh).  MesCC's
 #                      tcc-mes makes ea464b2f...; from boot1 on the two
-#                      routes have the same bytes.  It differs from what
-#                      gcc-built stand-ins make (c1696e57...) only in the -g
-#                      directory string (see tinycc/direct-input.c).
+#                      routes have the same bytes.  It equals what the
+#                      junction study's stand-ins built with gcc, tcc 0.9.27
+#                      and seed-cc make (c1696e57...).
 #   tinycc/bin-boot/*, tinycc/bin/*
 #                      build-out/tinycc/bin-boot/ and bin/, the source
 #                      preparation tools seed-cc builds (tinycc/build-tools.sh);
 #                      the same in two checkouts at different paths
 # When a change is meant to alter one, update its line in the same commit
 # and say why.
-3c11f52b2937bdfbd7e9197cdfe79cc57e84058a9b9c4067602e1f6279649bca  tinycc/tcc-first
-4e3e525a06ba9aac5b8095cf543e0840b2692a35b122682bedebc0c03effd06b  tinycc/junction/usr/bin/tcc-boot0
+1a3a95abb749bd0d8877bb61121c86cda3aab0f97ff26ac56b546f3415d13fa8  tinycc/tcc-first
+c1696e57f25b77315a05d84b4e1a75002112cbd656156522c97be7ecd182c495  tinycc/junction/usr/bin/tcc-boot0
 7a1643c7de35691fe89bcd807bad786890b3fbe7f1858e3c9f3eb842000c2d60  tinycc/bin-boot/ungz
 019f164646d6ca38d9058957eb70489f996fb9c5d39fd214840fc18cb6d81fac  tinycc/bin-boot/untar
 e265a0a35a1fba70de55e9486e70093161c37975d2c5d90b809fe2b41259e2e8  tinycc/bin/catm

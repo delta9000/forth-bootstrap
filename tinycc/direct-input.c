@@ -20,13 +20,13 @@
    and the Forth compiler's native runtime supplies the system calls.  The
    target is i386.
 
-   One known difference from tcc-mes: under PNUT_CC, portable libc's
-   getcwd returns NULL (the native runtime has no getcwd system call), so
-   with -g this tcc records the directory of tcc.c as "/" where tcc-mes
-   records /steps/tcc-0.9.26/build/tcc-0.9.26-1147-gee75a10c/.  That is
-   the only difference in tcc-boot0's object code from the stand-ins the
-   junction study built with gcc, tcc 0.9.27 and seed-cc; without -g the
-   objects are identical.  It is gone from tcc-boot1 on. */
+   getcwd: under PNUT_CC, portable libc's getcwd returns NULL, and with -g
+   tcc then records the directory of tcc.c as "/".
+   tinycc/libc-getcwd.after makes it call _getcwd, the Linux getcwd call
+   that cc/119-cc-native-runtime.fth emits when tinycc/tcc-compile.fth
+   sets cc-native-getcwd, so this tcc records
+   /steps/tcc-0.9.26/build/tcc-0.9.26-1147-gee75a10c/ as tcc-mes does,
+   and its tcc-boot0 equals the stand-ins' (c1696e57...). */
 #define PNUT_CC 1
 #define PNUT_EXE 1
 #define PNUT_EXE_64 1

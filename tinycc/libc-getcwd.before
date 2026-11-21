@@ -1,0 +1,3 @@
+#ifdef PNUT_CC
+  return NULL; // Not implemented
+#else

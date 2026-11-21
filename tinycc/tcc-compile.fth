@@ -17,6 +17,7 @@
 true cc-target-lp64 !
 true cc-prep-direct !
 [lit] 1 cc-bootstrap-floatbits !
+true cc-native-getcwd !
 [lit] 8388608 cc-arena-map
 create tcc-output s, build-out/tinycc/tcc-first [lit] 0 c,
 create tcc-source s, build-out/tcc-sources/direct-input.c

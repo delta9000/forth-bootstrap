@@ -14,8 +14,8 @@
 # The source preparation is done by the tools tinycc/build-tools.sh builds
 # from the seed (seed-cc, from stage0-posix's and live-bootstrap's C): its
 # sha256sum checks the archives against tinycc/SOURCES, ungz and untar
-# unpack them, simple-patch applies live-bootstrap's simple-patches and catm
-# writes config.h and copies our two files.  The host programs left are
+# unpack them, simple-patch applies live-bootstrap's simple-patches and our
+# libc-getcwd pair, and catm writes config.h and copies our two files.  The host programs left are
 # bash, which runs this script, rm and mkdir -p, which clear and make
 # build-out directories, and cat, which joins the Forth input (the
 # layers, the driver and direct-input.c) into seed-forth's stdin, plus
@@ -27,7 +27,8 @@
 #       MesCC: its two simple-patches to tcctools.c (from the pinned
 #       live-bootstrap tree) and an empty config.h.  Nothing else.
 #   pnut-<commit>/  tinycc-inputs/pnut-<commit>.tar.gz, whole (untar has no
-#       member selection); only portable_libc/ is read, as published, and
+#       member selection); only portable_libc/ is read, with
+#       tinycc/libc-getcwd.{before,after} applied to src/unistd.c, and
 #       compiled into the same image.  seed-forth's six libc patches are for
 #       its x86_64 boot stages and are not needed here.
 #   libc-sscanf.c  tinycc/libc-sscanf.c, the sscanf pnut's libc lacks
@@ -73,6 +74,9 @@ done
     || fail "ungz failed on $PNUT.tar.gz"
 (cd "$SRC" && ../tinycc/bin/untar --non-strict --file pnut.tar > /dev/null 2>&1) \
     || fail "untar failed on pnut.tar"
+"$BIN/simple-patch" "$SRC/$PNUT/portable_libc/src/unistd.c" \
+    tinycc/libc-getcwd.before tinycc/libc-getcwd.after \
+    || fail "simple-patch libc-getcwd failed"
 "$BIN/rm" "$SRC/tcc.tar"
 "$BIN/rm" "$SRC/pnut.tar"
 

@@ -17,6 +17,12 @@ create cc-native-name-access   s, access
 create cc-native-name-mprotect s, mprotect
 create cc-native-name-time     s, time
 create cc-native-name-gettimeofday s, gettimeofday
+create cc-native-name-getcwd   s, _getcwd
+
+\ cc-native-getcwd ( -- addr )  Nonzero adds _getcwd, Linux getcwd(buf,
+\ size): the byte count, or -1.  Off by default, so that no other native
+\ program changes; tinycc/tcc-compile.fth sets it for pnut's getcwd.
+variable cc-native-getcwd
 
 \ cc-native-sysarg ( stack-byte-offset modrm -- )
 \ MOV a full stack cell into a syscall argument register. Narrow C values
@@ -103,6 +109,9 @@ variable cc-native-trap-length
   cc-native-name-mprotect [lit] 8 ty-int [lit] 10 [lit] 3 cc-native-primitive
   cc-native-name-time     [lit] 4 ty-long [lit] 201 [lit] 1 cc-native-primitive
   cc-native-name-gettimeofday [lit] 12 ty-int [lit] 96 [lit] 2 cc-native-primitive
+  cc-native-getcwd @ if,
+    cc-native-name-getcwd [lit] 7 ty-long [lit] 79 [lit] 2 cc-native-primitive
+  then,
   cc-bootstrap-floatbits @ if,
     cc-native-name-localtime [lit] 9 ty-struct [lit] 1 ty-make cc-native-unavailable
     cc-native-name-ldexp [lit] 5 ty-double [lit] 0 ty-make cc-native-unavailable

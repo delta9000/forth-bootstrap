@@ -8,8 +8,8 @@ live-bootstrap's `steps/tcc-0.9.26`, where that compiler stands in for
 ## The first tcc
 
 `tinycc/build-first-tcc.sh` writes `build-out/tinycc/tcc-first`, an x86_64
-static ELF of 792,624 bytes with sha256
-`3c11f52b2937bdfbd7e9197cdfe79cc57e84058a9b9c4067602e1f6279649bca`.  The
+static ELF of 792,776 bytes with sha256
+`1a3a95abb749bd0d8877bb61121c86cda3aab0f97ff26ac56b546f3415d13fa8`.  The
 pin is in `tests/pins/tinycc.sha256`.  Two checkouts at different paths
 built the same bytes.
 
@@ -26,10 +26,14 @@ The source it compiles:
   before MesCC runs: two `tcctools.c` simple-patches and an empty
   `config.h`;
 - no patch of ours;
-- pnut's `portable_libc`, unchanged, in the same translation unit, and
-  after it `libc-sscanf.c`: the `sscanf` that pnut's `stdio.h` declares
-  but does not define, enough for tcc's one call,
-  `sscanf(TCC_VERSION, "%d.%d.%d", ...)` in `libtcc.c`;
+- pnut's `portable_libc` in the same translation unit, with two additions
+  of ours: `libc-sscanf.c` after it, the `sscanf` that pnut's `stdio.h`
+  declares but does not define, enough for tcc's one call,
+  `sscanf(TCC_VERSION, "%d.%d.%d", ...)` in `libtcc.c`; and
+  `libc-getcwd.before`/`.after`, a simple-patch to `src/unistd.c`, so that
+  `getcwd` under `PNUT_CC` calls `_getcwd`, the Linux call
+  `cc/119-cc-native-runtime.fth` emits when `tcc-compile.fth` sets
+  `cc-native-getcwd`, instead of returning NULL;
 - tcc-mes's defines for x86 (`direct-input.c`), so the compiler looks for
   headers and libraries where tcc-mes does.
 
@@ -105,8 +109,8 @@ the two MesCC commands replaced by copying the first tcc to `tcc-mes`
 
 | file | live-bootstrap (MesCC) | this route |
 |---|---|---|
-| `/usr/bin/tcc-mes` | `2b15c85f…` | `3c11f52b…` (pinned) |
-| `/usr/bin/tcc-boot0` | `ea464b2f…` | `4e3e525a…` (pinned) |
+| `/usr/bin/tcc-mes` | `2b15c85f…` | `1a3a95ab…` (pinned) |
+| `/usr/bin/tcc-boot0` | `ea464b2f…` | `c1696e57…` (pinned) |
 | `/usr/bin/tcc-boot1` | `d9116def…` | same |
 | `/usr/bin/tcc` | `b9dce87d…` | same |
 | `/usr/lib/mes/libc.a` | `a6172e52…` | same |
@@ -141,15 +145,12 @@ tcc-boot1 `b9dce87d…` already, so the boot1 line does not match although
 
 ## What does not reproduce
 
-- tcc-boot0 is `4e3e525a…`.  MesCC's tcc-mes gives `ea464b2f…`.  The stand-ins
-  that the junction study built with gcc, tcc 0.9.27 and seed-cc, using the
-  same defines, gave `c1696e57…`.  The difference from `c1696e57…` is the
-  `-g` directory string.  Under `PNUT_CC`, portable libc's `getcwd` returns
-  NULL, because the native runtime has no getcwd call.  So the first tcc
-  records `/` instead of `/steps/tcc-0.9.26/build/tcc-0.9.26-1147-gee75a10c/`.
-  Compiled without `-g`, `tcc.c` gives the same object from both.  A getcwd
-  primitive in `cc/119-cc-native-runtime.fth` would probably close the gap,
-  but this was not tried.
+- tcc-boot0 is `c1696e57…`, as the stand-ins that the junction study built
+  with gcc, tcc 0.9.27 and seed-cc, using the same defines, gave.  MesCC's
+  tcc-mes gives `ea464b2f…`.  Every first compiler other than MesCC now
+  agrees from tcc-boot0 on.  Before the getcwd primitive, pnut's `getcwd`
+  returned NULL and the first tcc recorded `/` as the `-g` directory,
+  giving `4e3e525a…`.
 - tcc-mes is a different program by design: an x86_64 binary with pnut's
   libc, not MesCC's i386 one.
 
