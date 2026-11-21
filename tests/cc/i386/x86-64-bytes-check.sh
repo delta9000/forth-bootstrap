@@ -39,11 +39,13 @@ for f in $(cc/i386/layers.sh); do
     esac
 done > "$OUT/x86-64-bytes.layers"
 traps=$(grep -c '\[lit\] 130 cc-die' "$OUT/x86-64-bytes.layers")
-sed 's|build-out/tinycc/tcc-first-i386 |build-out/tinycc/x86-64-bytes.tcc |' tinycc/tcc-compile-i386.fth \
-    > "$OUT/x86-64-bytes.driver"
+sed 's|build-out/tinycc/tcc-first-i386 |build-out/tinycc/x86-64-bytes.tcc |' tinycc/tcc-names-i386.fth \
+    > "$OUT/x86-64-bytes.names"
+grep -q x86-64-bytes.tcc "$OUT/x86-64-bytes.names" || fail "tinycc/tcc-names-i386.fth does not name the output"
 rm -f "$OUT/x86-64-bytes.tcc"
 rc=0
-cat "$OUT/x86-64-bytes.layers" "$OUT/x86-64-bytes.driver" build-out/tcc-sources-i386/direct-input.c \
+cat "$OUT/x86-64-bytes.layers" "$OUT/x86-64-bytes.names" tinycc/tcc-compile-i386.fth \
+    build-out/tcc-sources-i386/direct-input.c \
     | ./seed-forth > "$OUT/x86-64-bytes.stdout" 2>&1 || rc=$?
 [ "$rc" = 0 ] && [ ! -s "$OUT/x86-64-bytes.stdout" ] \
     || { head -c 500 "$OUT/x86-64-bytes.stdout" >&2; fail "seed-forth exited $rc: an x86-64 encoder was reached"; }

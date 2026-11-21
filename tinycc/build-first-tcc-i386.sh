@@ -17,7 +17,8 @@
 #       live-bootstrap's steps/mes-0.28 gives it on x86;
 #   tinycc/direct-input-i386.c defines __i386__;
 #   tinycc/mes-libc-native-i386.c is the system-call layer;
-#   tinycc/tcc-compile-i386.fth is the driver.
+#   tinycc/tcc-compile-i386.fth is the driver, and tinycc/tcc-names-i386.fth
+#       gives it its four paths.
 # The source-preparation tools are build-tools.sh's, which this runs first.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -71,7 +72,8 @@ done
 mapfile -t layers < <(cc/i386/layers.sh)
 rm -f "$OUT/tcc-first-i386" "$OUT/compile-i386.input"
 rc=0
-"$BIN/catm" "$OUT/compile-i386.input" "${layers[@]}" tinycc/tcc-compile-i386.fth "$SRC/direct-input.c"
+"$BIN/catm" "$OUT/compile-i386.input" "${layers[@]}" tinycc/tcc-names-i386.fth \
+    tinycc/tcc-compile-i386.fth "$SRC/direct-input.c"
 ./seed-forth < "$OUT/compile-i386.input" > "$OUT/compile-i386.stdout" 2>&1 || rc=$?
 # The Forth outer interpreter reports an unknown word on stdout and goes on,
 # so anything on stdout is a failure even when the exit status is 0.
