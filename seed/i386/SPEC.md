@@ -1019,12 +1019,12 @@ strong oracles: the first compares 975,624 bytes of compiler output.
 | the same two under `strace -f`: only `brk`, `open`, `read`, `write`, `close` and `exit`; the break never lowered; the output file written after everything else was read | to write | the host side keeps to builder-hex0's calls |
 | `tests/tinycc/i386-one-boot-check.sh` with the host-built tcc-mes and kaem removed from the disk | exists, to change | the seed, assembled by the built-in `hex0`, builds kaem, the tools and the first tcc on builder-hex0, and the boot reaches live-bootstrap's published hashes. The boot also exports `/seed-forth-i386`, which must equal the host's `./seed-forth-i386` byte for byte |
 
-Run them in this order. The first two compare against today's pins and
-need no other change, so they come before anything moves a pin. When the
-M2libc layer gains the three process calls kaem needs, the eleven tool
-pins move (`forth/i386/CONTRACT.md`): they are then rebuilt by the
-x86-64 seed and pinned again, and "both seeds build the same bytes"
-remains the oracle.
+Run them in this order. The first two compare against today's pins. No
+pin moves for kaem: the three process calls it needs are in a file of
+their own, `tinycc/m2libc-kaem-i386.c`, which only kaem's command lists
+(`forth/i386/CONTRACT.md`, section 7.4), so the eleven tools keep their
+bytes. kaem has its own pin, `tinycc/kaem-i386`, and the i386 seed's
+kaem is compared with it as the tools are with theirs.
 
 ### 13.3 What changes and has to be updated with the seed
 
@@ -1039,7 +1039,7 @@ remains the oracle.
   book covers the i386 seed is the owner's decision.
 
 Not affected: every existing hash in `tests/pins/outputs.sha256` and
-`tests/pins/tinycc.sha256`, apart from the eleven tool pins named above.
+`tests/pins/tinycc.sha256`, the eleven tool pins included.
 
 ### 13.4 What no check exercises
 

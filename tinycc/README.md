@@ -304,8 +304,14 @@ The C is the same too, with what the target changes:
   the bss if it is below it, and zeroes 1 MiB of stack below esp.  The
   replay passes with `ulimit -s 48`, so the first tcc uses under 48 KiB.
 
-`tinycc/build-tools-i386.sh` builds the thirteen tools the same way into
+`tinycc/build-tools-i386.sh` builds the tools the same way into
 `build-out/tinycc/bin-i386/`, with `m2libc-native-i386.c`.
+
+The driver, `tinycc/tcc-compile-i386.fth`, names no file.  Its four paths
+(the output, `direct-input.c` and the two include directories) are in
+`tinycc/tcc-names-i386.fth`, read ahead of it, as a tool's names are read
+ahead of `tinycc/tool-compile.fth`.  The i386 seed's job gives the same
+driver the same four names from its command line (below).
 
 Checks, all on the host through its IA32 support (`CHECK_I386=1
 ./check-all.sh` runs them):
@@ -329,8 +335,8 @@ Checks, all on the host through its IA32 support (`CHECK_I386=1
   encoder of `cc/090-cc-emit.fth` or REX prefix of a later layer is
   reached when the first tcc is compiled.
 
-Not done here: the i386 seed ("The i386 seed: specified, not written",
-below).
+Not done here: the i386 seed ("The i386 host: written, waiting for its
+seed", below).
 
 ## One boot on builder-hex0
 
@@ -411,17 +417,17 @@ the boot, which the Mes-libc one of the hand-off does not.
   and unpacks builder-hex0's archive with the seed-built tools, runs
   hex0-seed for stage 1, writes the disk, starts QEMU and reads the drive.
 
-## The i386 seed: specified, not written
+## The i386 host: written, waiting for its seed
 
 The one-boot route needs a seed that runs on builder-hex0, so that the
 programs on the disk above are built in the boot and not on the host.
-Two documents specify it; neither the seed nor the files they describe
-exist yet.
+Two documents specify it:
 
 - `seed/i386/SPEC.md`: the seed itself, an i386 Forth with 64-bit cells
   that builder-hex0's built-in `hex0` assembles in the boot. It takes its
   Forth source by file name, because descriptor 0 there is the disk
-  stream. The x86-64 seed, K0, K1 and the GCC route are unchanged.
+  stream. The x86-64 seed, K0, K1 and the GCC route are unchanged. It is
+  not in the repository yet.
 - `forth/i386/CONTRACT.md`: what is laid down on top of it. It lists every
   piece of machine code the Forth library and the compiler lay for the
   Forth system itself (as opposed to `cc/i386/`, which is the code of the
@@ -429,9 +435,57 @@ exist yet.
   `include`, allocation by `brk`, the boot's disk and scripts, and kaem
   built by the seed.
 
-The oracle for both is the build above: the i386 seed must produce the
-same `tcc-first-i386` and the same `bin-i386` tools as the x86-64 seed,
-byte for byte.
+What the contract specifies for the host is written:
+
+| file | what |
+|---|---|
+| `forth/i386/010-lib.fth` | the library: `forth/010-lib.fth` with i386 machine code and call numbers, and at its end `brk-alloc`, `arg`, `include` and a `key` that reads files by name |
+| `forth/i386/020-cc-arena.fth` | `cc/020-cc-arena.fth` on cells that are register pairs |
+| `forth/i386/030-io.fth`, `115-nzero.fth` | the three words of the shared layers that cannot run on this host, replaced |
+| `forth/i386/layers.fth` | `cc/i386/layers.sh`'s list as `include` lines |
+| `tinycc/i386-seed/tcc-first.fth`, `tool.fth` | the two jobs: the names come from the command line, then the x86-64 host's drivers are loaded |
+| `tinycc/m2libc-kaem-i386.c` | `fork`, `waitpid` and an `execve` that asks `access` first, for kaem only |
+
+Every run is `seed-forth-i386 forth/i386/010-lib.fth JOB [ARG ...]`.
+From `cc/030-cc-io.fth` on, both hosts read the same compiler files.
+
+**kaem.**  `tinycc/build-tools-i386.sh` also builds
+`build-out/tinycc/kaem-i386` (99,008 bytes, pinned) from
+`vendor/mescc-tools/Kaem`, like a tool, with `m2libc-kaem-i386.c` ahead of
+its three files.  The eleven tools are compiled without that file and
+keep their pins.  This is the kaem the seed will build in the boot; the
+kaem on today's one-boot disk is still the Mes-libc one the first tcc
+compiles on the host.
+
+Checks, under `CHECK_I386=1 ./check-all.sh`:
+- `tests/forth/i386/standin-check.sh`: each stand-in's `diff` against its
+  x86-64 original equals a committed file; no word only the x86-64 files
+  define is used by a later layer; the load list is `layers.sh`'s.
+- `tests/forth/i386/asm-check.py`: the 94 byte lines of `forth/i386/`
+  equal GNU as and llvm-mc on their comments.
+- `tests/forth/i386/high-halves-check.sh`: 153 cases on cells whose two
+  halves both matter, each primitive interpreted and compiled in place.
+  The x86-64 seed runs the same text and gives the expected values.
+- `tests/tinycc/i386-kaem-check.sh`: kaem's own eighteen test scripts on
+  Linux; a status of 1 stops a script; a missing command is refused by
+  `access` with no `execve`.
+- `tests/tinycc/i386-kaem-boot-check.sh`: on builder-hex0, kaem under
+  kaem runs commands that exit 0, stops on a status of 1, reports an exit
+  of 300 as 44 (builder-hex0 does not mask the status), and a missing
+  command leaves the machine running.
+- `tests/tinycc/i386-seed-check.sh`, skipped until `./seed-forth-i386`
+  exists: the i386 seed builds the first tcc, the eleven tools and kaem,
+  byte for byte the x86-64 seed's, under strace with only `brk`, `open`,
+  `read`, `write`, `close` and `exit`.
+
+The oracle for the seed and the host files together is that last check.
+The host files have run only on a stand-in seed written from the
+specification for the purpose and not kept: there all thirteen programs
+came out byte for byte, on Linux, and `catm`, kaem and the first tcc on
+builder-hex0 (`forth/i386/CONTRACT.md`, section 9).
+
+Not done: the seed, and the one-boot disk that has the seed build
+everything in the boot (`forth/i386/CONTRACT.md`, section 7).
 
 ## What does not reproduce
 
