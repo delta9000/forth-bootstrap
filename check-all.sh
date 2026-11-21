@@ -24,6 +24,9 @@
 #       its comments, its ELF and dictionary fields equal what their
 #       comments state, and its branch notes and addresses add up (needs as;
 #       SKIP without)
+#   10  tests/pins/check-outputs.sh: seed-cc, seed-ar, Stage A's cc-out-v1,
+#       the K1 recipe runner and K1 equal tests/pins/outputs.sha256 (files a
+#       skipped step did not build are reported, not compared)
 #
 # Long steps, opt in:
 #   CHECK_CHAIN=1   chain/plumbing-root.sh: hex0-seed to the GCC 4.0.4 fixed
@@ -91,12 +94,13 @@ if have as && have python3; then
 else
     skip "09-seed-asm" "missing: as or python3"
 fi
+run "10-outputs" sh tests/pins/check-outputs.sh
 if [ "${CHECK_CHAIN:-0}" = 1 ]; then
-    run "10-chain" sh chain/plumbing-root.sh
+    run "11-chain" sh chain/plumbing-root.sh
 fi
 case ${CHECK_K1:-} in
-    smoke) run "11-k1-smoke" kernel/k1/run-chain.sh --direct-smoke ;;
-    linux) run "11-k1-linux" kernel/k1/run-chain.sh --direct-linux ;;
+    smoke) run "12-k1-smoke" kernel/k1/run-chain.sh --direct-smoke ;;
+    linux) run "12-k1-linux" kernel/k1/run-chain.sh --direct-linux ;;
     '') ;;
     *) echo "check-all: CHECK_K1 is smoke or linux" >&2; exit 2 ;;
 esac
