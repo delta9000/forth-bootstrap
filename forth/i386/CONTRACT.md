@@ -452,7 +452,7 @@ file ends, which is the end of input.
 The compiler then sees exactly the bytes the x86-64 host reads from
 standard input after the Forth text: the listed files one after another
 with nothing between them, which is what `catm` joins for it today
-(`tinycc/build-first-tcc-i386.sh:74`, `tinycc/build-tools-i386.sh:46-47`).
+(`tinycc/build-first-tcc-i386.sh:75-76`, `tinycc/build-tools-i386.sh:53-54`).
 Quoted `#include` lines resolve as before, beside the path given to
 `cc-prep-source-name`.
 
@@ -572,13 +572,13 @@ With variables and a search path, in this order:
 3. The first tcc's sources are prepared **in `/`**. `untar` unpacks into
    the working directory and has no option for another
    (`vendor/stage0-posix/mescc-tools-extra/untar.c:391-427`), and
-   `tinycc/build-first-tcc-i386.sh:43,55` changes directory for it, which
+   `tinycc/build-first-tcc-i386.sh:44,56` changes directory for it, which
    the boot cannot. So tcc's and Mes's archives are unpacked to
    `/tcc-0.9.26-1147-gee75a10c` and `/mes-0.28`, and `direct-input.c`,
    `mes-libc.c` and `mes-libc-native.c` are written beside them, because
    their quoted includes are relative to their own directory
    (`tinycc/direct-input-i386.c:29-30`). The other commands are those of
-   `tinycc/build-first-tcc-i386.sh:45-67` with `/` for the source
+   `tinycc/build-first-tcc-i386.sh:46-68` with `/` for the source
    directory.
 4. One seed run of `tcc-first.fth`, with `/usr/bin/tcc-mes`,
    `direct-input.c`, `mes-0.28/include` and `mes-0.28/include/linux/x86`
@@ -713,8 +713,9 @@ out of the repository, and used as `SEED_I386`. On it:
 
 - `tests/tinycc/i386-seed-check.sh` passes: the first tcc (`92d11438…`),
   the eleven tools and kaem have the x86-64 seed's bytes, in 13 runs
-  making 7.4 million calls, of which 7,406,304 are one-byte reads. The
-  first-tcc run takes 0.8 s.
+  making 7.4 million calls: 7,406,304 reads, of which 7,403,494 are the
+  one-byte reads of Forth text and 2,810 read C files. The first-tcc run
+  takes 0.8 s.
 - HERE at the end of the first-tcc compile is 144,025,149 (0x0895A63D):
   9.00 MiB above the initial HERE, of the image's 31.9 MiB. The x86-64
   host ends 9.01 MiB above its load address.
