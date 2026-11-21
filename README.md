@@ -273,8 +273,8 @@ RAM with a sparse file instead, but a full run writes terabytes through
 it: not on an SSD.
 
 `./check-all.sh` runs the quick checks; `CHECK_CHAIN=1` and
-`CHECK_K1=smoke|linux` add the long ones, and `CHECK_TINYCC=1` the TinyCC
-junction (`tinycc/README.md`).
+`CHECK_K1=smoke|linux` add the long ones, `CHECK_TINYCC=1` the TinyCC
+junction and `CHECK_I386=1` the i386 back end (`tinycc/README.md`).
 
 ## Reading order
 

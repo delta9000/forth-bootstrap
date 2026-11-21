@@ -47,6 +47,13 @@
 #                   (seconds; needs bwrap, the host kernel's i386 support,
 #                   the vendor/stage0-posix submodule and the archives of
 #                   tinycc/SOURCES; SKIP without the first two)
+#   CHECK_I386=1    the i386 back end (cc/i386/) and what it builds
+#                   (tinycc/README.md): its encoders against GNU as, no
+#                   x86-64 encoder reached, the run-time corpus against
+#                   gcc -m32, the junction with the i386 first tcc and
+#                   tools under strace, and the gcc -m32 stand-in (under a
+#                   minute; needs what CHECK_TINYCC needs, gcc -m32, as,
+#                   objcopy, strace and python3; SKIP without)
 #   CHECK_HEX0_HANDOFF=1  tests/tinycc/hex0-handoff-check.sh: K0 runs seed
 #                   Forth, which builds the first tcc; the first tcc makes
 #                   tcc-boot0 and mes libc and writes live-bootstrap's
@@ -123,6 +130,20 @@ if [ "${CHECK_TINYCC:-0}" = 1 ]; then
         run "13-tinycc-junction" tests/tinycc/junction-check.sh
     else
         skip "13-tinycc-junction" "$why"
+    fi
+fi
+if [ "${CHECK_I386:-0}" = 1 ]; then
+    if ! why=$(tests/tinycc/junction-check.sh --probe); then
+        skip "15-i386" "$why"
+    elif ! { have as && have objcopy && have strace && have python3; }; then
+        skip "15-i386" "missing: as, objcopy, strace or python3"
+    elif ! echo 'int main (void) { return 0; }' | gcc -m32 -x c - -o /dev/null 2> /dev/null; then
+        skip "15-i386" "gcc -m32 does not build a program here"
+    else
+        run "15-i386-encoders" sh -c 'python3 tests/cc/i386/asm-check.py && tests/cc/i386/x86-64-bytes-check.sh'
+        run "16-i386-corpus" tests/cc/i386/run-corpus.sh
+        run "17-i386-junction" tests/tinycc/i386-syscall-check.sh
+        run "18-i386-standin" tests/tinycc/i386-standin-check.sh
     fi
 fi
 if [ "${CHECK_HEX0_HANDOFF:-0}" = 1 ]; then

@@ -5,6 +5,11 @@
 #                      seed Forth with Mes libc (tinycc/build-first-tcc.sh,
 #                      856,568 bytes);
 #                      the same in two checkouts at different paths
+#   tinycc/tcc-first-i386
+#                      build-out/tinycc/tcc-first-i386, the same program
+#                      compiled by the i386 back end, cc/i386/
+#                      (tinycc/build-first-tcc-i386.sh, 975,624 bytes);
+#                      the same in two checkouts at different paths
 #   tinycc/junction/usr/bin/tcc-boot0
 #                      build-out/tinycc/junction-root/usr/bin/tcc-boot0, what
 #                      the first tcc makes of tcc.c in live-bootstrap's
@@ -34,6 +39,7 @@
 # When a change is meant to alter one, update its line in the same commit
 # and say why.
 d9e97270f8d39587b2ef57d675cf733aa239b11f288c75d6b2fcc4adf7019fec  tinycc/tcc-first
+92d1143823045f9324c2d4b34c64dfc11bc994c958b92bfbd80a99de371e4d2d  tinycc/tcc-first-i386
 c1696e57f25b77315a05d84b4e1a75002112cbd656156522c97be7ecd182c495  tinycc/junction/usr/bin/tcc-boot0
 71e4ff873a45c3a820166a2bf23d8ec2e0e3aab80192a9fd6ec3ab6ae495e17d  tinycc/bin-boot/ungz
 026a67a0c9f87fbfa5255237243f41610bcf4f53efcd3f715019081b703517a2  tinycc/bin-boot/untar

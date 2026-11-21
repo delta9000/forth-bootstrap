@@ -2,6 +2,9 @@
 # tests/tinycc/junction-check.sh -- the TinyCC junction with live-bootstrap.
 #
 #     tests/tinycc/junction-check.sh            the Forth-built first tcc
+#     tests/tinycc/junction-check.sh --i386     the i386 one, built by the
+#                                               i386 back end (cc/i386/), and
+#                                               the i386 tools with it
 #     tests/tinycc/junction-check.sh FIRST_TCC  any other first compiler
 #     tests/tinycc/junction-check.sh --probe    exit 0 when this can run here
 #
@@ -40,6 +43,12 @@
 # with FIRST_TCC (python3 tools/fetch-archives.py
 # build-out/tinycc-inputs/...).  Under
 # half a minute.
+#
+# With JUNCTION_STRACE=FILE in the environment the chroot runs under
+# strace -f -o FILE (tests/tinycc/i386-syscall-check.sh reads the trace).
+# With JUNCTION_FIRST_ONLY=1 the replay stops once the first compiler has
+# done its own work, and nothing is compared
+# (tests/tinycc/i386-standin-check.sh looks at the files).
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
@@ -79,7 +88,15 @@ why=$(probe) || { echo "junction-check: cannot run: $why" >&2; exit 1; }
 fail() { echo "junction-check: FAIL: $*" >&2; exit 1; }
 
 # The first compiler, and the tools (build-first-tcc.sh builds them too)
-if [ $# -ge 1 ]; then
+BIN=$OUT/bin
+if [ "${1:-}" = --i386 ]; then
+    # every program the kaem text runs is then an i386 one
+    tinycc/build-first-tcc-i386.sh
+    tinycc/build-tools-i386.sh
+    FIRST=$OUT/tcc-first-i386
+    BIN=$OUT/bin-i386
+    own=1
+elif [ $# -ge 1 ]; then
     FIRST=$1
     own=0
     tinycc/build-tools.sh
@@ -95,7 +112,6 @@ fi
 # and unpacked live-bootstrap's into $OUT/lb.  The steps directory is
 # mounted read-write and pass1.kaem builds in it, so build-tools.sh
 # unpacked a fresh copy.
-BIN=$OUT/bin
 rm -rf "$R"
 "$BIN/mkdir" -p "$R"/usr/bin "$R"/usr/lib/mes "$R"/usr/include/mes "$R"/tmp \
     "$R"/dev "$R"/external/distfiles
@@ -111,7 +127,7 @@ done
 echo "junction-check: first compiler $FIRST"
 sha256sum "$FIRST"
 rc=0
-bwrap --bind "$R" / \
+${JUNCTION_STRACE:+strace -f -o "$JUNCTION_STRACE"} bwrap --bind "$R" / \
     --bind "$OUT/lb/$LB/steps" /steps \
     --ro-bind "$OUT/lb/$LB/seed" /seed \
     --ro-bind "$IN/tcc-0.9.26.tar.gz" /external/distfiles/tcc-0.9.26.tar.gz \
@@ -124,9 +140,14 @@ bwrap --bind "$R" / \
     --dev /dev --proc /proc \
     --clearenv --setenv LD_LIBRARY_PATH "$libpath" \
     --chdir / \
-    /host/usr/bin/bash /forth-bootstrap/tinycc/lb-replay.sh > "$OUT/junction.log" 2>&1 || rc=$?
+    /host/usr/bin/bash /forth-bootstrap/tinycc/lb-replay.sh ${JUNCTION_FIRST_ONLY:+--first-only} \
+    > "$OUT/junction.log" 2>&1 || rc=$?
 grep -E '^(==== |tcc version)' "$OUT/junction.log" | grep -v ': running in' || true
 [ "$rc" = 0 ] || { tail -30 "$OUT/junction.log" >&2; fail "lb-replay.sh exited $rc (log: $OUT/junction.log)"; }
+if [ -n "${JUNCTION_FIRST_ONLY:-}" ]; then
+    echo "junction-check: stopped after the first compiler's own work; nothing compared"
+    exit 0
+fi
 
 # Compare.  live-bootstrap's checksums file names absolute paths in its /.
 echo "junction-check: against live-bootstrap's steps/tcc-0.9.26/tcc-0.9.26.x86.checksums"
@@ -138,7 +159,7 @@ while read -r want path; do
             # MesCC's output in live-bootstrap; this route's own pins instead
             pin=$(sed -n "s|^\([0-9a-f]\{64\}\)  tinycc/junction$path\$|\1|p" tests/pins/tinycc.sha256)
             if [ "$path" = /usr/bin/tcc-mes ] && [ "$own" = 1 ]; then
-                pin=$(sed -n 's|^\([0-9a-f]\{64\}\)  tinycc/tcc-first$|\1|p' tests/pins/tinycc.sha256)
+                pin=$(sed -n "s|^\([0-9a-f]\{64\}\)  tinycc/${FIRST##*/}\$|\1|p" tests/pins/tinycc.sha256)
             fi
             if [ "$own" = 0 ]; then
                 echo "  ---   $got  $path (MesCC's in live-bootstrap; another first compiler, not compared)"

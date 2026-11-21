@@ -33,6 +33,9 @@
 #               Every later command is theirs: same order, flags, -g, cwd
 #               and absolute paths.  The checksum comparison is done by
 #               junction-check.sh outside the chroot.
+# With --first-only the tcc-0.9.26 text stops at "# Install", when the
+# first tcc has made its libc and tcc-boot0 and nothing has replaced them
+# (tests/tinycc/i386-standin-check.sh compares those files).
 set -euo pipefail
 
 FIRST=/forth-bootstrap/tcc-first
@@ -111,7 +114,9 @@ K=/steps/tcc-0.9.26/pass1.kaem
     cut_kaem "$K" '# Vars' '${MES} --no-auto-compile -e main ${BINDIR}/mescc.scm -- \'
     if [ "${1:-}" != --prepare ]; then
         echo "cp $FIRST tcc-mes"
-        cut_kaem "$K" 'cp tcc-mes ${BINDIR}/' '# Checksums'
+        end='# Checksums'
+        [ "${1:-}" = --first-only ] && end='# Install'
+        cut_kaem "$K" 'cp tcc-mes ${BINDIR}/' "$end"
     fi
 } | pkg=tcc-0.9.26 run_kaem tcc-0.9.26 /steps/tcc-0.9.26
 

@@ -275,6 +275,63 @@ prepared source file into it; the host creates the empty drive, starts
 QEMU twice and reads the drive (`tinycc/hex0-records.py`).  It writes no
 byte of boot 2's disk.
 
+## The i386 first tcc
+
+`tinycc/build-first-tcc-i386.sh` writes `build-out/tinycc/tcc-first-i386`,
+the same program as an i386 static ELF of 975,624 bytes: the first step
+towards running the whole route on builder-hex0, which is an i386 kernel.
+The seed that compiles it is still the x86-64 one, on the host.
+
+The compiler is the same layers with the i386 back end among them
+(`cc/i386/`, `cc/README.md`; `cc/i386/layers.sh` prints the load order).
+The C is the same too, with what the target changes:
+- `include/arch/` gets Mes's `include/linux/x86` headers, and
+  `direct-input-i386.c` defines `__i386__` where `direct-input.c` defines
+  `__x86_64__`.  `__SIZEOF_LONG_LONG__` stays undefined, as MesCC leaves
+  it, so Mes's `struct stat` is the old i386 one the kernel fills.
+- `mes-libc-native-i386.c` is the system-call layer.  Besides the numbers
+  it differs from `mes-libc-native.c` in two ways.  It replaces Mes's
+  `stdarg.h`, because native mode keeps every argument in an 8-byte slot
+  while a pointer is now 4 bytes.  And it passes to the kernel only the
+  calls builder-hex0 has (exit, fork, read, write, open, close, waitpid,
+  execve, chdir, lseek, access, mkdir, brk, getcwd); any other gets
+  builder-hex0's answer, 0, without a system call.  tcc makes three such
+  calls: `unlink` before it writes an output file, and `stat` and
+  `unlink` in Mes's `remove`, after `tcc -ar` has copied its temporary
+  file.  So on Linux, as on builder-hex0, the first tcc leaves
+  `libc.a.tmp`, `libtcc1.a.tmp` and `libgetopt.a.tmp` behind.
+- the entry stub (`cc/i386/117-entry.fth`) raises the break to the end of
+  the bss if it is below it, and zeroes 1 MiB of stack below esp.  The
+  replay passes with `ulimit -s 48`, so the first tcc uses under 48 KiB.
+
+`tinycc/build-tools-i386.sh` builds the thirteen tools the same way into
+`build-out/tinycc/bin-i386/`, with `m2libc-native-i386.c`.
+
+Checks, all on the host through its IA32 support (`CHECK_I386=1
+./check-all.sh` runs them):
+- `tests/tinycc/junction-check.sh --i386`: the replay with the i386 first
+  tcc and the i386 tools reaches tcc-boot0 `c1696e57…`, tcc-boot1
+  `d9116def…`, `/usr/bin/tcc` `b9dce87d…` and the six libraries, as the
+  x86-64 first tcc does.
+- `tests/tinycc/i386-standin-check.sh`: gcc `-m32` compiles the same unit
+  with Mes's own i386 assembly files; every file the two first compilers
+  write in the replay (the crt files, `unified-libc.o`, `libc.a`,
+  `libtcc1`, getopt and tcc-boot0) has the same bytes.
+- `tests/tinycc/i386-syscall-check.sh`: under `strace -f`, the first tcc
+  and the tools make only builder-hex0's calls (rm's `unlink`, chmod's
+  `chmod` and untar's `symlink` apart), never lower the break, never
+  write past the end of a file and only grow the newest file.
+- `tests/cc/i386/run-corpus.sh`: small C programs compiled by the i386
+  back end and by gcc `-m32` print the same lines.  They cover what the
+  pins cannot see: the high halves of `long long` values.
+- `tests/cc/i386/asm-check.py` and `tests/cc/i386/x86-64-bytes-check.sh`:
+  the encoders' bytes equal GNU as on their comments, and no x86-64
+  encoder of `cc/090-cc-emit.fth` or REX prefix of a later layer is
+  reached when the first tcc is compiled.
+
+Not done here: the i386 seed, running any of this on builder-hex0, and
+the one-boot route.
+
 ## What does not reproduce
 
 - tcc-boot0 is `c1696e57…`, as the stand-ins that the junction study built
