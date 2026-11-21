@@ -19,10 +19,7 @@
 
 \ cc-emit-mov-rdi-imm32 ( v -- )   48 C7 C7 <imm32>
 : cc-emit-mov-rdi-imm32
-  [lit]  72 cc-emit-byte
-  [lit] 199 cc-emit-byte
-  [lit] 199 cc-emit-byte
-  cc-emit-4le ;
+  x{ 48 c7 c7 } cc-emit-4le ;                     \ mov rdi, imm32
 
 \ ===========================================================================
 \ Stack ops
@@ -36,30 +33,30 @@ defer cc-emit-track-pop-fwd
 ' cc-emit-track-noop is cc-emit-track-pop-fwd
 
 \ push rdi: 0x57
-: cc-emit-push-rdi  cc-emit-track-push-fwd [lit]  87 cc-emit-byte ;
+: cc-emit-push-rdi  cc-emit-track-push-fwd x{ 57 } ;  \ push rdi
 
 \ pop rdi:  0x5F
-: cc-emit-pop-rdi   cc-emit-track-pop-fwd [lit]  95 cc-emit-byte ;
+: cc-emit-pop-rdi   cc-emit-track-pop-fwd x{ 5f } ;  \ pop rdi
 
 \ pop rsi:  0x5E
-: cc-emit-pop-rsi   cc-emit-track-pop-fwd [lit]  94 cc-emit-byte ;
+: cc-emit-pop-rsi   cc-emit-track-pop-fwd x{ 5e } ;  \ pop rsi
 
 \ pop rdx:  0x5A
-: cc-emit-pop-rdx   cc-emit-track-pop-fwd [lit]  90 cc-emit-byte ;
+: cc-emit-pop-rdx   cc-emit-track-pop-fwd x{ 5a } ;  \ pop rdx
 
 \ pop rcx:  0x59
-: cc-emit-pop-rcx   cc-emit-track-pop-fwd [lit]  89 cc-emit-byte ;
+: cc-emit-pop-rcx   cc-emit-track-pop-fwd x{ 59 } ;  \ pop rcx
 
 \ pop r8:   0x41 0x58  (REX.B + pop)
-: cc-emit-pop-r8    cc-emit-track-pop-fwd [lit]  65 cc-emit-byte [lit]  88 cc-emit-byte ;
+: cc-emit-pop-r8    cc-emit-track-pop-fwd x{ 41 58 } ;  \ pop r8
 
 \ pop r9:   0x41 0x59
-: cc-emit-pop-r9    cc-emit-track-pop-fwd [lit]  65 cc-emit-byte [lit]  89 cc-emit-byte ;
+: cc-emit-pop-r9    cc-emit-track-pop-fwd x{ 41 59 } ;  \ pop r9
 
 \ push rbx (0x53) / pop rbx (0x5B).  Used by switch to preserve the outer
 \ value of rbx across the switch (which uses rbx to hold the scrutinee).
-: cc-emit-push-rbx  [lit]  83 cc-emit-byte ;
-: cc-emit-pop-rbx   [lit]  91 cc-emit-byte ;
+: cc-emit-push-rbx  x{ 53 } ;                     \ push rbx
+: cc-emit-pop-rbx   x{ 5b } ;                     \ pop rbx
 
 \ ===========================================================================
 \ Local-variable access
@@ -78,7 +75,7 @@ defer cc-emit-track-pop-fwd
 : cc-disp8-from-slot
   1+ [lit] 8 *                                   \ 8 * (slot+1)
   [lit] 0 swap -                                  \ negate
-  [lit] 255 and ;                                 \ low byte
+  $ff and ;                                       \ low byte
 
 \ cc-emit-local-ea ( slot modrm8 -- )
 \   Emit the ModR/M byte + displacement for [rbp + disp] access to a local
@@ -90,81 +87,60 @@ defer cc-emit-track-pop-fwd
     cc-emit-byte
     cc-disp8-from-slot cc-emit-byte
   else,
-    [lit] 64 + cc-emit-byte                       \ mod=01 -> mod=10
+    $40 + cc-emit-byte                            \ mod=01 -> mod=10
     1+ [lit] 8 *                                  \ 8 * (slot+1)
     [lit] 0 swap - cc-emit-4le                    \ negate; low 4 bytes = disp32
   then, ;
 
 \ mov rdi, [rbp + disp]:  48 8B 7D <disp8>  (or 48 8B BD <disp32>)
 : cc-emit-load-local                              ( slot -- )
-  [lit]  72 cc-emit-byte
-  [lit] 139 cc-emit-byte
-  [lit] 125 cc-emit-local-ea ;
+  x{ 48 8b } $7d cc-emit-local-ea ;               \ mov rdi, qword [rbp+disp]
 
 \ mov [rbp + disp], rdi:  48 89 7D <disp8>  (or 48 89 BD <disp32>)
 : cc-emit-store-local                             ( slot -- )
-  [lit]  72 cc-emit-byte
-  [lit] 137 cc-emit-byte
-  [lit] 125 cc-emit-local-ea ;
+  x{ 48 89 } $7d cc-emit-local-ea ;               \ mov qword [rbp+disp], rdi
 
 \ lea rdi, [rbp + disp]:  48 8D 7D <disp8>  (or 48 8D BD <disp32>)
 \ ModR/M(mod=01, reg=rdi=7, rm=rbp=5) = 0x7D.  Loads the *address* of the local
 \ slot into rdi (used to implement `&local`).
 : cc-emit-lea-rdi-local                           ( slot -- )
-  [lit]  72 cc-emit-byte
-  [lit] 141 cc-emit-byte
-  [lit] 125 cc-emit-local-ea ;
+  x{ 48 8d } $7d cc-emit-local-ea ;               \ lea rdi, [rbp+disp]
 
 \ mov rdi, [rdi]:  48 8B 3F
 \ ModR/M(mod=00, reg=rdi=7, rm=rdi=7) = 0x3F.  Loads the qword at the address
 \ currently in rdi into rdi (dereference).
 : cc-emit-load-via-rdi
-  [lit]  72 cc-emit-byte
-  [lit] 139 cc-emit-byte
-  [lit]  63 cc-emit-byte ;
+  x{ 48 8b 3f } ;                                 \ mov rdi, qword [rdi]
 
 \ movzx rdi, BYTE PTR [rdi]:  48 0F B6 3F
 \ Zero-extends a single byte from [rdi] into rdi.  Used by `s[i]` rvalue use
 \ where s is `char*` (or any other byte-element access path).
 : cc-emit-load-byte-via-rdi
-  [lit]  72 cc-emit-byte
-  [lit]  15 cc-emit-byte
-  [lit] 182 cc-emit-byte
-  [lit]  63 cc-emit-byte ;
+  x{ 48 0f b6 3f } ;                              \ movzx rdi, byte [rdi]
 
 \ movzx edi, dil:  40 0F B6 FF
 \ Keeps only rdi's low byte (writing edi clears the upper half of rdi).
 \ REX=0x40 selects dil rather than bh.  Used by a (char) cast.
 : cc-emit-zx-byte-rdi
-  [lit]  64 cc-emit-byte
-  [lit]  15 cc-emit-byte
-  [lit] 182 cc-emit-byte
-  [lit] 255 cc-emit-byte ;
+  x{ 40 0f b6 ff } ;                              \ movzx edi, dil
 
 \ mov [rcx], rdi:  48 89 39
 \ ModR/M(mod=00, reg=rdi=7, rm=rcx=1) = 0x39.  Stores rdi to the qword address
 \ in rcx (assignment via dereference).
 : cc-emit-store-via-rcx
-  [lit]  72 cc-emit-byte
-  [lit] 137 cc-emit-byte
-  [lit]  57 cc-emit-byte ;
+  x{ 48 89 39 } ;                                 \ mov qword [rcx], rdi
 
 \ mov BYTE PTR [rcx], dil:  40 88 39
 \ Stores the low byte of rdi to [rcx].  REX=0x40 is needed to select dil
 \ instead of bh.  Used by `s[i] = c;` where s is char*.
 : cc-emit-store-byte-via-rcx
-  [lit]  64 cc-emit-byte
-  [lit] 136 cc-emit-byte
-  [lit]  57 cc-emit-byte ;
+  x{ 40 88 39 } ;                                 \ mov byte [rcx], dil
 
 \ shl rdi, imm8:  48 C1 E7 <imm8>
 \ ModR/M(mod=11, reg=/4 = SHL, rm=rdi=7) = 11_100_111 = 0xE7.  Multiplies rdi
 \ by 2^imm8 (used to scale array index by sizeof(T) when T is 8 bytes).
 : cc-emit-shl-rdi-imm8                            ( imm8 -- )
-  [lit]  72 cc-emit-byte
-  [lit] 193 cc-emit-byte
-  [lit] 231 cc-emit-byte
-  cc-emit-byte ;
+  x{ 48 c1 e7 } cc-emit-byte ;                    \ shl rdi, imm8
 
 \ Convenience: rdi <<= 3 (multiply by 8 = sizeof(int)/sizeof(ptr)).
 : cc-emit-shl-rdi-3   [lit] 3 cc-emit-shl-rdi-imm8 ;
@@ -173,10 +149,7 @@ defer cc-emit-track-pop-fwd
 \ ModR/M(mod=11, reg=/0 = ADD, rm=rdi=7) = 11_000_111 = 0xC7.  Used to bias
 \ a struct base/pointer in rdi by a field offset.  imm32 is sign-extended.
 : cc-emit-add-rdi-imm32                           ( imm32 -- )
-  [lit]  72 cc-emit-byte
-  [lit] 129 cc-emit-byte
-  [lit] 199 cc-emit-byte
-  cc-emit-4le ;
+  x{ 48 81 c7 } cc-emit-4le ;                     \ add rdi, imm32
 
 \ Param-spill helpers: store the SYS-V argument register holding the i'th
 \ argument into local slot i.  Each one is `mov [rbp + disp8], <reg>`.
@@ -190,44 +163,31 @@ defer cc-emit-track-pop-fwd
 \   reg=r9 (1 with R bit): 01_001_101 = 0x4D
 
 : cc-emit-store-local-from-rsi                    ( slot -- )
-  [lit]  72 cc-emit-byte
-  [lit] 137 cc-emit-byte
-  [lit] 117 cc-emit-local-ea ;                    \ 0x75
+  x{ 48 89 } $75 cc-emit-local-ea ;               \ mov qword [rbp+disp], rsi
 
 : cc-emit-store-local-from-rdx                    ( slot -- )
-  [lit]  72 cc-emit-byte
-  [lit] 137 cc-emit-byte
-  [lit]  85 cc-emit-local-ea ;                    \ 0x55
+  x{ 48 89 } $55 cc-emit-local-ea ;               \ mov qword [rbp+disp], rdx
 
 : cc-emit-store-local-from-rcx                    ( slot -- )
-  [lit]  72 cc-emit-byte
-  [lit] 137 cc-emit-byte
-  [lit]  77 cc-emit-local-ea ;                    \ 0x4D
+  x{ 48 89 } $4d cc-emit-local-ea ;               \ mov qword [rbp+disp], rcx
 
 : cc-emit-store-local-from-r8                     ( slot -- )
-  [lit]  76 cc-emit-byte                          \ REX.W+R = 0x4C
-  [lit] 137 cc-emit-byte
-  [lit]  69 cc-emit-local-ea ;                    \ 0x45
+  x{ 4c 89 } $45 cc-emit-local-ea ;               \ mov qword [rbp+disp], r8
 
 : cc-emit-store-local-from-r9                     ( slot -- )
-  [lit]  76 cc-emit-byte
-  [lit] 137 cc-emit-byte
-  [lit]  77 cc-emit-local-ea ;                    \ 0x4D
+  x{ 4c 89 } $4d cc-emit-local-ea ;               \ mov qword [rbp+disp], r9
 
 \ mov rax, [rbp + disp]:  48 8B 45 <disp8>  (or 48 8B 85 <disp32>)
 \ ModR/M(mod=01, reg=rax=0, rm=rbp=5) = 01_000_101 = 0x45.  Used to load a
 \ function-pointer local into rax just before an indirect `call rax` — keeps
 \ rdi/rsi/etc. (already loaded with SYS-V args) untouched.
 : cc-emit-load-local-into-rax                     ( slot -- )
-  [lit]  72 cc-emit-byte
-  [lit] 139 cc-emit-byte
-  [lit]  69 cc-emit-local-ea ;                    \ 0x45
+  x{ 48 8b } $45 cc-emit-local-ea ;               \ mov rax, qword [rbp+disp]
 
 \ call rax:  FF D0   (no REX needed; rax = reg 0).
 \ ModR/M(mod=11, reg=/2 = CALL r/m64, rm=rax=0) = 11_010_000 = 0xD0.
 : cc-emit-call-rax
-  [lit] 255 cc-emit-byte
-  [lit] 208 cc-emit-byte ;
+  x{ ff d0 } ;                                    \ call rax
 
 \ ===========================================================================
 \ Register-to-register moves
@@ -237,46 +197,33 @@ defer cc-emit-track-pop-fwd
 
 \ mov rcx, rdi:  48 89 F9     (89 /r, mod=11 reg=rdi=7 rm=rcx=1 -> 11_111_001 = F9)
 : cc-emit-mov-rcx-rdi
-  [lit]  72 cc-emit-byte
-  [lit] 137 cc-emit-byte
-  [lit] 249 cc-emit-byte ;
+  x{ 48 89 f9 } ;                                 \ mov rcx, rdi
 
 \ mov rax, rdi:  48 89 F8     (mod=11 reg=rdi=7 rm=rax=0 -> 11_111_000 = F8)
 : cc-emit-mov-rax-rdi
-  [lit]  72 cc-emit-byte
-  [lit] 137 cc-emit-byte
-  [lit] 248 cc-emit-byte ;
+  x{ 48 89 f8 } ;                                 \ mov rax, rdi
 
 \ mov rdi, rax:  48 89 C7     (mod=11 reg=rax=0 rm=rdi=7 -> 11_000_111 = C7)
 \ Used after a function call to transfer the SYS-V return value into our
 \ scratch rdi so the rest of the expression machinery sees it.
 : cc-emit-mov-rdi-rax
-  [lit]  72 cc-emit-byte
-  [lit] 137 cc-emit-byte
-  [lit] 199 cc-emit-byte ;
+  x{ 48 89 c7 } ;                                 \ mov rdi, rax
 
 \ mov rbx, rdi:  48 89 FB   (89 /r, mod=11 reg=rdi=7 rm=rbx=3 -> 11_111_011 = FB)
 \ Used at switch entry to stash the scrutinee in a callee-saved register so
 \ it survives across case-body codegen (including any function calls).
 : cc-emit-mov-rbx-rdi
-  [lit]  72 cc-emit-byte
-  [lit] 137 cc-emit-byte
-  [lit] 251 cc-emit-byte ;
+  x{ 48 89 fb } ;                                 \ mov rbx, rdi
 
 \ cmp rbx, imm32:  48 81 FB <imm32>   (81 /7, mod=11 /7=111 rm=rbx=3 -> FB)
 \ Used by switch dispatch to compare the saved scrutinee against each case
 \ constant.  Sets ZF iff rbx == imm32.  imm32 is sign-extended to 64 bits.
 : cc-emit-cmp-rbx-imm32                           ( v -- )
-  [lit]  72 cc-emit-byte
-  [lit] 129 cc-emit-byte
-  [lit] 251 cc-emit-byte
-  cc-emit-4le ;
+  x{ 48 81 fb } cc-emit-4le ;                     \ cmp rbx, imm32
 
 \ xor rax, rax:  48 31 C0     (zero rax in 3 bytes; for implicit return).
 : cc-emit-xor-rax-rax
-  [lit]  72 cc-emit-byte
-  [lit]  49 cc-emit-byte
-  [lit] 192 cc-emit-byte ;
+  x{ 48 31 c0 } ;                                 \ xor rax, rax
 
 \ ===========================================================================
 \ ALU on rdi using rcx as the right operand
@@ -292,25 +239,18 @@ defer cc-emit-track-pop-fwd
 \ ADD r/m64, r64 (0x01 /r): rm=dst, reg=src.
 \   add rdi, rcx -> mod=11 reg=rcx=1 rm=rdi=7 -> 11_001_111 = 0xCF
 : cc-emit-add-rdi-rcx
-  [lit]  72 cc-emit-byte
-  [lit]   1 cc-emit-byte
-  [lit] 207 cc-emit-byte ;
+  x{ 48 01 cf } ;                                 \ add rdi, rcx
 
 \ SUB r/m64, r64 (0x29 /r): same encoding shape.
 \   sub rdi, rcx -> 0xCF
 : cc-emit-sub-rdi-rcx
-  [lit]  72 cc-emit-byte
-  [lit]  41 cc-emit-byte
-  [lit] 207 cc-emit-byte ;
+  x{ 48 29 cf } ;                                 \ sub rdi, rcx
 
 \ IMUL r64, r/m64 (0x0F AF /r): reg=dst, rm=src (NOTE the operand order is
 \ flipped from add/sub).
 \   imul rdi, rcx -> mod=11 reg=rdi=7 rm=rcx=1 -> 11_111_001 = 0xF9
 : cc-emit-imul-rdi-rcx
-  [lit]  72 cc-emit-byte
-  [lit]  15 cc-emit-byte
-  [lit] 175 cc-emit-byte
-  [lit] 249 cc-emit-byte ;
+  x{ 48 0f af f9 } ;                              \ imul rdi, rcx
 
 \ Signed division: idiv divides rdx:rax by r/m64, leaving quotient in rax,
 \ remainder in rdx.  We want rdi := rdi / rcx (or rdi % rcx).  Sequence:
@@ -319,16 +259,16 @@ defer cc-emit-track-pop-fwd
 \     idiv rcx          ; 48 F7 F9         (F7 /7, mod=11 rm=rcx=1 -> 11_111_001=0xF9)
 \     mov rdi, rax|rdx  ; 48 89 C7 (rax) or 48 89 D7 (rdx)
 : cc-emit-idiv-quotient
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte [lit] 248 cc-emit-byte
-  [lit]  72 cc-emit-byte [lit] 153 cc-emit-byte
-  [lit]  72 cc-emit-byte [lit] 247 cc-emit-byte [lit] 249 cc-emit-byte
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte [lit] 199 cc-emit-byte ;
+  x{ 48 89 f8 }                                   \ mov rax, rdi
+  x{ 48 99 }                                      \ cqo
+  x{ 48 f7 f9 }                                   \ idiv rcx
+  x{ 48 89 c7 } ;                                 \ mov rdi, rax
 
 : cc-emit-idiv-remainder
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte [lit] 248 cc-emit-byte
-  [lit]  72 cc-emit-byte [lit] 153 cc-emit-byte
-  [lit]  72 cc-emit-byte [lit] 247 cc-emit-byte [lit] 249 cc-emit-byte
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte [lit] 215 cc-emit-byte ;
+  x{ 48 89 f8 }                                   \ mov rax, rdi
+  x{ 48 99 }                                      \ cqo
+  x{ 48 f7 f9 }                                   \ idiv rcx
+  x{ 48 89 d7 } ;                                 \ mov rdi, rdx
 
 \ ===========================================================================
 \ Function prologue / epilogue
@@ -337,14 +277,9 @@ defer cc-emit-track-pop-fwd
 \ Epilogue:  mov rsp, rbp ; pop rbp ; ret
 
 : cc-emit-prologue                                ( frame-bytes -- )
-  [lit]  85 cc-emit-byte                          \ push rbp
-  [lit]  72 cc-emit-byte
-  [lit] 137 cc-emit-byte
-  [lit] 229 cc-emit-byte                          \ mov rbp, rsp
-  [lit]  72 cc-emit-byte
-  [lit] 129 cc-emit-byte
-  [lit] 236 cc-emit-byte                          \ sub rsp, imm32 prefix
-  cc-emit-4le ;
+  x{ 55 }                                         \ push rbp
+  x{ 48 89 e5 }                                   \ mov rbp, rsp
+  x{ 48 81 ec } cc-emit-4le ;                     \ sub rsp, imm32
 
 : cc-emit-restore-noop ;
 defer cc-emit-restore-callee-fwd
@@ -352,11 +287,9 @@ defer cc-emit-restore-callee-fwd
 
 : cc-emit-epilogue
   cc-emit-restore-callee-fwd
-  [lit]  72 cc-emit-byte
-  [lit] 137 cc-emit-byte
-  [lit] 236 cc-emit-byte                          \ mov rsp, rbp
-  [lit]  93 cc-emit-byte                          \ pop rbp
-  [lit] 195 cc-emit-byte ;                        \ ret
+  x{ 48 89 ec }                                   \ mov rsp, rbp
+  x{ 5d }                                         \ pop rbp
+  x{ c3 } ;                                       \ ret
 
 \ ===========================================================================
 \ Comparisons: set rdi to 0 or 1 based on signed comparison of left/right.
@@ -371,19 +304,17 @@ defer cc-emit-restore-callee-fwd
 \ cc-emit-cmp-set ( setX-opcode -- )  Common tail; caller passes the second
 \ byte of the setcc opcode (0x94, 0x95, 0x9C, 0x9D, 0x9E, 0x9F).
 : cc-emit-cmp-set
-  [lit]  72 cc-emit-byte [lit]  49 cc-emit-byte [lit] 192 cc-emit-byte   \ xor rax,rax
-  [lit]  72 cc-emit-byte [lit]  57 cc-emit-byte [lit] 207 cc-emit-byte   \ cmp rdi,rcx
-  [lit]  15 cc-emit-byte                                                  \ 0F prefix
-  cc-emit-byte                                                            \ setX opcode
-  [lit] 192 cc-emit-byte                                                  \ ModR/M for AL
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte [lit] 199 cc-emit-byte ; \ mov rdi,rax
+  x{ 48 31 c0 }                                   \ xor rax, rax
+  x{ 48 39 cf }                                   \ cmp rdi, rcx
+  x{ 0f } cc-emit-byte x{ c0 }                    \ setX al  (X: the opcode byte passed in)
+  x{ 48 89 c7 } ;                                 \ mov rdi, rax
 
-: cc-emit-cmp-eq  [lit] 148 cc-emit-cmp-set ;     \ 0x94 setE
-: cc-emit-cmp-ne  [lit] 149 cc-emit-cmp-set ;     \ 0x95 setNE
-: cc-emit-cmp-lt  [lit] 156 cc-emit-cmp-set ;     \ 0x9C setL
-: cc-emit-cmp-ge  [lit] 157 cc-emit-cmp-set ;     \ 0x9D setGE
-: cc-emit-cmp-le  [lit] 158 cc-emit-cmp-set ;     \ 0x9E setLE
-: cc-emit-cmp-gt  [lit] 159 cc-emit-cmp-set ;     \ 0x9F setG
+: cc-emit-cmp-eq  $94 cc-emit-cmp-set ;           \ sete al
+: cc-emit-cmp-ne  $95 cc-emit-cmp-set ;           \ setne al
+: cc-emit-cmp-lt  $9c cc-emit-cmp-set ;           \ setl al
+: cc-emit-cmp-ge  $9d cc-emit-cmp-set ;           \ setge al
+: cc-emit-cmp-le  $9e cc-emit-cmp-set ;           \ setle al
+: cc-emit-cmp-gt  $9f cc-emit-cmp-set ;           \ setg al
 
 \ ===========================================================================
 \ Conditional / unconditional branches with rel32 fixups.
@@ -391,25 +322,18 @@ defer cc-emit-restore-callee-fwd
 
 \ test rdi, rdi  -> 48 85 FF  (sets ZF=1 iff rdi == 0).
 : cc-emit-test-rdi
-  [lit]  72 cc-emit-byte
-  [lit] 133 cc-emit-byte
-  [lit] 255 cc-emit-byte ;
+  x{ 48 85 ff } ;                                 \ test rdi, rdi
 
 \ cc-emit-jz-rel32-placeholder ( -- patch-offset )
 \ Emits `0F 84 00 00 00 00`; returns the file-offset of the rel32 cell
 \ so the caller can later patch it with cc-patch-rel32-to-here.
 : cc-emit-jz-rel32-placeholder
-  [lit]  15 cc-emit-byte
-  [lit] 132 cc-emit-byte
-  cc-out-pos @
-  [lit] 0 cc-emit-4le ;
+  x{ 0f 84 } cc-out-pos @ 0 cc-emit-4le ;         \ jz rel32
 
 \ cc-emit-jmp-rel32-placeholder ( -- patch-offset )
 \ Emits `E9 00 00 00 00`; returns the rel32 file-offset.
 : cc-emit-jmp-rel32-placeholder
-  [lit] 233 cc-emit-byte
-  cc-out-pos @
-  [lit] 0 cc-emit-4le ;
+  x{ e9 } cc-out-pos @ 0 cc-emit-4le ;            \ jmp rel32
 
 \ cc-emit-call-rel32-placeholder ( -- patch-offset )
 \ Emits `E8 00 00 00 00`; returns the rel32 file-offset.  Used for forward
@@ -417,18 +341,13 @@ defer cc-emit-restore-callee-fwd
 \ patch offset onto a fixup list attached to the callee's prototype symbol;
 \ the list is walked and patched when the function is later defined.
 : cc-emit-call-rel32-placeholder
-  [lit] 232 cc-emit-byte
-  cc-out-pos @
-  [lit] 0 cc-emit-4le ;
+  x{ e8 } cc-out-pos @ 0 cc-emit-4le ;            \ call rel32
 
 \ cc-emit-jnz-rel32-placeholder ( -- patch-offset )
 \ Emits `0F 85 00 00 00 00`; returns the rel32 file-offset.  Used by `||`'s
 \ short-circuit fast-path: if LHS is non-zero, skip RHS and produce 1.
 : cc-emit-jnz-rel32-placeholder
-  [lit]  15 cc-emit-byte
-  [lit] 133 cc-emit-byte
-  cc-out-pos @
-  [lit] 0 cc-emit-4le ;
+  x{ 0f 85 } cc-out-pos @ 0 cc-emit-4le ;         \ jnz rel32
 
 \ cc-patch-rel32-to-here ( patch-offset -- )
 \ rel32 = current cc-out-pos - (patch-offset + 4).
@@ -449,9 +368,7 @@ defer cc-emit-restore-callee-fwd
 \ Encoding: 48 BF <imm64-LE>  (10 bytes total).
 
 : cc-emit-movabs-rdi-imm64                        ( v -- )
-  [lit]  72 cc-emit-byte                          \ REX.W
-  [lit] 191 cc-emit-byte                          \ B7 + rdi (7) = BF
-  cc-emit-8le ;
+  x{ 48 bf } cc-emit-8le ;                        \ movabs rdi, imm64
 
 \ cc-emit-mov-rdi-int ( v -- )  Load an integer literal into rdi using the
 \ shortest correct encoding.  `mov rdi, imm32` (7 bytes) sign-extends its
@@ -483,10 +400,7 @@ defer cc-emit-restore-callee-fwd
 \ list is walked and each 8-byte imm64 is patched to the function's real
 \ vaddr when cc-parse-function processes its definition.
 : cc-emit-movabs-rdi-imm64-placeholder
-  [lit]  72 cc-emit-byte
-  [lit] 191 cc-emit-byte
-  cc-out-pos @
-  [lit] 0 cc-emit-8le ;
+  x{ 48 bf } cc-out-pos @ 0 cc-emit-8le ;         \ movabs rdi, imm64
 
 \ cc-add-fixup-to-list ( fixup-offset list-var -- )  Allocate a 16-byte node
 \ and prepend it to the linked list rooted at list-var.  Defined here so
@@ -530,7 +444,7 @@ defer cc-emit-restore-callee-fwd
     then,
   repeat,
   drop drop
-  [lit] 0 cc-emit-byte ;                          \ trailing NUL terminator
+  0 cc-emit-byte ;                                \ trailing NUL terminator
 
 \ ===========================================================================
 \ Built-in libc shims (putchar, exit, getchar) emitted at the start of
@@ -557,18 +471,14 @@ defer cc-emit-restore-callee-fwd
 \   pop rdi              5F                       (restore rsp)
 \   ret                  C3
 : cc-emit-putchar-shim
-  [lit]  87 cc-emit-byte                          \ push rdi
-  [lit]  72 cc-emit-byte [lit] 199 cc-emit-byte [lit] 192 cc-emit-byte
-  [lit]   1 cc-emit-4le                           \ mov rax, 1
-  [lit]  72 cc-emit-byte [lit] 199 cc-emit-byte [lit] 199 cc-emit-byte
-  [lit]   1 cc-emit-4le                           \ mov rdi, 1
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte [lit] 230 cc-emit-byte
-                                                  \ mov rsi, rsp
-  [lit]  72 cc-emit-byte [lit] 199 cc-emit-byte [lit] 194 cc-emit-byte
-  [lit]   1 cc-emit-4le                           \ mov rdx, 1
-  [lit]  15 cc-emit-byte [lit]   5 cc-emit-byte   \ syscall
-  [lit]  95 cc-emit-byte                          \ pop rdi
-  [lit] 195 cc-emit-byte ;                        \ ret
+  x{ 57 }                                         \ push rdi
+  x{ 48 c7 c0 } 1 cc-emit-4le                     \ mov rax, 1
+  x{ 48 c7 c7 } 1 cc-emit-4le                     \ mov rdi, 1
+  x{ 48 89 e6 }                                   \ mov rsi, rsp
+  x{ 48 c7 c2 } 1 cc-emit-4le                     \ mov rdx, 1
+  x{ 0f 05 }                                      \ syscall
+  x{ 5f }                                         \ pop rdi
+  x{ c3 } ;                                       \ ret
 
 \ -- exit(int n): syscall 60 with rdi = n.  10 bytes.
 \
@@ -576,10 +486,9 @@ defer cc-emit-restore-callee-fwd
 \   syscall              0F 05
 \   ret                  C3                        (unreachable but tidy)
 : cc-emit-exit-shim
-  [lit]  72 cc-emit-byte [lit] 199 cc-emit-byte [lit] 192 cc-emit-byte
-  [lit]  60 cc-emit-4le                           \ mov rax, 60
-  [lit]  15 cc-emit-byte [lit]   5 cc-emit-byte   \ syscall
-  [lit] 195 cc-emit-byte ;                        \ ret
+  x{ 48 c7 c0 } 60 cc-emit-4le                    \ mov rax, 60
+  x{ 0f 05 }                                      \ syscall
+  x{ c3 } ;                                       \ ret
 
 \ -- getchar(void): read 1 byte from fd 0; return -1 on EOF.  48 bytes.
 \
@@ -599,28 +508,19 @@ defer cc-emit-restore-callee-fwd
 \   pop rdi              5F
 \   ret                  C3
 : cc-emit-getchar-shim
-  [lit]  87 cc-emit-byte                          \ push rdi
-  [lit]  72 cc-emit-byte [lit] 199 cc-emit-byte [lit] 192 cc-emit-byte
-  [lit]   0 cc-emit-4le                           \ mov rax, 0
-  [lit]  72 cc-emit-byte [lit] 199 cc-emit-byte [lit] 199 cc-emit-byte
-  [lit]   0 cc-emit-4le                           \ mov rdi, 0
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte [lit] 230 cc-emit-byte
-                                                  \ mov rsi, rsp
-  [lit]  72 cc-emit-byte [lit] 199 cc-emit-byte [lit] 194 cc-emit-byte
-  [lit]   1 cc-emit-4le                           \ mov rdx, 1
-  [lit]  15 cc-emit-byte [lit]   5 cc-emit-byte   \ syscall
-  [lit]  72 cc-emit-byte [lit] 133 cc-emit-byte [lit] 192 cc-emit-byte
-                                                  \ test rax, rax
-  [lit] 117 cc-emit-byte [lit]   9 cc-emit-byte   \ jnz +9 (skip mov+jmp)
-  [lit]  72 cc-emit-byte [lit] 199 cc-emit-byte [lit] 192 cc-emit-byte
-  [lit] 255 cc-emit-byte [lit] 255 cc-emit-byte
-  [lit] 255 cc-emit-byte [lit] 255 cc-emit-byte   \ mov rax, -1 (sign-extended imm32 = FFFFFFFF)
-  [lit] 235 cc-emit-byte [lit]   5 cc-emit-byte   \ jmp +5 (skip movzx)
-  [lit]  72 cc-emit-byte [lit]  15 cc-emit-byte
-  [lit] 182 cc-emit-byte [lit]   4 cc-emit-byte
-  [lit]  36 cc-emit-byte                          \ movzx rax, byte [rsp]
-  [lit]  95 cc-emit-byte                          \ pop rdi
-  [lit] 195 cc-emit-byte ;                        \ ret
+  x{ 57 }                                         \ push rdi
+  x{ 48 c7 c0 } 0 cc-emit-4le                     \ mov rax, 0
+  x{ 48 c7 c7 } 0 cc-emit-4le                     \ mov rdi, 0
+  x{ 48 89 e6 }                                   \ mov rsi, rsp
+  x{ 48 c7 c2 } 1 cc-emit-4le                     \ mov rdx, 1
+  x{ 0f 05 }                                      \ syscall
+  x{ 48 85 c0 }                                   \ test rax, rax
+  x{ 75 09 }                                      \ jnz +9  (skip mov+jmp)
+  x{ 48 c7 c0 ff ff ff ff }                       \ mov rax, -1  (sign-extended imm32 = FFFFFFFF)
+  x{ eb 05 }                                      \ jmp +5  (skip movzx)
+  x{ 48 0f b6 04 24 }                             \ movzx rax, byte [rsp]
+  x{ 5f }                                         \ pop rdi
+  x{ c3 } ;                                       \ ret
 
 \ ===========================================================================
 \ Libc shims: fputs, fputc, fopen, fclose, fwrite, fread, calloc,
@@ -647,25 +547,20 @@ defer cc-emit-restore-callee-fwd
 \   syscall            0F 05
 \   ret                C3
 : cc-emit-fputs-shim
-  [lit]  87 cc-emit-byte                          \ push rdi
-  [lit]  86 cc-emit-byte                          \ push rsi
-  [lit]  72 cc-emit-byte [lit]  49 cc-emit-byte
-  [lit] 210 cc-emit-byte                          \ xor rdx, rdx
-  [lit]  15 cc-emit-byte [lit] 182 cc-emit-byte
-  [lit]  12 cc-emit-byte [lit]  23 cc-emit-byte   \ movzx ecx, [rdi+rdx]
-  [lit] 132 cc-emit-byte [lit] 201 cc-emit-byte   \ test cl, cl
-  [lit] 116 cc-emit-byte [lit]   5 cc-emit-byte   \ jz +5
-  [lit]  72 cc-emit-byte [lit] 255 cc-emit-byte
-  [lit] 194 cc-emit-byte                          \ inc rdx
-  [lit] 235 cc-emit-byte [lit] 243 cc-emit-byte   \ jmp .loop  (disp = -13)
-  [lit]  72 cc-emit-byte [lit] 199 cc-emit-byte
-  [lit] 192 cc-emit-byte [lit]   1 cc-emit-4le    \ mov rax, 1
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit] 254 cc-emit-byte                          \ mov rsi, rdi  (buf)
-  [lit]  95 cc-emit-byte                          \ pop rdi  (fd)
-  [lit]  89 cc-emit-byte                          \ pop rcx  (discard str)
-  [lit]  15 cc-emit-byte [lit]   5 cc-emit-byte   \ syscall
-  [lit] 195 cc-emit-byte ;                        \ ret
+  x{ 57 }                                         \ push rdi
+  x{ 56 }                                         \ push rsi
+  x{ 48 31 d2 }                                   \ xor rdx, rdx
+  x{ 0f b6 0c 17 }                                \ movzx ecx, byte [rdi+rdx]
+  x{ 84 c9 }                                      \ test cl, cl
+  x{ 74 05 }                                      \ jz +5
+  x{ 48 ff c2 }                                   \ inc rdx
+  x{ eb f3 }                                      \ jmp -13  (.loop)
+  x{ 48 c7 c0 } 1 cc-emit-4le                     \ mov rax, 1
+  x{ 48 89 fe }                                   \ mov rsi, rdi  (buf)
+  x{ 5f }                                         \ pop rdi  (fd)
+  x{ 59 }                                         \ pop rcx  (discard str)
+  x{ 0f 05 }                                      \ syscall
+  x{ c3 } ;                                       \ ret
 
 \ -- fputc(int c, FILE *fp) -> c on success.  30 bytes.
 \
@@ -679,20 +574,15 @@ defer cc-emit-restore-callee-fwd
 \   pop rcx            59
 \   ret                C3
 : cc-emit-fputc-shim
-  [lit]  87 cc-emit-byte                          \ push rdi
-  [lit]  72 cc-emit-byte [lit] 199 cc-emit-byte
-  [lit] 192 cc-emit-byte [lit]   1 cc-emit-4le    \ mov rax, 1
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit] 247 cc-emit-byte                          \ mov rdi, rsi  (fd)
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit] 230 cc-emit-byte                          \ mov rsi, rsp  (buf)
-  [lit]  72 cc-emit-byte [lit] 199 cc-emit-byte
-  [lit] 194 cc-emit-byte [lit]   1 cc-emit-4le    \ mov rdx, 1
-  [lit]  15 cc-emit-byte [lit]   5 cc-emit-byte   \ syscall
-  [lit]  15 cc-emit-byte [lit] 182 cc-emit-byte
-  [lit]   4 cc-emit-byte [lit]  36 cc-emit-byte   \ movzx eax, [rsp]
-  [lit]  89 cc-emit-byte                          \ pop rcx
-  [lit] 195 cc-emit-byte ;                        \ ret
+  x{ 57 }                                         \ push rdi
+  x{ 48 c7 c0 } 1 cc-emit-4le                     \ mov rax, 1
+  x{ 48 89 f7 }                                   \ mov rdi, rsi  (fd)
+  x{ 48 89 e6 }                                   \ mov rsi, rsp  (buf)
+  x{ 48 c7 c2 } 1 cc-emit-4le                     \ mov rdx, 1
+  x{ 0f 05 }                                      \ syscall
+  x{ 0f b6 04 24 }                                \ movzx eax, byte [rsp]
+  x{ 59 }                                         \ pop rcx
+  x{ c3 } ;                                       \ ret
 
 \ -- fopen(char *path, char *mode) -> fd on success, 0 on error.  51 bytes.
 \
@@ -718,29 +608,24 @@ defer cc-emit-restore-callee-fwd
 \ .ok:
 \   ret                C3
 : cc-emit-fopen-shim
-  [lit]  87 cc-emit-byte                          \ push rdi
-  [lit]  15 cc-emit-byte [lit] 182 cc-emit-byte
-  [lit]   6 cc-emit-byte                          \ movzx eax, [rsi]
-  [lit]  49 cc-emit-byte [lit] 246 cc-emit-byte   \ xor esi, esi
-  [lit] 131 cc-emit-byte [lit] 248 cc-emit-byte
-  [char] w  cc-emit-byte                          \ cmp eax, 'w'
-  [lit] 117 cc-emit-byte [lit]   7 cc-emit-byte   \ jne +7
-  [lit] 190 cc-emit-byte [lit] 577 cc-emit-4le    \ mov esi, 0x241
-  [lit] 235 cc-emit-byte [lit]  10 cc-emit-byte   \ jmp +10
-  [lit] 131 cc-emit-byte [lit] 248 cc-emit-byte
-  [char] a  cc-emit-byte                          \ cmp eax, 'a'
-  [lit] 117 cc-emit-byte [lit]   5 cc-emit-byte   \ jne +5
-  [lit] 190 cc-emit-byte [lit] 1089 cc-emit-4le   \ mov esi, 0x441
-  [lit]  95 cc-emit-byte                          \ pop rdi
-  [lit]  72 cc-emit-byte [lit] 199 cc-emit-byte
-  [lit] 192 cc-emit-byte [lit]   2 cc-emit-4le    \ mov rax, 2
-  [lit] 186 cc-emit-byte [lit] 420 cc-emit-4le    \ mov edx, 0644
-  [lit]  15 cc-emit-byte [lit]   5 cc-emit-byte   \ syscall
-  [lit]  72 cc-emit-byte [lit] 133 cc-emit-byte
-  [lit] 192 cc-emit-byte                          \ test rax, rax
-  [lit] 121 cc-emit-byte [lit]   2 cc-emit-byte   \ jns +2
-  [lit]  49 cc-emit-byte [lit] 192 cc-emit-byte   \ xor eax, eax
-  [lit] 195 cc-emit-byte ;                        \ ret
+  x{ 57 }                                         \ push rdi
+  x{ 0f b6 06 }                                   \ movzx eax, byte [rsi]
+  x{ 31 f6 }                                      \ xor esi, esi
+  x{ 83 f8 } [char] w cc-emit-byte                \ cmp eax, 'w'
+  x{ 75 07 }                                      \ jne +7
+  x{ be } 577 cc-emit-4le                         \ mov esi, 0x241
+  x{ eb 0a }                                      \ jmp +10
+  x{ 83 f8 } [char] a cc-emit-byte                \ cmp eax, 'a'
+  x{ 75 05 }                                      \ jne +5
+  x{ be } 1089 cc-emit-4le                        \ mov esi, 0x441
+  x{ 5f }                                         \ pop rdi
+  x{ 48 c7 c0 } 2 cc-emit-4le                     \ mov rax, 2
+  x{ ba } 420 cc-emit-4le                         \ mov edx, 0x1a4  (mode 0644)
+  x{ 0f 05 }                                      \ syscall
+  x{ 48 85 c0 }                                   \ test rax, rax
+  x{ 79 02 }                                      \ jns +2
+  x{ 31 c0 }                                      \ xor eax, eax
+  x{ c3 } ;                                       \ ret
 
 \ -- fclose(FILE *fp) -> 0.  12 bytes.
 \
@@ -749,11 +634,10 @@ defer cc-emit-restore-callee-fwd
 \   xor eax, eax  31 C0
 \   ret           C3
 : cc-emit-fclose-shim
-  [lit]  72 cc-emit-byte [lit] 199 cc-emit-byte
-  [lit] 192 cc-emit-byte [lit]   3 cc-emit-4le    \ mov rax, 3
-  [lit]  15 cc-emit-byte [lit]   5 cc-emit-byte   \ syscall
-  [lit]  49 cc-emit-byte [lit] 192 cc-emit-byte   \ xor eax, eax
-  [lit] 195 cc-emit-byte ;                        \ ret
+  x{ 48 c7 c0 } 3 cc-emit-4le                     \ mov rax, 3
+  x{ 0f 05 }                                      \ syscall
+  x{ 31 c0 }                                      \ xor eax, eax
+  x{ c3 } ;                                       \ ret
 
 \ -- fwrite(void *ptr, size_t sz, size_t n, FILE *fp) -> bytes written.  20 bytes.
 \
@@ -764,16 +648,12 @@ defer cc-emit-restore-callee-fwd
 \   syscall        0F 05
 \   ret            C3
 : cc-emit-fwrite-shim
-  [lit]  72 cc-emit-byte [lit]  15 cc-emit-byte
-  [lit] 175 cc-emit-byte [lit] 214 cc-emit-byte   \ imul rdx, rsi
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit] 254 cc-emit-byte                          \ mov rsi, rdi  (buf)
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit] 207 cc-emit-byte                          \ mov rdi, rcx  (fd)
-  [lit]  72 cc-emit-byte [lit] 199 cc-emit-byte
-  [lit] 192 cc-emit-byte [lit]   1 cc-emit-4le    \ mov rax, 1
-  [lit]  15 cc-emit-byte [lit]   5 cc-emit-byte   \ syscall
-  [lit] 195 cc-emit-byte ;                        \ ret
+  x{ 48 0f af d6 }                                \ imul rdx, rsi
+  x{ 48 89 fe }                                   \ mov rsi, rdi  (buf)
+  x{ 48 89 cf }                                   \ mov rdi, rcx  (fd)
+  x{ 48 c7 c0 } 1 cc-emit-4le                     \ mov rax, 1
+  x{ 0f 05 }                                      \ syscall
+  x{ c3 } ;                                       \ ret
 
 \ -- fread(void *ptr, size_t sz, size_t n, FILE *fp) -> elements read.  30 bytes.
 \
@@ -792,25 +672,19 @@ defer cc-emit-restore-callee-fwd
 \ .done:
 \   ret              C3
 : cc-emit-fread-shim
-  [lit]  86 cc-emit-byte                          \ push rsi
-  [lit]  72 cc-emit-byte [lit]  15 cc-emit-byte
-  [lit] 175 cc-emit-byte [lit] 242 cc-emit-byte   \ imul rsi, rdx
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit] 242 cc-emit-byte                          \ mov rdx, rsi  (count)
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit] 254 cc-emit-byte                          \ mov rsi, rdi  (buf)
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit] 207 cc-emit-byte                          \ mov rdi, rcx  (fd)
-  [lit]  49 cc-emit-byte [lit] 192 cc-emit-byte   \ xor eax, eax
-  [lit]  15 cc-emit-byte [lit]   5 cc-emit-byte   \ syscall
-  [lit]  89 cc-emit-byte                          \ pop rcx  (sz)
-  [lit]  72 cc-emit-byte [lit] 133 cc-emit-byte
-  [lit] 192 cc-emit-byte                          \ test rax, rax
-  [lit] 126 cc-emit-byte [lit]   5 cc-emit-byte   \ jle +5
-  [lit]  49 cc-emit-byte [lit] 210 cc-emit-byte   \ xor edx, edx
-  [lit]  72 cc-emit-byte [lit] 247 cc-emit-byte
-  [lit] 241 cc-emit-byte                          \ div rcx
-  [lit] 195 cc-emit-byte ;                        \ ret
+  x{ 56 }                                         \ push rsi
+  x{ 48 0f af f2 }                                \ imul rsi, rdx
+  x{ 48 89 f2 }                                   \ mov rdx, rsi  (count)
+  x{ 48 89 fe }                                   \ mov rsi, rdi  (buf)
+  x{ 48 89 cf }                                   \ mov rdi, rcx  (fd)
+  x{ 31 c0 }                                      \ xor eax, eax
+  x{ 0f 05 }                                      \ syscall
+  x{ 59 }                                         \ pop rcx  (sz)
+  x{ 48 85 c0 }                                   \ test rax, rax
+  x{ 7e 05 }                                      \ jle +5
+  x{ 31 d2 }                                      \ xor edx, edx
+  x{ 48 f7 f1 }                                   \ div rcx
+  x{ c3 } ;                                       \ ret
 
 \ -- calloc(size_t n, size_t sz) -> zeroed memory or NULL.  113 bytes.
 \
@@ -852,52 +726,37 @@ defer cc-emit-restore-callee-fwd
 \   heap_base: 8 zero bytes     (mmap is zero-filled by Linux)
 \   heap_pos:  8 zero bytes
 : cc-emit-calloc-shim
-  [lit]  87 cc-emit-byte                          \ push rdi
-  [lit]  86 cc-emit-byte                          \ push rsi
-  [lit]  72 cc-emit-byte [lit] 139 cc-emit-byte
-  [lit]   5 cc-emit-byte [lit]  88 cc-emit-4le    \ mov rax, [rip+0x58]
-  [lit]  72 cc-emit-byte [lit] 133 cc-emit-byte
-  [lit] 192 cc-emit-byte                          \ test rax, rax
-  [lit] 117 cc-emit-byte [lit]  48 cc-emit-byte   \ jnz +48 (.have_heap)
-  [lit]  49 cc-emit-byte [lit] 255 cc-emit-byte   \ xor edi, edi
-  [lit] 190 cc-emit-byte [lit] 268435456 cc-emit-4le  \ mov esi, 0x10000000 (256 MB heap)
-  [lit] 186 cc-emit-byte [lit]   3 cc-emit-4le    \ mov edx, 3
-  [lit]  65 cc-emit-byte [lit] 186 cc-emit-byte
-  [lit]  34 cc-emit-4le                           \ mov r10d, 0x22
-  [lit]  65 cc-emit-byte [lit] 184 cc-emit-byte
-  [lit] 255 cc-emit-byte [lit] 255 cc-emit-byte
-  [lit] 255 cc-emit-byte [lit] 255 cc-emit-byte   \ mov r8d, -1  (4 explicit bytes)
-  [lit]  69 cc-emit-byte [lit]  49 cc-emit-byte
-  [lit] 201 cc-emit-byte                          \ xor r9d, r9d
-  [lit] 184 cc-emit-byte [lit]   9 cc-emit-4le    \ mov eax, 9
-  [lit]  15 cc-emit-byte [lit]   5 cc-emit-byte   \ syscall
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit]   5 cc-emit-byte [lit]  42 cc-emit-4le    \ mov [rip+0x2A], rax (heap_base)
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit]   5 cc-emit-byte [lit]  43 cc-emit-4le    \ mov [rip+0x2B], rax (heap_pos)
-  [lit]  94 cc-emit-byte                          \ pop rsi
-  [lit]  95 cc-emit-byte                          \ pop rdi
-  [lit]  72 cc-emit-byte [lit]  15 cc-emit-byte
-  [lit] 175 cc-emit-byte [lit] 254 cc-emit-byte   \ imul rdi, rsi
-  [lit]  72 cc-emit-byte [lit] 131 cc-emit-byte
-  [lit] 199 cc-emit-byte [lit]   7 cc-emit-byte   \ add rdi, 7
-  [lit]  72 cc-emit-byte [lit] 131 cc-emit-byte
-  [lit] 231 cc-emit-byte [lit] 248 cc-emit-byte   \ and rdi, -8
-  [lit]  72 cc-emit-byte [lit] 139 cc-emit-byte
-  [lit]   5 cc-emit-byte [lit]  22 cc-emit-4le    \ mov rax, [rip+0x16] (heap_pos)
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit] 193 cc-emit-byte                          \ mov rcx, rax
-  [lit]  72 cc-emit-byte [lit]   1 cc-emit-byte
-  [lit] 249 cc-emit-byte                          \ add rcx, rdi
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit]  13 cc-emit-byte [lit]   9 cc-emit-4le    \ mov [rip+0x09], rcx (heap_pos)
-  [lit] 195 cc-emit-byte                          \ ret
+  x{ 57 }                                         \ push rdi
+  x{ 56 }                                         \ push rsi
+  x{ 48 8b 05 } 88 cc-emit-4le                    \ mov rax, qword [rip+0x58]
+  x{ 48 85 c0 }                                   \ test rax, rax
+  x{ 75 30 }                                      \ jnz +48  (.have_heap)
+  x{ 31 ff }                                      \ xor edi, edi
+  x{ be } 268435456 cc-emit-4le                   \ mov esi, 0x10000000  (256 MB heap)
+  x{ ba } 3 cc-emit-4le                           \ mov edx, 3
+  x{ 41 ba } 34 cc-emit-4le                       \ mov r10d, 0x22
+  x{ 41 b8 ff ff ff ff }                          \ mov r8d, 0xffffffff  (4 explicit bytes)
+  x{ 45 31 c9 }                                   \ xor r9d, r9d
+  x{ b8 } 9 cc-emit-4le                           \ mov eax, 9
+  x{ 0f 05 }                                      \ syscall
+  x{ 48 89 05 } 42 cc-emit-4le                    \ mov qword [rip+0x2a], rax  (heap_base)
+  x{ 48 89 05 } 43 cc-emit-4le                    \ mov qword [rip+0x2b], rax  (heap_pos)
+  x{ 5e }                                         \ pop rsi
+  x{ 5f }                                         \ pop rdi
+  x{ 48 0f af fe }                                \ imul rdi, rsi
+  x{ 48 83 c7 07 }                                \ add rdi, 7
+  x{ 48 83 e7 f8 }                                \ and rdi, -8
+  x{ 48 8b 05 } 22 cc-emit-4le                    \ mov rax, qword [rip+0x16]  (heap_pos)
+  x{ 48 89 c1 }                                   \ mov rcx, rax
+  x{ 48 01 f9 }                                   \ add rcx, rdi
+  x{ 48 89 0d } 9 cc-emit-4le                     \ mov qword [rip+0x9], rcx  (heap_pos)
+  x{ c3 }                                         \ ret
   [lit]   0 cc-emit-8le                           \ heap_base = 0
   [lit]   0 cc-emit-8le ;                         \ heap_pos  = 0
 
 \ -- free(void *p) -> void.  1 byte.  No-op: bump allocator never frees.
 : cc-emit-free-shim
-  [lit] 195 cc-emit-byte ;                        \ ret
+  x{ c3 } ;                                       \ ret
 
 \ ===========================================================================
 \ Libc shims: the POSIX calls open, read, write, close; malloc, and the
@@ -916,25 +775,20 @@ defer cc-emit-restore-callee-fwd
 \ .ok:
 \   ret                 C3
 : cc-emit-syscall-shim                            ( n -- )
-  [lit] 184 cc-emit-byte cc-emit-4le              \ mov eax, n
-  [lit]  15 cc-emit-byte [lit]   5 cc-emit-byte   \ syscall
-  [lit]  72 cc-emit-byte [lit] 133 cc-emit-byte
-  [lit] 192 cc-emit-byte                          \ test rax, rax
-  [lit] 121 cc-emit-byte [lit]   7 cc-emit-byte   \ jns +7
-  [lit]  72 cc-emit-byte [lit] 199 cc-emit-byte [lit] 192 cc-emit-byte
-  [lit] 255 cc-emit-byte [lit] 255 cc-emit-byte
-  [lit] 255 cc-emit-byte [lit] 255 cc-emit-byte   \ mov rax, -1
-  [lit] 195 cc-emit-byte ;                        \ ret
+  x{ b8 } cc-emit-4le                             \ mov eax, imm32
+  x{ 0f 05 }                                      \ syscall
+  x{ 48 85 c0 }                                   \ test rax, rax
+  x{ 79 07 }                                      \ jns +7
+  x{ 48 c7 c0 ff ff ff ff }                       \ mov rax, -1
+  x{ c3 } ;                                       \ ret
 
 \ -- malloc(size_t n) -> calloc(n, 1).  12 bytes.
 \
 \   mov rsi, 1          48 C7 C6 01 00 00 00
 \   jmp calloc          E9 <rel32>
 : cc-emit-malloc-shim                             ( calloc-vaddr -- )
-  [lit]  72 cc-emit-byte [lit] 199 cc-emit-byte
-  [lit] 198 cc-emit-byte [lit]   1 cc-emit-4le    \ mov rsi, 1
-  [lit] 233 cc-emit-byte
-  cc-here-vaddr [lit] 4 + - cc-emit-4le ;         \ jmp calloc
+  x{ 48 c7 c6 } 1 cc-emit-4le                     \ mov rsi, 1
+  x{ e9 } cc-here-vaddr 4 + - cc-emit-4le ;       \ jmp rel32  (calloc)
 
 \ -- strlen(char *s) -> length.  14 bytes.
 \
@@ -947,14 +801,12 @@ defer cc-emit-restore-callee-fwd
 \ .done:
 \   ret                      C3
 : cc-emit-strlen-shim
-  [lit]  49 cc-emit-byte [lit] 192 cc-emit-byte   \ xor eax, eax
-  [lit] 128 cc-emit-byte [lit]  60 cc-emit-byte
-  [lit]   7 cc-emit-byte [lit]   0 cc-emit-byte   \ cmp byte [rdi+rax], 0
-  [lit] 116 cc-emit-byte [lit]   5 cc-emit-byte   \ je +5
-  [lit]  72 cc-emit-byte [lit] 255 cc-emit-byte
-  [lit] 192 cc-emit-byte                          \ inc rax
-  [lit] 235 cc-emit-byte [lit] 245 cc-emit-byte   \ jmp .loop  (disp = -11)
-  [lit] 195 cc-emit-byte ;                        \ ret
+  x{ 31 c0 }                                      \ xor eax, eax
+  x{ 80 3c 07 00 }                                \ cmp byte [rdi+rax], 0
+  x{ 74 05 }                                      \ je +5
+  x{ 48 ff c0 }                                   \ inc rax
+  x{ eb f5 }                                      \ jmp -11  (.loop)
+  x{ c3 } ;                                       \ ret
 
 \ -- memcpy(void *d, void *s, size_t n) -> d.  9 bytes.
 \
@@ -963,12 +815,10 @@ defer cc-emit-restore-callee-fwd
 \   rep movsb        F3 A4           (rdi = d, rsi = s already)
 \   ret              C3
 : cc-emit-memcpy-shim
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit] 248 cc-emit-byte                          \ mov rax, rdi
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit] 209 cc-emit-byte                          \ mov rcx, rdx
-  [lit] 243 cc-emit-byte [lit] 164 cc-emit-byte   \ rep movsb
-  [lit] 195 cc-emit-byte ;                        \ ret
+  x{ 48 89 f8 }                                   \ mov rax, rdi
+  x{ 48 89 d1 }                                   \ mov rcx, rdx
+  x{ f3 a4 }                                      \ rep movs byte [rdi], byte [rsi]
+  x{ c3 } ;                                       \ ret
 
 \ -- strrchr(char *s, int c) -> pointer to the last c in s (the NUL
 \ counts, so c = 0 finds the end), or NULL.  23 bytes.
@@ -987,20 +837,16 @@ defer cc-emit-restore-callee-fwd
 \ .done:
 \   ret                        C3
 : cc-emit-strrchr-shim
-  [lit]  49 cc-emit-byte [lit] 192 cc-emit-byte   \ xor eax, eax
-  [lit]  15 cc-emit-byte [lit] 182 cc-emit-byte
-  [lit]  15 cc-emit-byte                          \ movzx ecx, byte [rdi]
-  [lit]  64 cc-emit-byte [lit]  56 cc-emit-byte
-  [lit] 241 cc-emit-byte                          \ cmp cl, sil
-  [lit] 117 cc-emit-byte [lit]   3 cc-emit-byte   \ jne +3
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte
-  [lit] 248 cc-emit-byte                          \ mov rax, rdi
-  [lit] 132 cc-emit-byte [lit] 201 cc-emit-byte   \ test cl, cl
-  [lit] 116 cc-emit-byte [lit]   5 cc-emit-byte   \ je +5
-  [lit]  72 cc-emit-byte [lit] 255 cc-emit-byte
-  [lit] 199 cc-emit-byte                          \ inc rdi
-  [lit] 235 cc-emit-byte [lit] 236 cc-emit-byte   \ jmp .loop  (disp = -20)
-  [lit] 195 cc-emit-byte ;                        \ ret
+  x{ 31 c0 }                                      \ xor eax, eax
+  x{ 0f b6 0f }                                   \ movzx ecx, byte [rdi]
+  x{ 40 38 f1 }                                   \ cmp cl, sil
+  x{ 75 03 }                                      \ jne +3
+  x{ 48 89 f8 }                                   \ mov rax, rdi
+  x{ 84 c9 }                                      \ test cl, cl
+  x{ 74 05 }                                      \ je +5
+  x{ 48 ff c7 }                                   \ inc rdi
+  x{ eb ec }                                      \ jmp -20  (.loop)
+  x{ c3 } ;                                       \ ret
 
 \ ===========================================================================
 \ Shifts, bitwise ops, inc/dec/neg/not on rdi
@@ -1010,60 +856,42 @@ defer cc-emit-restore-callee-fwd
 \
 \ shl rdi, cl: 48 D3 E7   (D3 /4, mod=11 rm=rdi=7 -> 11_100_111=0xE7)
 : cc-emit-shl-rdi-cl
-  [lit]  72 cc-emit-byte
-  [lit] 211 cc-emit-byte
-  [lit] 231 cc-emit-byte ;
+  x{ 48 d3 e7 } ;                                 \ shl rdi, cl
 
 \ sar rdi, cl (arithmetic right shift, signed): 48 D3 FF  (D3 /7 -> 11_111_111=0xFF)
 : cc-emit-sar-rdi-cl
-  [lit]  72 cc-emit-byte
-  [lit] 211 cc-emit-byte
-  [lit] 255 cc-emit-byte ;
+  x{ 48 d3 ff } ;                                 \ sar rdi, cl
 
 \ and rdi, rcx: 48 21 CF  (21 /r, mod=11 reg=rcx=1 rm=rdi=7 -> 11_001_111=0xCF)
 : cc-emit-and-rdi-rcx
-  [lit]  72 cc-emit-byte
-  [lit]  33 cc-emit-byte
-  [lit] 207 cc-emit-byte ;
+  x{ 48 21 cf } ;                                 \ and rdi, rcx
 
 \ or rdi, rcx: 48 09 CF
 : cc-emit-or-rdi-rcx
-  [lit]  72 cc-emit-byte
-  [lit]   9 cc-emit-byte
-  [lit] 207 cc-emit-byte ;
+  x{ 48 09 cf } ;                                 \ or rdi, rcx
 
 \ xor rdi, rcx: 48 31 CF
 : cc-emit-xor-rdi-rcx
-  [lit]  72 cc-emit-byte
-  [lit]  49 cc-emit-byte
-  [lit] 207 cc-emit-byte ;
+  x{ 48 31 cf } ;                                 \ xor rdi, rcx
 
 \ not rdi: 48 F7 D7  (F7 /2 = NOT, mod=11 rm=rdi=7 -> 11_010_111=0xD7)
 : cc-emit-not-rdi
-  [lit]  72 cc-emit-byte
-  [lit] 247 cc-emit-byte
-  [lit] 215 cc-emit-byte ;
+  x{ 48 f7 d7 } ;                                 \ not rdi
 
 \ neg rdi: 48 F7 DF  (F7 /3 = NEG, mod=11 rm=rdi=7 -> 11_011_111=0xDF)
 : cc-emit-neg-rdi
-  [lit]  72 cc-emit-byte
-  [lit] 247 cc-emit-byte
-  [lit] 223 cc-emit-byte ;
+  x{ 48 f7 df } ;                                 \ neg rdi
 
 \ inc qword [rbp + disp]: 48 FF 45 <disp8>  (or 48 FF 85 <disp32>)
 \ ModR/M(mod=01, reg=/0=INC, rm=rbp=5) = 01_000_101 = 0x45.  Increments the
 \ local slot in place without disturbing rdi/rcx (used by post-increment).
 : cc-emit-inc-mem-local                           ( slot -- )
-  [lit]  72 cc-emit-byte
-  [lit] 255 cc-emit-byte
-  [lit]  69 cc-emit-local-ea ;
+  x{ 48 ff } $45 cc-emit-local-ea ;               \ inc qword [rbp+disp]
 
 \ dec qword [rbp + disp]: 48 FF 4D <disp8>  (or 48 FF 8D <disp32>)
 \ ModR/M(mod=01, reg=/1=DEC, rm=rbp=5) = 01_001_101 = 0x4D.
 : cc-emit-dec-mem-local                           ( slot -- )
-  [lit]  72 cc-emit-byte
-  [lit] 255 cc-emit-byte
-  [lit]  77 cc-emit-local-ea ;
+  x{ 48 ff } $4d cc-emit-local-ea ;               \ dec qword [rbp+disp]
 
 \ The same through the address in rcx, for a ++ / -- whose operand is a
 \ pointer target, an element or a field (rcx holds its address).
@@ -1071,29 +899,25 @@ defer cc-emit-restore-callee-fwd
 \   inc qword [rcx]  48 FF 01      inc byte [rcx]  FE 01
 \   dec qword [rcx]  48 FF 09      dec byte [rcx]  FE 09
 : cc-emit-inc-via-rcx                             ( byte? -- )
-  0= if, [lit] 72 cc-emit-byte [lit] 255 else, [lit] 254 then,
-  cc-emit-byte  [lit] 1 cc-emit-byte ;
+  0= if, x{ 48 } $ff else, $fe then,
+  cc-emit-byte  x{ 01 } ;                         \ inc qword [rcx] / inc byte [rcx]
 : cc-emit-dec-via-rcx                             ( byte? -- )
-  0= if, [lit] 72 cc-emit-byte [lit] 255 else, [lit] 254 then,
-  cc-emit-byte  [lit] 9 cc-emit-byte ;
+  0= if, x{ 48 } $ff else, $fe then,
+  cc-emit-byte  x{ 09 } ;                         \ dec qword [rcx] / dec byte [rcx]
 
 \ mov rdi, [rcx]  48 8B 39   /  movzx rdi, byte [rcx]  48 0F B6 39
 : cc-emit-load-via-rcx                            ( byte? -- )
-  [lit] 72 cc-emit-byte
-  if, [lit] 15 cc-emit-byte [lit] 182 else, [lit] 139 then,
-  cc-emit-byte  [lit] 57 cc-emit-byte ;
+  x{ 48 }
+  if, x{ 0f } $b6 else, $8b then,
+  cc-emit-byte  x{ 39 } ;                         \ movzx rdi, byte [rcx] / mov rdi, qword [rcx]
 
 \ cc-emit-not-zero-flag.  Canonicalize rdi to 0/1 = (rdi == 0).
 \ Pattern: xor rax,rax; test rdi,rdi; sete al; mov rdi,rax.  Used by unary '!'.
 : cc-emit-not-zero-flag
-  [lit]  72 cc-emit-byte [lit]  49 cc-emit-byte [lit] 192 cc-emit-byte
-                                                  \ xor rax,rax
-  [lit]  72 cc-emit-byte [lit] 133 cc-emit-byte [lit] 255 cc-emit-byte
-                                                  \ test rdi,rdi
-  [lit]  15 cc-emit-byte [lit] 148 cc-emit-byte [lit] 192 cc-emit-byte
-                                                  \ sete al
-  [lit]  72 cc-emit-byte [lit] 137 cc-emit-byte [lit] 199 cc-emit-byte ;
-                                                  \ mov rdi,rax
+  x{ 48 31 c0 }                                   \ xor rax, rax
+  x{ 48 85 ff }                                   \ test rdi, rdi
+  x{ 0f 94 c0 }                                   \ sete al
+  x{ 48 89 c7 } ;                                 \ mov rdi, rax
 
 \ ===========================================================================
 \ File-scope global variables.
@@ -1225,10 +1049,7 @@ variable cc-bss-base-vaddr                       \ set by cc-finalize-globals
 \ address once globals are placed.  Used by the sk-global IDENT path in
 \ cc-parse-primary.
 : cc-emit-global-ref                                ( slot -- )
-  [lit]  72 cc-emit-byte                            \ REX.W (0x48)
-  [lit] 191 cc-emit-byte                            \ B7 + 7 = BF (movabs rdi)
-  cc-out-pos @                                      ( slot patch-off )
-  [lit] 0 cc-emit-8le                               \ imm64 placeholder
+  x{ 48 bf } cc-out-pos @ 0 cc-emit-8le           \ movabs rdi, imm64
   swap cc-gfixup-add ;
 
 \ ===========================================================================
@@ -1249,21 +1070,19 @@ defer cc-emit-type-check-fwd
   cc-emit-type-check-fwd
   dup ty-size [lit] 1 = if,
     ty-unsigned? if, cc-emit-load-byte-via-rdi else,
-      [lit] 72 cc-emit-byte [lit] 15 cc-emit-byte
-      [lit] 190 cc-emit-byte [lit] 63 cc-emit-byte  \ movsx rdi, byte [rdi]
+      x{ 48 0f be 3f }                            \ movsx rdi, byte [rdi]
     then, exit,
   then,
   dup ty-size [lit] 2 = if,
-    [lit] 72 cc-emit-byte [lit] 15 cc-emit-byte
-    ty-unsigned? if, [lit] 183 else, [lit] 191 then, cc-emit-byte
-    [lit] 63 cc-emit-byte exit,                    \ movzx/movsx rdi, word [rdi]
+    x{ 48 0f }
+    ty-unsigned? if, $b7 else, $bf then, cc-emit-byte
+    x{ 3f } exit,                                 \ movzx/movsx rdi, word [rdi]
   then,
   dup ty-size [lit] 4 = if,
     ty-unsigned? if,
-      [lit] 139 cc-emit-byte [lit] 63 cc-emit-byte  \ mov edi, [rdi]
+      x{ 8b 3f }                                  \ mov edi, dword [rdi]
     else,
-      [lit] 72 cc-emit-byte [lit] 99 cc-emit-byte
-      [lit] 63 cc-emit-byte                       \ movsxd rdi, dword [rdi]
+      x{ 48 63 3f }                               \ movsxd rdi, dword [rdi]
     then, exit,
   then,
   drop cc-emit-load-via-rdi ;
@@ -1274,11 +1093,10 @@ defer cc-emit-type-check-fwd
   ty-size
   dup [lit] 1 = if, drop cc-emit-store-byte-via-rcx exit, then,
   dup [lit] 2 = if,
-    drop [lit] 102 cc-emit-byte [lit] 137 cc-emit-byte
-    [lit] 57 cc-emit-byte exit,                    \ mov word [rcx], di
+    drop x{ 66 89 39 } exit,                      \ mov word [rcx], di
   then,
   [lit] 4 = if,
-    [lit] 137 cc-emit-byte [lit] 57 cc-emit-byte    \ mov dword [rcx], edi
+    x{ 89 39 }                                    \ mov dword [rcx], edi
   else, cc-emit-store-via-rcx then, ;
 
 \ cc-emit-convert-rdi ( ty -- )  Truncate/sign-extend the integer in rdi.
@@ -1286,21 +1104,19 @@ defer cc-emit-type-check-fwd
   cc-emit-type-check-fwd
   dup ty-size [lit] 1 = if,
     ty-unsigned? if, cc-emit-zx-byte-rdi else,
-      [lit] 72 cc-emit-byte [lit] 15 cc-emit-byte
-      [lit] 190 cc-emit-byte [lit] 255 cc-emit-byte \ movsx rdi, dil
+      x{ 48 0f be ff }                            \ movsx rdi, dil
     then, exit,
   then,
   dup ty-size [lit] 2 = if,
-    [lit] 72 cc-emit-byte [lit] 15 cc-emit-byte
-    ty-unsigned? if, [lit] 183 else, [lit] 191 then, cc-emit-byte
-    [lit] 255 cc-emit-byte exit,                   \ movzx/movsx rdi, di
+    x{ 48 0f }
+    ty-unsigned? if, $b7 else, $bf then, cc-emit-byte
+    x{ ff } exit,                                 \ movzx/movsx rdi, di
   then,
   dup ty-size [lit] 4 = if,
     ty-unsigned? if,
-      [lit] 137 cc-emit-byte [lit] 255 cc-emit-byte \ mov edi, edi
+      x{ 89 ff }                                  \ mov edi, edi
     else,
-      [lit] 72 cc-emit-byte [lit] 99 cc-emit-byte
-      [lit] 255 cc-emit-byte                      \ movsxd rdi, edi
+      x{ 48 63 ff }                               \ movsxd rdi, edi
     then, exit,
   then,
   drop ;
@@ -1314,21 +1130,20 @@ defer cc-emit-convert-value
 : cc-emit-convert-rcx
   cc-emit-type-check-fwd
   dup ty-size [lit] 1 = if,
-    [lit] 72 cc-emit-byte [lit] 15 cc-emit-byte
-    ty-unsigned? if, [lit] 182 else, [lit] 190 then, cc-emit-byte
-    [lit] 201 cc-emit-byte exit,                   \ movzx/movsx rcx, cl
+    x{ 48 0f }
+    ty-unsigned? if, $b6 else, $be then, cc-emit-byte
+    x{ c9 } exit,                                 \ movzx/movsx rcx, cl
   then,
   dup ty-size [lit] 2 = if,
-    [lit] 72 cc-emit-byte [lit] 15 cc-emit-byte
-    ty-unsigned? if, [lit] 183 else, [lit] 191 then, cc-emit-byte
-    [lit] 201 cc-emit-byte exit,                   \ movzx/movsx rcx, cx
+    x{ 48 0f }
+    ty-unsigned? if, $b7 else, $bf then, cc-emit-byte
+    x{ c9 } exit,                                 \ movzx/movsx rcx, cx
   then,
   dup ty-size [lit] 4 = if,
     ty-unsigned? if,
-      [lit] 137 cc-emit-byte [lit] 201 cc-emit-byte \ mov ecx, ecx
+      x{ 89 c9 }                                  \ mov ecx, ecx
     else,
-      [lit] 72 cc-emit-byte [lit] 99 cc-emit-byte
-      [lit] 201 cc-emit-byte                      \ movsxd rcx, ecx
+      x{ 48 63 c9 }                               \ movsxd rcx, ecx
     then, exit,
   then,
   drop ;
@@ -1349,36 +1164,34 @@ defer cc-emit-convert-right
   cc-target-lp64 @ 0= if, drop cc-emit-store-local exit, then,
   ty-size
   dup [lit] 1 = if,
-    drop [lit] 64 cc-emit-byte [lit] 136 cc-emit-byte
-    [lit] 125 cc-emit-local-ea exit,               \ mov byte [rbp+disp], dil
+    drop x{ 40 88 } $7d cc-emit-local-ea exit,    \ mov byte [rbp+disp], dil
   then,
   dup [lit] 2 = if,
-    drop [lit] 102 cc-emit-byte [lit] 137 cc-emit-byte
-    [lit] 125 cc-emit-local-ea exit,               \ mov word [rbp+disp], di
+    drop x{ 66 89 } $7d cc-emit-local-ea exit,    \ mov word [rbp+disp], di
   then,
   [lit] 4 = if,
-    [lit] 137 cc-emit-byte [lit] 125 cc-emit-local-ea
+    x{ 89 } $7d cc-emit-local-ea                  \ mov dword [rbp+disp], edi
   else, cc-emit-store-local then, ;
 
 \ Unsigned division clears rdx, then DIV rcx uses the full rdx:rax dividend.
 \ Both operands must already have been converted to the common C type.
 : cc-emit-udiv-quotient
   cc-emit-mov-rax-rdi
-  [lit] 49 cc-emit-byte [lit] 210 cc-emit-byte      \ xor edx, edx
-  [lit] 72 cc-emit-byte [lit] 247 cc-emit-byte [lit] 241 cc-emit-byte
+  x{ 31 d2 }                                      \ xor edx, edx
+  x{ 48 f7 f1 }                                   \ div rcx
   cc-emit-mov-rdi-rax ;                            \ div rcx; mov rdi, rax
 
 : cc-emit-udiv-remainder
   cc-emit-mov-rax-rdi
-  [lit] 49 cc-emit-byte [lit] 210 cc-emit-byte
-  [lit] 72 cc-emit-byte [lit] 247 cc-emit-byte [lit] 241 cc-emit-byte
-  [lit] 72 cc-emit-byte [lit] 137 cc-emit-byte [lit] 215 cc-emit-byte ;
+  x{ 31 d2 }                                      \ xor edx, edx
+  x{ 48 f7 f1 }                                   \ div rcx
+  x{ 48 89 d7 } ;                                 \ mov rdi, rdx
 
-: cc-emit-cmp-ult [lit] 146 cc-emit-cmp-set ;       \ setB
-: cc-emit-cmp-uge [lit] 147 cc-emit-cmp-set ;       \ setAE
-: cc-emit-cmp-ule [lit] 150 cc-emit-cmp-set ;       \ setBE
-: cc-emit-cmp-ugt [lit] 151 cc-emit-cmp-set ;       \ setA
+: cc-emit-cmp-ult $92 cc-emit-cmp-set ;           \ setb al
+: cc-emit-cmp-uge $93 cc-emit-cmp-set ;           \ setae al
+: cc-emit-cmp-ule $96 cc-emit-cmp-set ;           \ setbe al
+: cc-emit-cmp-ugt $97 cc-emit-cmp-set ;           \ seta al
 
 \ Logical (unsigned) right shift: shr rdi, cl = 48 D3 EF.
 : cc-emit-shr-rdi-cl
-  [lit] 72 cc-emit-byte [lit] 211 cc-emit-byte [lit] 239 cc-emit-byte ;
+  x{ 48 d3 ef } ;                                 \ shr rdi, cl

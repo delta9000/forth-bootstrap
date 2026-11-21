@@ -26,7 +26,7 @@
 skip-vm-pages                                     \ HERE = 0x414000
 
 \ cc-in-buf holds stdin exactly as read; nothing but the preprocessor reads it.
-[lit] 1048576 constant cc-in-default-cap
+1048576 constant cc-in-default-cap
 create cc-in-default-buf cc-in-default-cap allot
 variable cc-in-buffer
 variable cc-in-limit
@@ -40,7 +40,7 @@ variable cc-in-len
 \ spliced in, directives blanked. The default is twice the raw capacity;
 \ direct GCC selects separately measured limits. The reader's cursor is in the lexer's
 \ state block (020-cc-arena.fth).
-[lit] 2097152 constant cc-src-default-cap
+2097152 constant cc-src-default-cap
 create cc-src-default-buf cc-src-default-cap allot
 variable cc-src-buffer
 variable cc-src-limit
@@ -52,9 +52,9 @@ variable cc-src-len
 
 \ cc-src-init ( -- )  Empty the source buffer and rewind the reader.
 : cc-src-init
-  [lit] 0 cc-src-len !
-  [lit] 0 cc-src-pos !
-  [lit] 1 cc-src-line ! ;
+  0 cc-src-len !
+  0 cc-src-pos !
+  1 cc-src-line ! ;
 
 \ cc-read-all ( fd buf cap code -- n )  Read fd to end of file into buf and
 \ return the byte count.  Each read asks for all the room left.  A buffer
@@ -67,14 +67,14 @@ variable cc-ra-code
 variable cc-ra-n
 : cc-read-all
   cc-ra-code ! cc-ra-cap ! cc-ra-buf ! cc-ra-fd !
-  [lit] 0 cc-ra-n !
+  0 cc-ra-n !
   cc-ra-fd @ 0= if,                    \ stdin: first what key-fill holds (020)
     cc-ra-buf @ cc-ra-cap @ key-drain cc-ra-n !
     cc-ra-n @ 1+ cc-ra-cap @ cc-ra-code @ cc-check-cap
   then,
   begin,
     cc-ra-fd @  cc-ra-buf @ cc-ra-n @ +  cc-ra-cap @ cc-ra-n @ -  read
-    dup [lit] 0 >
+    dup 0 >
   while,
     cc-ra-n +!
     cc-ra-n @ 1+ cc-ra-cap @ cc-ra-code @ cc-check-cap   \ full: die
@@ -85,7 +85,7 @@ variable cc-ra-n
 \ Rewinds the reader first, so an error here reports line 1.
 : cc-load-stdin
   cc-src-init
-  [lit] 0 cc-in-buf cc-in-cap [lit] 20 cc-read-all  cc-in-len ! ;
+  0 cc-in-buf cc-in-cap 20 cc-read-all  cc-in-len ! ;
 
 \ cc-eof? ( -- f )  -1 if pos has reached len; 0 otherwise.
 : cc-eof?  cc-src-pos @ cc-src-len @ >= ;
@@ -94,7 +94,7 @@ variable cc-ra-n
 \ Both arms of if,/else, produce exactly one value, so stack stays balanced.
 : cc-peek-char
   cc-eof? if,
-    [lit] 0
+    0
   else,
     cc-src-buf cc-src-pos @ + c@
   then, ;
@@ -103,9 +103,9 @@ variable cc-ra-n
 \ Tracks line number when consuming '\n' (10).
 : cc-next-char
   cc-peek-char
-  [lit] 1 cc-src-pos +!
+  1 cc-src-pos +!
   dup nl = if,
-    [lit] 1 cc-src-line +!
+    1 cc-src-line +!
   then, ;
 
 \ ===========================================================================
@@ -113,7 +113,7 @@ variable cc-ra-n
 \ ===========================================================================
 
 \ 1 MiB output cap — fits any reasonable ELF the C-subset compiler emits.
-[lit] 1048576 constant cc-out-default-cap
+1048576 constant cc-out-default-cap
 create cc-out-default-buf cc-out-default-cap allot
 variable cc-out-buffer
 variable cc-out-limit
@@ -124,27 +124,33 @@ cc-out-default-cap cc-out-limit !
 variable cc-out-pos
 
 \ cc-out-init ( -- )
-: cc-out-init  [lit] 0 cc-out-pos ! ;
+: cc-out-init  0 cc-out-pos ! ;
 
 \ cc-emit-byte ( b -- )  Append a byte at cc-out-buf[cc-out-pos++]; die 21
 \ if the buffer is full.
 : cc-emit-byte
   cc-out-pos @ 1+ cc-out-cap [lit] 21 cc-check-cap
   cc-out-buf cc-out-pos @ + c!
-  [lit] 1 cc-out-pos +! ;
+  1 cc-out-pos +! ;
+
+\ x{ hh ... }  010-lib.fth's c{ with cc-emit-byte as the sink: `x{ 48 89 f8 }`
+\ emits what `[lit] 72 cc-emit-byte [lit] 137 cc-emit-byte [lit] 248
+\ cc-emit-byte` emits, and compiles to the same code.
+' cc-emit-byte constant cc-emit-byte-xt
+: x{  cc-emit-byte-xt hex{ ; immediate
 
 \ cc-emit-4le ( v -- )  Emit low 4 bytes of v in little-endian.
 : cc-emit-4le
   dup cc-emit-byte                              \ byte 0
-  [lit] 256 / dup cc-emit-byte                  \ byte 1
-  [lit] 256 / dup cc-emit-byte                  \ byte 2
-  [lit] 256 / cc-emit-byte ;                    \ byte 3
+  256 / dup cc-emit-byte                        \ byte 1
+  256 / dup cc-emit-byte                        \ byte 2
+  256 / cc-emit-byte ;                          \ byte 3
 
 \ cc-emit-8le ( v -- )  Emit all 8 bytes of v in little-endian.
 \ Reuses cc-emit-4le for both halves; shifts by 32 between halves.
 : cc-emit-8le
   dup cc-emit-4le                                              \ low 4 bytes
-  [lit] 256 / [lit] 256 / [lit] 256 / [lit] 256 /              \ shift right 32
+  256 / 256 / 256 / 256 /                                      \ shift right 32
   cc-emit-4le ;                                                \ high 4 bytes
 
 \ cc-out-patch-byte ( v offset -- )  Overwrite cc-out-buf[offset] with low byte of v.
@@ -155,21 +161,21 @@ variable cc-out-pos
 : cc-out-patch-4le
   >r                                                  ( v       ; R: offset )
   dup r@                       cc-out-patch-byte      ( v       ; R: offset )
-  [lit] 256 / dup r@ 1+ cc-out-patch-byte             ( v>>8    ; R: offset )
-  [lit] 256 / dup r@ [lit] 2 + cc-out-patch-byte      ( v>>16   ; R: offset )
-  [lit] 256 /     r> [lit] 3 + cc-out-patch-byte ;    ( v>>24>>8 popped )
+  256 / dup r@ 1+ cc-out-patch-byte             ( v>>8    ; R: offset )
+  256 / dup r@ 2 + cc-out-patch-byte      ( v>>16   ; R: offset )
+  256 /     r> 3 + cc-out-patch-byte ;    ( v>>24>>8 popped )
 
 \ cc-out-patch-8le ( v offset -- )  Overwrite 8 bytes at offset (LE).
 : cc-out-patch-8le
   >r                                                  ( v       ; R: offset )
   dup r@                       cc-out-patch-byte      ( v       ; R: offset )
-  [lit] 256 / dup r@ 1+ cc-out-patch-byte
-  [lit] 256 / dup r@ [lit] 2 + cc-out-patch-byte
-  [lit] 256 / dup r@ [lit] 3 + cc-out-patch-byte
-  [lit] 256 / dup r@ [lit] 4 + cc-out-patch-byte
-  [lit] 256 / dup r@ [lit] 5 + cc-out-patch-byte
-  [lit] 256 / dup r@ [lit] 6 + cc-out-patch-byte
-  [lit] 256 /     r> [lit] 7 + cc-out-patch-byte ;
+  256 / dup r@ 1+ cc-out-patch-byte
+  256 / dup r@ 2 + cc-out-patch-byte
+  256 / dup r@ 3 + cc-out-patch-byte
+  256 / dup r@ 4 + cc-out-patch-byte
+  256 / dup r@ 5 + cc-out-patch-byte
+  256 / dup r@ 6 + cc-out-patch-byte
+  256 /     r> 7 + cc-out-patch-byte ;
 
 \ ===========================================================================
 \ C. Output file write
@@ -186,7 +192,7 @@ variable cc-out-pos
 \ cc-out-buf[0..cc-out-pos@] to it; closes.  On open failure (fd < 0),
 \ dies with code 22.
 : cc-write-output
-  [lit] 577 [lit] 493 open                        ( fd )
+  577 493 open                        ( fd )
   dup 0< if,
     drop
     [lit] 22 cc-die
@@ -209,7 +215,7 @@ variable cc-out-pos
 
 \ cell[] ( i arr -- addr )  Address of cell i of an array of 8-byte cells —
 \ how every parallel-array table (macros, symbols, ...) is indexed.
-: cell[]  swap [lit] 8 * + ;
+: cell[]  swap 8 * + ;
 
 \ cc-name-find ( a u addrs lens count -- i | -1 )  Look the name a u up in
 \ a table kept as two parallel arrays, addrs (where each name's bytes are)
@@ -240,11 +246,11 @@ variable cc-nf-lens
 \ symbol tables (040, 070) keep, per hash, their newest entry in a bucket
 \ and link the older ones behind it, so a lookup compares only the names
 \ that share its hash.
-[lit] 4096 constant cc-name-buckets
+4096 constant cc-name-buckets
 : cc-name-hash
-  [lit] 5381 >r
+  5381 >r
   begin, dup while,
-    over c@ r> [lit] 33 * + >r
+    over c@ r> 33 * + >r
     1- swap 1+ swap
   repeat, 2drop
   r> cc-name-buckets 1- and ;
@@ -254,9 +260,9 @@ variable cc-nf-lens
 \ Raw and output round to whole MiB. Expanded text splices in every included
 \ byte, so it and the direct include pool (040) share one bound: the measured
 \ maximum (binutils i386-opc.c) plus 25%, rounded up to whole MiB. 3/7/4 MiB.
-[lit] 3145728 constant cc-in-direct-cap
-[lit] 7340032 constant cc-src-direct-cap
-[lit] 4194304 constant cc-out-direct-cap
+3145728 constant cc-in-direct-cap
+7340032 constant cc-src-direct-cap
+4194304 constant cc-out-direct-cap
 variable cc-io-direct-base
 
 \ Round before mmap only after rejecting zero, negative and overflowing sizes.
@@ -264,9 +270,9 @@ variable cc-io-direct-base
 : cc-workspace-round ( bytes code -- page-bytes )
   >r dup [lit] 0 <= if, r@ cc-die then,
   dup [lit] 9223372036854771712 > if, r@ cc-die then,
-  [lit] 4095 + [lit] 4096 / [lit] 4096 * r> drop ;
+  4095 + 4096 / 4096 * r> drop ;
 : cc-workspace-syscall ( page-bytes -- address )
-  [lit] 0 swap [lit] 3 [lit] 34 true [lit] 0 [lit] 9 syscall6 ;
+  0 swap 3 34 true 0 9 syscall6 ;
 defer cc-workspace-syscall-fwd
 ' cc-workspace-syscall is cc-workspace-syscall-fwd
 : cc-workspace-map ( bytes code -- address )
@@ -278,7 +284,7 @@ defer cc-workspace-syscall-fwd
   cc-out-default-buf cc-out-buffer ! cc-out-default-cap cc-out-limit ! ;
 : cc-io-direct-workspace ( -- )
   cc-io-direct-base @ 0= if,
-    cc-in-direct-cap cc-src-direct-cap + cc-out-direct-cap + [lit] 20 cc-workspace-map
+    cc-in-direct-cap cc-src-direct-cap + cc-out-direct-cap + 20 cc-workspace-map
     cc-io-direct-base !
   then,
   cc-io-direct-base @ cc-in-buffer ! cc-in-direct-cap cc-in-limit !
