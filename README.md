@@ -164,13 +164,13 @@ Each directory has a README that says where to start.
 
 | Directory | What is in it |
 |---|---|
-| `seed/` | `000-seed.hex0`, the Forth, written directly as annotated hex0 (the only source of it); `build.sh`; `MINIMAL.md`, why it has the 21 words it has |
+| `seed/` | `000-seed.hex0`, the Forth, written directly as annotated hex0 (the only source of it); `build.sh`; `MINIMAL.md`, why it has the 21 words it has; `i386/`, the second seed, for the TinyCC route in one boot on builder-hex0: `SPEC.md`, `000-seed.hex0` (1,191 bytes, an i386 Forth with the same 21 words and 64-bit cells) and its `build.sh` |
 | `forth/` | `010-lib.fth`, the Forth library on the seed's 21 machine-code words; `130-asm.fth`, an M1 assembler and hex2 linker used only by check step 03; the library's test |
 | `cc/` | the C compiler in Forth, loaded in numeric order (`020-cc-arena.fth` to `141-archive.fth`); its tests; `driver/`, seed-cc and seed-ar |
 | `kernel/` | `k0/` (K0, written directly in hex0, and its check), `k1/` (K1 in C and `k1-asm.fth`, its recipes, disk writers and tests), `tools/` (the recipe runner and the files that build K1) |
 | `chain/` | `runtime/gcc-seed` (seed-cc's C library), `plumbing/` (the first tools, as kaem scripts), `gcc-direct/` (binutils, stage C, stage D, the late tools), `ladder/` and `gcc64/` (the climb to GCC 10.5.0 and Linux), `patches/`, `plumbing-root.sh` |
 | `tinycc/` | the TinyCC route: seed Forth builds the first tcc, and its junction with live-bootstrap (`tinycc/README.md`) |
-| `tests/` | Stage A and the M2-Planet headers the compiler falls back to; the assembler and seed-cc checks; `seed/asm-check.py`, the seed's comments against GNU as; the chain's test programs |
+| `tests/` | Stage A and the M2-Planet headers the compiler falls back to; the assembler and seed-cc checks; `seed/asm-check.py`, the seed's comments against GNU as; `seed/i386/`, the i386 seed's comment check, its tests against the x86-64 seed and under strace, and its builder-hex0 boot; the chain's test programs |
 | `tools/` | `fetch-archives.py`, `check-pins.py` |
 | `results/` | reports from the recorded runs |
 | `vendor/` | stage0-posix, mescc-tools and M2-Planet, as submodules |
