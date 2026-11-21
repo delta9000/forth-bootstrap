@@ -1,5 +1,6 @@
 # Build artifact — README "Generated binaries such as seed-forth ... are not source."
 seed-forth
+seed-forth-i386
 
 # mescc-tools intermediate tapes
 tape_01
