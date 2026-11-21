@@ -438,10 +438,13 @@ Quoted `#include` lines resolve as before, beside the path given to
 
 Two small files, each read as JOB.
 
-`tinycc/i386-seed/tcc-first.fth`: `include forth/i386/layers.fth`; list
-`build-out/tcc-sources-i386/direct-input.c` as the one input file;
-`include tinycc/tcc-compile-i386.fth`, which compiles and exits. The
-output is the driver's, `build-out/tinycc/tcc-first-i386`.
+`tinycc/i386-seed/tcc-first.fth`, run as
+`… tcc-first.fth OUT SOURCE INCLUDE INCLUDE-LINUX`:
+`include forth/i386/layers.fth`, then what `tinycc/tcc-compile-i386.fth`
+does, with its four paths (`:21-27`) taken from the arguments and SOURCE
+listed as the one input file. It cannot simply include that driver,
+which has the host's paths typed in, because the boot's differ (section
+7.3). On the host the arguments are the driver's own paths.
 
 `tinycc/i386-seed/tool.fth`, run as `… tool.fth OUT SOURCE [SOURCE ...]`:
 `include forth/i386/layers.fth`; define `tool-output` as argument 3 with
@@ -452,10 +455,10 @@ length to `cc-prep-source-name`, as the printed lines do today; list
 kaem, whose three files M2-Mesoplanet also compiles as one unit
 (`vendor/stage0-posix/x86/mescc-tools-mini-kaem.kaem:262-274`).
 
-The first tcc's bytes do not depend on the directory its sources are in
-**[measured]** (SPEC Appendix C), so a boot may put them elsewhere. Using
-the repository's relative paths in the boot too lets the same job and
-driver serve the host check and the boot.
+The compiler's output does not depend on these strings **[measured]**
+(SPEC Appendix C): the first tcc has the same bytes with its sources in
+another directory, and a tool has the same bytes when its source is
+named by an absolute path of 142 bytes.
 
 ## 7. The boot
 
@@ -487,7 +490,7 @@ As now: builder-hex0's stage 1, its stage-2 hex0 source, zeros to sector
     `tinycc/hex0-export.c`;
   - the three archives of `tinycc/SOURCES` and their checksum file;
   - the two scripts below.
-- Then four commands:
+- Then three commands:
 
       hex0 /seed/i386/000-seed.hex0 /seed-forth-i386
       hex0 /vendor/stage0-posix/x86/kaem-minimal.hex0 /kaem-optional-seed
@@ -518,7 +521,16 @@ Each argument is under 255 bytes (P§4).
 
 ### 7.3 `/kaem.run`, run by the full kaem
 
-With variables, `cd` and a search path, in this order:
+**The working directory decides the order.** On builder-hex0 the root
+has no entry: `chdir("/")` and `chdir("..")` fail, so a process that
+leaves `/` cannot return (P§5). A program inherits the directory of the
+one that starts it (read: `execve` copies it, B2:1698-1707). Every
+relative path in the Forth files, from `include forth/i386/layers.fth`
+on, is relative to `/`. So every seed run MUST come before kaem's first
+`cd`, and nothing before that point may need a `cd`. live-bootstrap's
+text does `cd`; it comes last.
+
+With variables and a search path, in this order:
 
 1. The eleven tools, each one seed run of `tool.fth`: first the nine
    whose sources are on the disk as they are (`catm`, `sha256sum`,
@@ -527,24 +539,37 @@ With variables, `cd` and a search path, in this order:
    of `tinycc/tools/` to copies of `ungz.c` and `untar.c`, then `ungz`
    and `untar`. The order and the commands are
    `tinycc/build-tools.sh`'s and `tinycc/build-tools-i386.sh`'s.
-2. The archives are checked and live-bootstrap's is unpacked, as the
-   present script does.
-3. The first tcc's sources are prepared under
-   `/build-out/tcc-sources-i386/` with the commands of
-   `tinycc/build-first-tcc-i386.sh:37-67`, and one seed run of
-   `tcc-first.fth` writes the first tcc, which `cp` installs as
-   `/usr/bin/tcc-mes`.
-4. live-bootstrap's text as now: of `steps/mes-0.28/pass1.kaem` the
-   unpacking and the header install, and `steps/tcc-0.9.26/pass1.kaem`
-   from "# Vars" to "# Checksums" without the MesCC commands.
-5. `hex0-export /dev/hda` with the files the host compares, now
+2. The archives are checked and live-bootstrap's is unpacked in `/`, as
+   the present script does.
+3. The first tcc's sources are prepared **in `/`**. `untar` unpacks into
+   the working directory and has no option for another
+   (`vendor/stage0-posix/mescc-tools-extra/untar.c:391-427`), and
+   `tinycc/build-first-tcc-i386.sh:43,55` changes directory for it, which
+   the boot cannot. So tcc's and Mes's archives are unpacked to
+   `/tcc-0.9.26-1147-gee75a10c` and `/mes-0.28`, and `direct-input.c`,
+   `mes-libc.c` and `mes-libc-native.c` are written beside them, because
+   their quoted includes are relative to their own directory
+   (`tinycc/direct-input-i386.c:29-30`). The other commands are those of
+   `tinycc/build-first-tcc-i386.sh:45-67` with `/` for the source
+   directory.
+4. One seed run of `tcc-first.fth`, with `/usr/bin/tcc-mes`,
+   `direct-input.c`, `mes-0.28/include` and `mes-0.28/include/linux/x86`
+   as its arguments, writes the first tcc.
+5. live-bootstrap's text as now, with its `cd` lines: of
+   `steps/mes-0.28/pass1.kaem` the unpacking and the header install, and
+   `steps/tcc-0.9.26/pass1.kaem` from "# Vars" to "# Checksums" without
+   the MesCC commands. It unpacks both archives again, at its own paths.
+6. `hex0-export /dev/hda` with the files the host compares, now
    including `/seed-forth-i386`, `/x86/bin/kaem` and the eleven tools.
 
+The paths the seed is given in the boot are not the host's: absolute
+source names in `/boot/seed.kaem`, and the first tcc's sources in `/`.
+The outputs are the same bytes all the same **[measured]** (section 6.5).
+
 Process depth is four: the shell, kaem-optional-seed, kaem, and the seed
-or a tool. builder-hex0 has 16 process slots (B2:66-83). A seed run
-under kaem needs 32 MiB of image and 19 MiB of break, well inside the
-670 MB process area, and kaem is saved meanwhile in the area above
-0x30000000.
+or a tool. builder-hex0 has 16 process slots (B2:83). A seed run under
+kaem needs 32 MiB of image and 19 MiB of break, well inside the 670 MB
+process area, and kaem is saved meanwhile in the area above 0x30000000.
 
 ### 7.4 kaem, compiled by the Forth compiler
 
@@ -600,8 +625,10 @@ the eleven pins alone; see the open questions in section 10.)
 - Buffered input: one `read` per byte is enough (section 6.2).
 - Inline `*` and `/`, or any other speed-up the x86-64 file has that is
   not in section 4.
-- The same dictionary addresses, sizes or HERE as the x86-64 host: no
-  output depends on them (`seed/SPEC.md:95-100`).
+- The same dictionary addresses, sizes or HERE as the x86-64 host. The
+  output does not depend on them **[measured]** (SPEC Appendix C): with
+  an extra word in the library and 12,347 extra bytes allotted after
+  `cc/030-cc-io.fth`, the first tcc keeps its hash.
 - A general `mmap` replacement: three callers, all served by
   `brk-alloc`.
 - Freeing memory, closing the top-level file, or reclaiming the include
@@ -620,7 +647,8 @@ Not free, although they look like shortcuts:
 - `lea`, not `add`, in `flag-test,` (section 4.2);
 - the `native!` redirection of `cc-nzero`: redefining it leaves 115's
   own two calls on x86-64 bytes (section 3);
-- the guard before `execve` in the shim (section 7.4).
+- the guard before `execve` in the shim (section 7.4);
+- every seed run before kaem's first `cd` (section 7.3).
 
 ## 9. Acceptance
 
@@ -680,5 +708,13 @@ against this document:
 - **The image size.** 32 MiB is a guess with margin over a 9.01 MiB
   measurement on another host. It is one field of the seed and one
   constant of the checker.
+- **The first-tcc job repeats the driver.** `tcc-first.fth` cannot
+  include `tinycc/tcc-compile-i386.fth` because of the typed-in paths.
+  Taking the four paths out of that driver into a names file, as the
+  tools have, would let both hosts share it; it changes a file the
+  x86-64 build reads, not its output.
+- **`P§n` citations** point at a notes file outside the repository. A
+  later reader cannot open it; copying `hex0-probe.md` into the
+  repository would fix that for both documents.
 - **Where the acceptance scripts live**, and whether the host oracle
   becomes a step of `CHECK_I386=1`.

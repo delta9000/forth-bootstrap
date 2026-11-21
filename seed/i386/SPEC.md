@@ -1229,6 +1229,16 @@ output 975,624.
 same sources under `build-out/other-dir/`, with the driver's four paths
 changed to match, gave the same 975,624 bytes.
 
+**Nor on the path strings of a tool.** `sha256sum` compiled with its
+source named by an absolute path of 142 bytes has the pinned bytes.
+
+**Nor on dictionary addresses.** With one extra word defined after the
+library and 12,347 bytes allotted after `cc/030-cc-io.fth`, so that
+every later dictionary address moves by an odd amount, the first tcc
+keeps its hash. The i386 host's dictionary differs from the x86-64
+host's in every address and size, so the byte-identity oracle of section
+13.2 rests on this.
+
 **Assemblers.** GNU as 2.47 and llvm-mc 23.1.5 in 32-bit mode write the
 same bytes for every instruction form this document and
 `forth/i386/CONTRACT.md` name, including operands that are assembler
