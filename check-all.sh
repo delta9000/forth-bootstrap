@@ -10,6 +10,9 @@
 #       M1 program; it prints "hi", exits 42 and is 160 bytes
 #   04  tests/cc/seed-cc-rebuild-check.sh: seed Forth builds seed-cc and
 #       seed-ar; that seed-cc rebuilds both, byte for byte the same
+#   04b tests/cc/gates/run-gates.sh: the Forth compiler compiles the gate
+#       fixtures G0.c to M1b.c, each program exits as expected, and it
+#       rejects the die-*.c fixtures with the expected error code
 #   05  tools/check-pins.py: every archive pin agrees with MANIFEST.sha256
 #   06  Stage A (tests/cc/stage-a-check.sh): the Forth compiler's M1 for
 #       M2-Planet equals a GCC-built M2-Planet's (needs gcc; SKIP without)
@@ -67,6 +70,7 @@ run "01-seed" bash -c 'seed/build.sh && [ "$(wc -c < seed-forth)" -eq 1772 ]'
 run "02-test" ./test.sh
 run "03-asm" tests/asm/hi-check.sh
 run "04-seed-cc" tests/cc/seed-cc-rebuild-check.sh
+run "04b-cc-gates" tests/cc/gates/run-gates.sh
 if have python3; then
     run "05-pins" python3 tools/check-pins.py
 else
