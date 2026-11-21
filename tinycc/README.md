@@ -263,13 +263,16 @@ checks the archives and lays out `build-out/tcc-sources/`; the seed-built
 bwrap, on the live-bootstrap tree `build-tools.sh` unpacked.  What the
 host still does: bash runs those scripts and stands in for kaem in
 `lb-replay.sh`, whose kaem text is cut by host grep, awk, sed and cat;
-the scripts' rm, mkdir, dirname, wc, sha256sum, sed and cut clear
-`build-out/` directories and compare the tools and archives with their
-pins; host hex0-seed builds seed-forth and K0;
+bash's printf writes each tool's three-line names file, part of its
+Forth input (`tinycc/build-tools.sh`); the scripts' rm, mkdir, dirname,
+wc, sha256sum, sed and cut clear `build-out/` directories and compare the
+tools and the first tcc with their pins; host hex0-seed builds seed-forth
+and K0;
 `tinycc/hex0-handoff-stream.py` cuts boot 2's script from the pinned
 pass1.kaem and lists the stream's files; `kernel/k0/mkfs.py` (via
-`tinycc/hex0-handoff-image.py`) writes K0's memory image; the host creates
-the empty drive, starts QEMU twice and reads the drive.  It writes no
+`tinycc/hex0-handoff-image.py`) writes K0's memory image, copying every
+prepared source file into it; the host creates the empty drive, starts
+QEMU twice and reads the drive (`tinycc/hex0-records.py`).  It writes no
 byte of boot 2's disk.
 
 ## What does not reproduce

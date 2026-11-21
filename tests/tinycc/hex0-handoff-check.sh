@@ -31,8 +31,9 @@
 # live-bootstrap's kaem text and host grep, awk, sed and cat cut it);
 # hex0-seed builds seed-forth and K0; this script cuts boot 2's script
 # from the pinned pass1.kaem, lists the files of the stream, writes K0's
-# memory image, creates the empty drive, starts QEMU twice and reads the
-# drive.  No byte of the drive is written by the host.
+# memory image (python3, copying the prepared sources into it), creates
+# the empty drive, starts QEMU twice and reads the drive.  No byte of the
+# drive is written by the host.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 

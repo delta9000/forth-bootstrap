@@ -24,9 +24,11 @@
 #                      mes libc tcc-mes makes (all but libc.a equal what
 #                      live-bootstrap publishes after tcc-boot2) and the i386
 #                      kaem, cp, chmod, match, rm and hex0-export the first
-#                      tcc builds against it.  The same bytes came from the
-#                      host junction (tinycc/lb-replay.sh stopped before
-#                      "# Install") and from K0.
+#                      tcc builds against it.  The old first tcc (7b2efd95,
+#                      pnut's libc) gave the same bytes in the host
+#                      junction (tinycc/lb-replay.sh stopped before
+#                      "# Install") and under K0; the first tcc with Mes
+#                      libc (d9e97270) gives them under K0.
 # When a change is meant to alter one, update its line in the same commit
 # and say why.
 d9e97270f8d39587b2ef57d675cf733aa239b11f288c75d6b2fcc4adf7019fec  tinycc/tcc-first

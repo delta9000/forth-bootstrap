@@ -47,8 +47,10 @@
 #                   tcc-boot0 and mes libc and writes live-bootstrap's
 #                   builder-hex0 disk through K0; builder-hex0 boots it and
 #                   runs pass1.kaem from tcc-boot0 to their published tcc and
-#                   libraries (under a minute with KVM; needs QEMU, bwrap
-#                   and the archives of tinycc/SOURCES; SKIP without them)
+#                   libraries (under a minute with KVM; needs QEMU, KVM,
+#                   bwrap, the vendor/stage0-posix submodule and the
+#                   archives of tinycc/SOURCES and tinycc/hex0-handoff.SOURCES;
+#                   SKIP without them)
 #
 # Each step's output goes to $TMPDIR/check-all-NAME.log (default /tmp); the
 # console shows one OK, SKIP or FAIL line per step and the verdict.
