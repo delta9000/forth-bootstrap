@@ -52,6 +52,9 @@ LB=live-bootstrap-a49273cbb5c381b851198bc1e53c294702f4f7c9
 # exits 42 through int 0x80.
 probe() {
     command -v bwrap > /dev/null || { echo "missing: bwrap"; return 1; }
+    for a in tcc-0.9.26.tar.gz mes-0.28.tar.gz $LB.tar.gz; do
+        [ -f "$IN/$a" ] || { echo "missing $IN/$a (python3 tools/fetch-archives.py $IN/$a)"; return 1; }
+    done
     # the chroot runs these from the host's /usr, mounted at /host/usr
     for t in bash grep awk sed cat; do
         [ -x /usr/bin/$t ] || { echo "missing: /usr/bin/$t"; return 1; }
