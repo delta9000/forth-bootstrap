@@ -16,8 +16,9 @@
 # G14b.c includes "gates/g14_helper.h" (seed-forth's copy, which sat in
 # tests/cc/, includes "g14_helper.h").
 #
-# Every gate runs; the script prints PASS or FAIL for each and exits 1 at
-# the end if any failed.
+# Every gate runs; the script prints PASS or FAIL for each, then runs
+# check-coverage.sh (error codes against the die gates), and exits 1 at the
+# end if any gate or the coverage check failed.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 
@@ -69,6 +70,8 @@ not_run=(
 # $CC_DIE_TMP, which is build-out/gates/die-tmp, not /tmp, because the
 # compiler may run with a private /tmp.  die-31-include-deep.c includes
 # itself as "gates/die-31-include-deep.c" for the reason G14b.c does.
+# tests/cc/gates/check-coverage.sh, run at the end, reads this list and
+# counts which of the compiler's error codes it tests.
 die_gates=(
   "die-10-arena-full.sh|10|cc: line 88: error 10"
   "die-20-input-too-big.sh|20|cc: line 1: error 20"
@@ -197,5 +200,9 @@ done
 
 [ "$private" = 1 ] || rm -f "$OUT"
 echo
+coverage=0
+"$D/check-coverage.sh" || coverage=$?
+echo
 echo "run-gates: $PASSED passed, $FAILED failed, ${#not_run[@]} not run"
-[ "$FAILED" = 0 ]
+[ "$coverage" = 0 ] || echo "run-gates: check-coverage.sh failed"
+[ "$FAILED" = 0 ] && [ "$coverage" = 0 ]
