@@ -38,9 +38,12 @@ ungz --file h.gz --output h2             # matched gzip -d
 untar --file t.tar                       # matched tar
 ```
 
-Measured since: that `sha256sum` exits 0 but its hashes are wrong ("abc"
-gives `709e80c8…`); so is the one the final tcc builds.  The hand-off
-hashes boot 2's results on the host instead.
+Measured since: that `sha256sum` exits 0 but hashes every file as that
+many zero bytes ("abc" gives `709e80c8…`, the sha256 of three NULs): it
+reads with `fseek` to the end, `ftell`, `rewind`, `fread`, and the libc
+pass1.kaem builds takes `rewind` from `stub/rewind.c`.  The one the final
+tcc builds does the same; the first tcc's build was not tried on "abc".
+The hand-off hashes boot 2's results on the host instead.
 
 Traced, that kaem and those tools use 16 i386 calls: the ten above minus
 stat64, plus fork 2, waitpid 7, execve 11, chdir 12, chmod 15, access 33
@@ -256,7 +259,7 @@ hex0 through stage0-posix, mes-0.28 and tcc-0.9.26 in 5 min 56 s under
 KVM and printed `OK` for all ten lines of tcc-0.9.26.x86.checksums.  When
 the stream ends builder-hex0 writes the file `/dev/hda`, if one exists,
 to the disk from sector 0 and reboots; the hand-off exports its results
-that way.  `cd /` fails in builder-hex0 (no entry for the root).
+that way.  kaem's `cd /` fails under builder-hex0 ("cd failed!").
 
 **Could a K0 run write it?**  The stream is trivial to produce (`src N
 path\n` and the bytes), and the stage-1 binary can be assembled under K0
@@ -275,7 +278,7 @@ choices:
    next guest's input, which the K1 route has not needed so far; the
    guest prints the stream's sha256 and the host and boot 2 check it.
 
-Measured since: choice 1 took 37 instructions and a table entry (call
+Measured since: choice 1 took 42 instructions and a table entry (call
 248 takes an fd, not a memory range: the file's data and size are in
 K0's file table).  A second K0 change was needed: K0 did not clear a
 new program's stack, and the first tcc's `-g` reads its getcwd buffer

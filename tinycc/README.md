@@ -128,9 +128,10 @@ Before boot 2 it also hashes the hand-off files in boot 1's stream
 against `tests/pins/tinycc.sha256` (`tinycc/hex0-handoff/boot1/…`).
 
 The hashes are taken on the host, not in boot 2: mescc-tools-extra's
-`sha256sum.c` compiled by these tcc builds prints wrong hashes (it hashes
-"abc" to `709e80c8…`, both from the first tcc and from the final
-`tcc`), so a guest-side `sha256sum -c` would prove nothing.
+`sha256sum.c` linked against this mes libc hashes every file as that many
+zero bytes ("abc" gives `709e80c8…`, the sha256 of three NULs), because
+it reads after `rewind` and the libc's `rewind` is `stub/rewind.c`.  A
+guest-side `sha256sum -c` would prove nothing.
 
 **Host involvement, item by item:** `tinycc/build-first-tcc.sh --prepare`
 and `tinycc/lb-replay.sh --prepare` (in bwrap) unpack and patch the
