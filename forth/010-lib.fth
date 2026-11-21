@@ -1,28 +1,51 @@
-\ 010-lib.fth — minimal helpers built on top of the 32 hand-encoded primitives.
+\ 010-lib.fth — the Forth library, built on the seed's 21 machine-code words:
+\   dup drop swap >r r>   @ ! c@ c!   + nand 0= * /
+\   key token find   syscall6   state : ;
 \ Loaded before any Forth-level vocabulary.
 \
 \ Conventions:
-\   - Up to the outer interpreter (interpret, near the end), all arithmetic
-\     constants use [lit] (the decimal literal compiler) because the seed
-\     has no interpret-mode number parser at all — [lit] is the only path
-\     (the seed's parse_decimal_code).  Characters use char / [char]
-\     (defined below), so no ASCII code needs a comment to explain it.
-\     After the hand-over to interpret, numbers are written bare.
-\   - No seed address is typed in: sysvar cells are found from the seed's
-\     state and latest primitives, and primitive xts with ' (tick).
+\   - Up to the outer interpreter (interpret, further down) this file is
+\     read by the seed's own loop (seed/000-seed.hex0, repl).  It knows
+\     words and unsigned decimal numbers, and \ comments; nothing else.
+\     So there are no ( ) comments, negative or hex numbers above the
+\     hand-over.  Characters use char / [char], so no ASCII code needs a
+\     comment to explain it.
+\   - No seed address is typed in: the sysvar cells are found from the
+\     seed's state word, and its words' xts with ' (tick).
 
-\ here-addr ( -- a )  push the address of the HERE sysvar cell.
-\ Useful because most "advance HERE" idioms want to update the cell, not just
-\ read its current value (which is what `here` does).  The seed's sysvars are
-\ consecutive cells STATE, LATEST, HERE, so HERE's cell follows LATEST's.
-: here-addr  latest [lit] 8 + ;         \ &HERE = &LATEST + 8 = 0x413010
+\ ===== Words the seed leaves to the library =====
+\ Each of these was machine code in an earlier seed and needs none.
+
+\ The seed's sysvars are consecutive 8-byte cells: STATE, LATEST, HERE,
+\ LAST_FOUND.  state pushes the address of the first; the others follow.
+\ latest ( -- a )     the cell holding the newest dictionary header's address.
+\ here-addr ( -- a )  the cell holding HERE, the first free byte.
+: latest     state 8 + ;
+: here-addr  state 16 + ;
+
+\ here ( -- addr )  the value of HERE: where the next byte laid down goes.
+: here  here-addr @ ;
+
+\ , ( v -- )  store the 8-byte cell v at HERE and advance HERE past it.
+: ,  here !  here 8 + here-addr ! ;
 
 \ c, ( b -- )  store low byte of TOS at HERE and advance HERE by 1.
 \ This is the workhorse for any code-emission vocabulary built in Forth.
-: c,
-  here c!                                 \ *HERE = byte
-  here-addr @ [lit] 1 + here-addr !       \ HERE += 1
-;
+: c,  here c!  here 1 + here-addr ! ;
+
+\ execute ( xt -- )  run the word whose code starts at xt.  A colon word
+\ is machine code that ends in ret, and the return stack is the x86 stack:
+\ >r puts xt on it, and this word's own ret then "returns" into xt.  When
+\ xt's word returns, it returns to whoever called execute.
+: execute  >r ;
+
+\ r@ ( -- n ; R: n -- n )  copy the top of the caller's return stack.
+\ Inside r@ the top of the return stack is r@'s own return address, so
+\ that comes off first and goes back last.
+: r@  r> r> dup >r swap >r ;
+
+\ ' ( "name" -- xt | 0 )  read the next token and look it up.
+: '  token find ;
 
 \ ----- bool / bitwise helpers built on nand -----
 \ All derived because nand is the only logical primitive in the seed.
@@ -39,12 +62,12 @@
 
 \ - ( a b -- a-b )  subtract via 2's complement (we have + and nand).
 \ Used by classifier helpers and the local rel32 CALL encoder below.
-: -  dup nand [lit] 1 + + ;
+: -  dup nand 1 + + ;
 
 \ 1+ ( n -- n+1 )   1- ( n -- n-1 )  Step by one: the commonest arithmetic
 \ in the C compiler (pointers, counters, lengths), so it gets a name.
-: 1+  [lit] 1 + ;
-: 1-  [lit] 1 - ;
+: 1+  1 + ;
+: 1-  1 - ;
 
 \ ===== Linux syscall wrappers (via syscall6 primitive) =====
 \ syscall6 ( a b c d e f n -- rax )  loads a..f into rdi/rsi/rdx/r10/r8/r9
@@ -54,11 +77,14 @@
 \   read=0  write=1  open=2  close=3  exit=60  brk=12  mmap=9
 
 \ write ( fd buf count -- n )        SYS_write=1
-: write  [lit] 0 [lit] 0 [lit] 0 [lit]  1 syscall6 ;
+: write  0 0 0 1 syscall6 ;
 
 \ die ( n -- )  Exit with status n via SYS_exit=60.
 \ Used by the C compiler's error paths instead of inlining the full syscall.
-: die  [lit] 0 [lit] 0 [lit] 0 [lit] 0 [lit] 0 [lit] 60 syscall6 ;
+: die  0 0 0 0 0 60 syscall6 ;
+
+\ bye ( -- )  exit with status 0.
+: bye  0 die ;
 
 \ ===== Character classification helpers =====
 \ All return -1 if true, 0 if false (Forth boolean convention).
@@ -70,22 +96,22 @@
 \ Approach: compute (c-48)/10.  If c<48 the subtract underflows to a huge
 \ unsigned, /10 is huge, 0= is 0.  If c in 48..57, (c-48)/10 = 0, 0= is -1.
 \ If c >= 58, (c-48)/10 >= 1, 0= is 0.  ✓
-: digit?  [lit] 48 - [lit] 10 / 0= ;
+: digit?  48 - 10 / 0= ;
 
 \ alpha-lower? ( c -- flag )  true if c is 'a'..'z' (97..122)
 \ Same trick: (c-97)/26 = 0 iff c in 97..122.
-: alpha-lower?  [lit] 97 - [lit] 26 / 0= ;
+: alpha-lower?  97 - 26 / 0= ;
 
 \ alpha-upper? ( c -- flag )  true if c is 'A'..'Z' (65..90)
-: alpha-upper?  [lit] 65 - [lit] 26 / 0= ;
+: alpha-upper?  65 - 26 / 0= ;
 
 \ ===== Comparison operators =====
 \ All return -1 (true) / 0 (false), Forth boolean convention.
 
 \ true ( -- -1 )  the canonical true flag, all 64 bits set.  The decimal
-\ literal parser is unsigned-only, so -1 cannot be written as [lit] -1;
+\ literal parser is unsigned-only, so -1 cannot be written as a number;
 \ `0 0=` manufactures it (0 is zero, so 0= answers -1).
-: true  [lit] 0 0= ;
+: true  0 0= ;
 
 \ = ( a b -- f )  -1 if a = b, else 0.  Equal iff (a - b) = 0.
 : =   - 0= ;
@@ -94,10 +120,9 @@
 : <>  = 0= ;
 
 \ 2^63 ( -- 2^63 )  9223372036854775808 = 0x8000000000000000, the sign bit
-\ of a 64-bit signed integer.  The literal round-trips through
-\ parse_decimal_code because that parser uses an unsigned 64-bit
-\ accumulator.
-: 2^63  [lit] 9223372036854775808 ;
+\ of a 64-bit signed integer.  The literal round-trips through the seed's
+\ number because it accumulates in an unsigned 64-bit register.
+: 2^63  9223372036854775808 ;
 
 \ 0< ( n -- f )  -1 if n is signed-negative (bit 63 set), else 0.
 \ Strategy: the seed's `/` is unsigned (DIV instruction).  A value with
@@ -134,15 +159,15 @@
 \ compact little-endian immediates.
 : ,4
   dup c,                       \ byte 0
-  [lit] 256 / dup c,           \ byte 1
-  [lit] 256 / dup c,           \ byte 2
-  [lit] 256 / c, ;             \ byte 3
+  256 / dup c,           \ byte 1
+  256 / dup c,           \ byte 2
+  256 / c, ;             \ byte 3
 
 \ ,8 ( v -- )  emit all 8 bytes of v at HERE in LE order.
 \ Used for movabs imm64 in defining words and for 8-byte branch target slots.
 : ,8
   dup ,4                                                 \ low 4 bytes
-  [lit] 256 / [lit] 256 / [lit] 256 / [lit] 256 /        \ shift right 32
+  256 / 256 / 256 / 256 /        \ shift right 32
   ,4 ;                                                   \ high 4 bytes
 
 \ ===== immediate flag toggle =====
@@ -154,14 +179,14 @@
 \ `latest` is a seed primitive — it pushes the address of the LATEST sysvar
 \ cell; `latest @` fetches the current dict tail pointer; `+ 8` is the
 \ flags-byte address.
-: immediate  latest @ [lit] 8 + [lit] 1 swap c! ;
+: immediate  latest @ 8 + 1 swap c! ;
 
 \ ===== the push body: constant (and create / variable, further below) =====
 \ constant is defined early so branch-xt/0branch-xt can use it: the
 \ control-flow combinators below need the xts of branch/0branch, and
 \ hard-coding them as numeric literals would break every time
 \ 000-seed.hex0's dictionary layout changes; instead, resolve them at load
-\ time via the seed's `'` (tick) primitive, captured into a constant.
+\ time via `'` (tick), captured into a constant.
 \
 \ A word that pushes one value has a 19-byte runtime body:
 \   48 83 ED 08          sub rbp, 8       ; make data-stack room
@@ -172,13 +197,13 @@
 \ and in what follows the ret.
 
 \ ret, ( -- )  emit C3, the x86 `ret` instruction.
-: ret,  [lit] 195 c, ;
+: ret,  195 c, ;
 
 \ push-imm64, ( v -- )  emit the 18 bytes that push v: the body minus ret.
 : push-imm64,
-  [lit] 72 c, [lit] 131 c, [lit] 237 c, [lit] 8 c,         \ 48 83 ED 08  sub rbp, 8
-  [lit] 72 c, [lit] 137 c, [lit] 125 c, [lit] 0 c,         \ 48 89 7D 00  mov [rbp], rdi
-  [lit] 72 c, [lit] 191 c,                                 \ 48 BF        movabs rdi, ...
+  72 c, 131 c, 237 c, 8 c,         \ 48 83 ED 08  sub rbp, 8
+  72 c, 137 c, 125 c, 0 c,         \ 48 89 7D 00  mov [rbp], rdi
+  72 c, 191 c,                                 \ 48 BF        movabs rdi, ...
   ,8 ;                                                     \ imm64 = v (consumes v)
 
 \ push-body, ( v -- )  emit the whole 19-byte body of a word that pushes v.
@@ -187,86 +212,77 @@
 \ constant ( v "name" -- )  define name as a word that pushes v.
 \ `:` parses the name, builds the header and sets STATE=1; we emit the body
 \ by hand and set STATE back to 0 (a `;` here would end constant itself).
-: constant  : push-body, [lit] 0 state ! ;
+: constant  : push-body, 0 state ! ;
 
 \ ===== call, and character literals =====
 
 \ call, ( target -- )  Emit a 5-byte x86-64 CALL to absolute `target`
-\ at HERE.  rel32 = target - (HERE + 5).  After `[lit] 232 c,` advances
+\ at HERE.  rel32 = target - (HERE + 5).  After `232 c,` advances
 \ HERE by 1, HERE points at the rel32's first byte and HERE+4 points just
 \ past the 5-byte CALL — so rel32 = target - (HERE_now + 4).
 \ Kept here so [char] and the control-flow combinators do not need another
 \ assembler layer.
 : call,
-  [lit] 232 c,                 \ 0xE8 CALL opcode
-  here [lit] 4 + - ,4 ;        \ rel32 = target - (HERE+4); emit 4 LE bytes
-
-\ lit-xt — the xt of the seed's `lit` primitive, which pushes the cell that
-\ follows its CALL (the runtime half of [lit]).
-' lit constant lit-xt
-
-\ tib ( -- a )  the seed's token buffer, where its reader leaves the token
-\ it read last.  It sits 2048 bytes below the sysvar page, which starts at
-\ STATE's cell: 0x413000 - 2048 = 0x412800.
-: tib  state [lit] 2048 - ;
+  232 c,                 \ 0xE8 CALL opcode
+  here 4 + - ,4 ;        \ rel32 = target - (HERE+4); emit 4 LE bytes
 
 \ char ( "tok" -- c )  read the next token and push its first byte.
-\ The seed's one Forth-callable token reader is ' (tick): it reads a token
-\ into the TIB and looks it up.  We drop its answer (an xt, or 0 when no word
-\ has that name) and take the byte straight from the TIB.
-: char  ' drop tib c@ ;
+: char  token drop c@ ;
 
-\ [char] ( "tok" -- )  IMMEDIATE, used inside : ... ;  Compile the next
-\ token's first byte as a literal: CALL lit and the cell, the same 13 bytes
-\ `[lit] N` lays down.  So `[char] ;` compiles exactly what `[lit] 59` does.
-: [char]  char lit-xt call, , ;
-immediate
-
-\ Characters char cannot quote.  The reader never makes a token of
-\ whitespace, and a token that is exactly \ or ( starts a comment.
-[lit]  9 constant tab
-[lit] 10 constant nl
-[lit] 32 constant bl
-[lit] 40 constant lparen                    \ (
-[lit] 92 constant backslash
+\ Characters char cannot quote, or that would start a comment where a
+\ later word quotes them.  The reader never makes a token of whitespace, a
+\ token that is exactly \ starts a comment, and the outer interpreter
+\ below takes one that is exactly ( as a comment too.
+9 constant tab
+10 constant nl
+32 constant bl
+40 constant lparen                    \ (
+92 constant backslash
 
 \ ===== Control-flow combinators =====
-\ Compile-time helpers that emit calls to the seed's `branch` and `0branch`
-\ primitives, plus inline 8-byte target slots, structured per traditional
+\ Compile-time helpers that emit calls to `branch` and `0branch`, plus
+\ inline 8-byte target slots, structured per traditional
 \ Forth idiom (begin/until/again/while/repeat/if/else/then).
 \
-\ The seed's branch/0branch primitives work with inline 8-byte target cells.
-\ Their x86 machine code is:
-\     pop rax           ; rax = return address = address of inline slot
-\     mov rax, [rax]    ; rax = contents of slot = branch destination
-\     push rax          ; push destination as new return address
-\     ret               ; "return" to destination (indirect jump)
-\
-\ zbranch_code is the same except it first inspects TOS (in rdi/rdx) and
-\ either loads the slot (branch taken) or skips past it (fall through).
-\
-\ This means the combinators must emit a 5-byte CALL rel32 followed
-\ immediately by an 8-byte absolute target address.  The CALL lands
-\ inside branch_code / zbranch_code which pop their own return address
-\ (pointing at the slot), dereference it, and jump.
+\ branch and 0branch, defined below, work with inline 8-byte target cells:
+\ the combinators emit a 5-byte CALL rel32 to one of them, followed
+\ immediately by an 8-byte absolute target address.  The word called takes
+\ its own return address (which points at the slot) off the return stack
+\ and puts back the address to go on at: the slot's contents for a jump,
+\ or the address after the slot to fall through.
 \
 \ The slot is thus "consumed" — it does NOT remain on the return stack.
 \ backward branches simply emit the back-target cell; forward branches
 \ reserve a slot, return its address as a fixup, and patch it later.
 \
 \ slot-layout for a forward branch (e.g. if, ... then,):
-\     E8 xx xx xx xx    ; CALL rel32 -> 0branch_code
+\     E8 xx xx xx xx    ; CALL rel32 -> 0branch
 \     <8-byte slot>     ; initially 0, patched by then, to target HERE
-\ After CALL, rax -> slot; zbranch_code tests flag, either:
-\   - flag==0: mov rax,[rax] -> load slot -> push -> ret to target
-\   - flag!=0: add rax,8    -> skip slot -> push -> ret past slot
 \
 \ Names end in `,` per Forth-asm convention ("emits code") and to keep them
 \ distinct from any plain runtime `if`/`then` words.
 \
-\ branch-xt / 0branch-xt — the xts of the seed's `branch` and `0branch`
-\ primitives, captured via `'` at load time so any 000-seed.hex0 layout change
-\ is automatically tracked.
+\ branch ( -- )  jump to the address in the cell that follows the CALL.
+\ Called from compiled code, branch finds its own return address on top of
+\ the return stack, and that is the cell's address: r> takes it, @ reads
+\ the target, >r leaves the target as the address branch returns to.
+: branch  r> @ >r ;
+
+\ 0branch ( flag -- )  jump to the cell's target if flag = 0; otherwise go
+\ on after the cell.  It has to choose between two return addresses with
+\ no branch to choose with, so it does it by arithmetic.  With
+\   past = cell + 8        where execution goes on if flag is not 0
+\   mask = -1 if flag = 0, else 0        which is what 0= answers
+\ the address to return to is  past + (mask and (target - past)).
+: 0branch
+  0=                    \ mask
+  r> dup @              \ mask cell target
+  swap 8 +              \ mask target past
+  dup >r                \ mask target past     R: past
+  - and                 \ mask and (target - past)
+  r> + >r ;             \ R: past, or target when flag was 0
+
+\ branch-xt / 0branch-xt — their xts, for the combinators to compile CALLs to.
 ' branch  constant branch-xt
 ' 0branch constant 0branch-xt
 
@@ -277,7 +293,7 @@ immediate
 : if,
   0branch-xt call,
   here                         \ slot address, returned as fixup
-  [lit] 0 ,                    \ reserve 8 bytes (` ,` emits a cell)
+  0 ,                    \ reserve 8 bytes (` ,` emits a cell)
 ;
 immediate
 
@@ -293,7 +309,7 @@ immediate
 : else,
   branch-xt call,
   here                         \ start of new (else-end) target slot
-  [lit] 0 ,                    \ reserve 8 bytes
+  0 ,                    \ reserve 8 bytes
   swap                         \ ( fixup-else fixup-if )
   here swap !                  \ patch fixup-if -> just past unconditional branch
 ;
@@ -308,7 +324,7 @@ immediate
 \ fixup, leaving back-target underneath for repeat,.
 : while,
   0branch-xt call,
-  here [lit] 0 , ;
+  here 0 , ;
 immediate
 
 \ repeat, ( back-target fixup -- )  Emit unconditional jump back to begin-target;
@@ -345,11 +361,11 @@ immediate
 \ area via `,` / `c,` / `allot`.  HERE is at the start of the body when
 \ push-body, runs, and the body is 19 bytes, so the data area starts at
 \ HERE + 19.
-: create  : here [lit] 19 + push-body, [lit] 0 state ! ;
+: create  : here 19 + push-body, 0 state ! ;
 
 \ variable ( "name" -- )  Define name as a word that pushes the address of
 \ an 8-byte cell, initialized to 0: a create whose data area is one cell.
-: variable  create [lit] 0 , ;
+: variable  create 0 , ;
 
 \ ===== Deferred words: defer / is =====
 \ A word can only call words that already exist, but two words that call
@@ -366,23 +382,23 @@ immediate
 \   <8 bytes>    the cell (0 until is fills it)
 ' @       constant fetch-xt
 ' execute constant execute-xt
-[lit] 29 constant defer-code-size
+29 constant defer-code-size
 
 \ defer ( "name" -- )  Define name as a word that runs the xt in its cell.
 : defer
   : here defer-code-size + push-imm64,           \ rdi = address of the cell
   fetch-xt call,  execute-xt call,  ret,
-  [lit] 0 ,  [lit] 0 state ! ;
+  0 ,  0 state ! ;
 
 \ is ( xt "name" -- )  Make the deferred word name run xt from now on.
 \ ' finds name's code; its cell sits defer-code-size bytes further on.
 : is  ' defer-code-size + ! ;
 
 \ ===== The outer interpreter =====
-\ The seed's REPL knows words and [lit] only: a number typed bare is a miss,
-\ and a miss prints the token and "?" and reads on.  interpret, below, is a
-\ second REPL that also reads numbers and stops at the first token it cannot
-\ take.  The token `interpret` after its definition hands over to it; it
+\ The seed's REPL knows words and unsigned decimal numbers only, and its
+\ numbers compile to a CALL and a cell.  interpret, below, is a second REPL
+\ that also reads negative and hex numbers, and compiles a number as the
+\ 18-byte push.  The token `interpret` after its definition hands over to it; it
 \ never returns, and at end of input it runs bye (exit 0), as the seed does.
 \ The library above it is the preamble it needs; the rest of the library,
 \ and every file loaded after it, is read by interpret.
@@ -394,41 +410,61 @@ immediate
 \ and then, tried only after find has failed, so 1+ and - stay words:
 \   a number: decimal, -decimal or $hex     -> push it, or compile-literal
 \   anything else                           -> the token and "?" on stdout,
-\                                              exit 2 (the seed's fatal_token)
+\                                              exit 2 (the seed's fatal)
 \ Nothing of the interpreter's sits on either stack while a word runs, so an
 \ interpreted >r ... r>, or a value left across tokens, behaves as under the
 \ seed's REPL.
 
-\ read-token ( -- a u )  the seed's own reader, made callable: the token's
-\ address in the TIB and its length, u = 0 at end of input; comments are
-\ skipped and a 256-byte token is fatal (exit 2), as the seed's REPL reads.
-\ ' is `call read_word; jmp find`, so read_word is the end of that 5-byte
-\ CALL plus its rel32.  @ fetches the rel32 and 4 bytes more; the sum is
-\ right in its low 32 bits, and the seed lives below 4 GiB.
-' ' dup [lit] 5 + swap 1+ @ + [lit] 4294967295 and constant read-word-addr
-: header:  : [lit] 0 state ! ;          \ ( "name" -- ) header only; c, lays the body
-header: read-token  read-word-addr call, ret,
+\ compile-literal ( n -- )  What a number does in compile state: lay the
+\ 18 bytes that push it (push-imm64,).  A bare number, [lit] and [char]
+\ all come here, so they lay the same bytes.
+defer compile-literal
+' push-imm64, is compile-literal
+
+\ [char] ( "tok" -- )  IMMEDIATE, used inside : ... ;  Compile the next
+\ token's first byte as a literal, so `[char] ;` compiles what 59 does.
+: [char]  char compile-literal ;
+immediate
+
+
+\ unknown ( a u -- )  As the seed's fatal: the token, "?" and a newline in
+\ one write to stdout, then exit 2.
+: unknown
+  >r [char] ? over r@ + c!  nl over r@ + 1+ c!
+  1 swap r> 2 + write drop  2 die ;
+
+\ read-token ( -- a u )  the next token, as the seed's token reads it (its
+\ address in the token buffer and its length, u = 0 at end of input, \
+\ comments skipped, a 256-byte token fatal), and with ( ) comments skipped
+\ too: a token that is exactly ( is dropped with everything up to the next
+\ ) byte, or to the end of input.  interpret, [lit] and c{ } read through
+\ it; the seed's : and the words that read one name or character (' char
+\ s,) call token and do not skip ( ).
+: paren?  dup 1 = if, over c@ lparen = exit, then, 0 ;        \ ( a u -- a u f )
+: skip-to-paren  begin, key dup 0= swap [char] ) = or 0= while, repeat, ;
+: read-token
+  begin, token paren? while, 2drop skip-to-paren repeat, ;
 
 \ ----- Numbers -----
 \ digit ( c -- n )  c's value as a digit, 0..35, or 99 for any other byte.
 : digit
   dup digit? if, [char] 0 - exit, then,
-  dup alpha-lower? if, [lit] 87 - exit, then,
-  dup alpha-upper? if, [lit] 55 - exit, then,
-  drop [lit] 99 ;
+  dup alpha-lower? if, 87 - exit, then,
+  dup alpha-upper? if, 55 - exit, then,
+  drop 99 ;
 
 \ advance ( a u -- a+1 u-1 )  step past the first byte.
 : advance  1- swap 1+ swap ;
 
 \ >digits ( a u base -- n true | false )  a non-empty run of digits below
-\ base.  The accumulator wraps silently, as the seed's parse_decimal does.
+\ base.  The accumulator wraps silently, as the seed's number does.
 variable np-base
 : >digits
   np-base !
-  dup 0= if, 2drop [lit] 0 exit, then,
-  [lit] 0 >r
+  dup 0= if, 2drop 0 exit, then,
+  0 >r
   begin, dup while,
-    over c@ digit dup np-base @ < 0= if, r> drop drop 2drop [lit] 0 exit, then,
+    over c@ digit dup np-base @ < 0= if, r> drop drop 2drop 0 exit, then,
     r> np-base @ * + >r
     advance
   repeat,
@@ -437,30 +473,26 @@ variable np-base
 \ number? ( a u -- n true | false )  decimal digits, - and decimal digits, or
 \ $ and hex digits (either case).  Nothing else: no 0x, no -$, no 'c'.
 : number?
-  dup if, over c@ [char] $ = if, advance [lit] 16 >digits exit, then, then,
+  dup if, over c@ [char] $ = if, advance 16 >digits exit, then, then,
   dup if, over c@ [char] - = if,
-    advance [lit] 10 >digits dup if, swap [lit] 0 swap - swap then, exit,
+    advance 10 >digits dup if, swap 0 swap - swap then, exit,
   then, then,
-  [lit] 10 >digits ;
+  10 >digits ;
 
-\ compile-literal ( n -- )  What a number does in compile state.  The seed's
-\ [lit] lays CALL lit and the cell; cc/020-cc-arena.fth's [lit] lays an
-\ inline push instead, and points this at it (`is compile-literal`), so a
-\ bare number and [lit] lay the same bytes at every point.
-defer compile-literal
-: lit-literal  lit-xt call, , ;
-' lit-literal is compile-literal
-
-\ unknown ( a u -- )  As the seed's fatal_token: the token, "?" and a
-\ newline in one write to stdout, then exit 2.
-: unknown
-  >r [char] ? over r@ + c!  nl over r@ + 1+ c!
-  [lit] 1 swap r> [lit] 2 + write drop  [lit] 2 die ;
+\ [lit] ( "n" -- n | )  IMMEDIATE.  The next token as an unsigned decimal
+\ number: pushed when interpreting, compiled as a literal in a definition.
+\ Any other token (-5, $41, a word's name, the end of input) is fatal, as
+\ an unknown word is.  The interpreter below reads numbers bare; [lit] is
+\ how every file loaded after this one has always spelt them.
+: [lit]
+  read-token 2dup 10 >digits if, nip nip state @ if, compile-literal then, exit, then,
+  unknown ;
+immediate
 
 \ found-immediate? ( -- f )  the IMMEDIATE bit of the entry find just hit.
 \ find leaves that entry in the sysvar cell after HERE's (LAST_FOUND); its
 \ flags byte is at entry + 8.
-: found-immediate?  latest [lit] 16 + @ [lit] 8 + c@ [lit] 1 and ;
+: found-immediate?  latest 16 + @ 8 + c@ 1 and ;
 
 \ interpret ( -- )  The loop.  execute stays in this word's own body: a word
 \ run from a helper that returned would find the helper's return address
@@ -485,6 +517,10 @@ interpret
 \ ===== The rest of the library =====
 \ The interpreter needs none of these words, so they come after the
 \ hand-over.
+
+\ emit ( c -- )  write the byte c to stdout.  The byte needs an address to
+\ be written from; the free byte at HERE serves.
+: emit  here c!  1 here 1 write drop ;
 
 \ ----- File syscalls (see the syscall wrappers above) -----
 \ open  ( path flags mode -- fd )    SYS_open=2
@@ -536,23 +572,12 @@ immediate
 : allot  here-addr @ + here-addr ! ;
 
 \ skip-vm-pages ( -- )  Jump HERE to the first page above the seed's fixed VM
-\ pages: data stack (below 0x411000), I/O scratch byte (0x412000), token
-\ buffer (0x412800) and the sysvar page, which starts at STATE's cell.  So
+\ pages: data stack (below 0x411000) and the sysvar page, which starts at
+\ STATE's cell and also holds key's byte and the token buffer.  So
 \ HERE becomes STATE + 4096 = 0x414000.  030-cc-io.fth and 130-asm.fth call
 \ it before creating their megabyte buffers, which then cannot overlap VM
 \ state.  HERE must still be below the data stack (0x410000) when it runs.
 : skip-vm-pages  state 4096 + here-addr ! ;
-
-\ token ( "tok" -- a u )  read the next token; leave its address in the TIB
-\ and its length.  The seed keeps the length in a register Forth cannot
-\ see, so we blank the TIB's 256 bytes first and then count the token's
-\ bytes up to the first blank (a token is at most 255 bytes).
-: token
-  tib 256 + tib                                  ( end p )
-  begin, 2dup > while, bl over c! 1+ repeat,     \ fill the TIB with blanks
-  2drop  ' drop                                  \ read the token into it
-  tib 0                                          ( a 0 )
-  begin, 2dup + c@ bl <> while, 1+ repeat, ;     ( a u )
 
 \ bytes, ( a u -- )  copy u bytes from a to HERE, advancing HERE.
 : bytes,

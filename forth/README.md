@@ -1,6 +1,6 @@
 # forth/
 
-`010-lib.fth` builds a Forth vocabulary on the seed's 32 primitives:
+`010-lib.fth` builds a Forth vocabulary on the seed's 21 machine-code words:
 stack words, logic from `nand`, comparisons, Linux system call wrappers,
 control flow, defining words and buffers.  Every later Forth file loads
 it first.  `130-asm.fth` uses the library to assemble stage0-posix's M1

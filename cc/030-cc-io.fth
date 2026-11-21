@@ -19,8 +19,8 @@
 \ A. Input buffer, source buffer + reader
 \ ===========================================================================
 
-\ Skip past the VM's fixed pages (data stack 0x410000..0x411000, I/O scratch
-\ 0x412000, token buffer 0x412800, sysvars 0x413000..0x414000) so the
+\ Skip past the VM's fixed pages (data stack 0x410000..0x411000, sysvars and
+\ token buffer 0x413000..0x414000) so the
 \ megabyte buffers do not overlap runtime VM state.  At 030-cc-io.fth load
 \ time HERE is well below 0x410000, so this is a forward bump to 0x414000.
 skip-vm-pages                                     \ HERE = 0x414000

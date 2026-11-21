@@ -2,7 +2,7 @@
 
 From a 229-byte hex0 program to a Linux kernel, with no compiler from
 outside: every compiler that builds the route is itself built by the route.
-stage0-posix's `hex0-seed` assembles a 1,772-byte Forth; a C compiler
+stage0-posix's `hex0-seed` assembles a 1,092-byte Forth; a C compiler
 written in that Forth builds a C driver, a shell and the first Unix tools;
 those build GCC 4.0.4 until it reproduces itself, then GCC 10.5.0, then
 Linux 7.2.8.  The whole run can happen inside two small kernels under QEMU:
@@ -13,7 +13,7 @@ The terms in the tree below are defined under Names.
 
 ```
 hex0-seed (229 bytes)
- └─ seed-forth (seed/000-seed.hex0, 1,772 bytes)
+ └─ seed-forth (seed/000-seed.hex0, 1,092 bytes)
      └─ Forth library (forth/010-lib.fth)
          └─ C compiler in Forth (cc/020-141) ── seed-cc, seed-ar (cc/driver/)
              └─ kaem, mescc-tools-extra, make 3.82, sed, grep, gawk, coreutils,
@@ -98,8 +98,8 @@ Each directory has a README that says where to start.
 
 | Directory | What is in it |
 |---|---|
-| `seed/` | `000-seed.hex0`, the annotated hex of the Forth; `build.sh` |
-| `forth/` | `010-lib.fth`, the Forth library on the seed's 32 primitives; `130-asm.fth`, an M1 assembler and hex2 linker used only by check step 03; the library's test |
+| `seed/` | `000-seed.hex0`, the annotated hex of the Forth; `build.sh`; `seed.asm`, the same program as NASM source, with `asm2hex0.py` and `check.sh`; `MINIMAL.md`, why it has the 21 words it has |
+| `forth/` | `010-lib.fth`, the Forth library on the seed's 21 machine-code words; `130-asm.fth`, an M1 assembler and hex2 linker used only by check step 03; the library's test |
 | `cc/` | the C compiler in Forth, loaded in numeric order (`020-cc-arena.fth` to `141-archive.fth`); its tests; `driver/`, seed-cc and seed-ar |
 | `kernel/` | `k0/` (K0 in hex0, with its NASM source), `k1/` (K1 in C and `k1-asm.fth`, its recipes, disk writers and tests), `tools/` (the recipe runner and the files that build K1) |
 | `chain/` | `runtime/gcc-seed` (seed-cc's C library), `plumbing/` (the first tools, as kaem scripts), `gcc-direct/` (binutils, stage C, stage D, the late tools), `ladder/` and `gcc64/` (the climb to GCC 10.5.0 and Linux), `patches/`, `plumbing-root.sh` |
@@ -147,7 +147,7 @@ The steps below run them one at a time, and then the long runs.
 **1. The seed and the Forth** (seconds):
 
 ```sh
-seed/build.sh                      # seed-forth, 1,772 bytes
+seed/build.sh                      # seed-forth, 1,092 bytes
 ./test.sh                          # seed primitives, 010-lib.fth, the first compiler layers
 tests/asm/hi-check.sh              # 130-asm.fth assembles a small M1 program; it prints "hi"
 python3 tests/seed/asm-check.py    # 000-seed.hex0's bytes equal GNU as on its comments (needs as)
@@ -212,7 +212,7 @@ junction (`tinycc/README.md`).
 
 ## Reading order
 
-- **seed/, forth/:** `seed/000-seed.hex0` (the seed's 32 primitives, one
+- **seed/, forth/:** `seed/000-seed.hex0` (the seed's 21 machine-code words, one
   instruction per annotated line), then `forth/010-lib.fth`.
 - **cc/:** the compiler in load order: `cc/020-cc-arena.fth` to
   `cc/120-cc-main.fth` (arena, preprocessor, lexer, types, code

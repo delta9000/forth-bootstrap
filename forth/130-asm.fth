@@ -39,8 +39,8 @@
 \ ============================================================================
 \ A. Buffers + cursor abstraction
 \ ============================================================================
-\ Skip past the VM's fixed pages (data stack 0x410000..0x411000, I/O scratch
-\ 0x412000, token buffer 0x412800, sysvars 0x413000..0x414000) so our buffers
+\ Skip past the VM's fixed pages (data stack 0x410000..0x411000, sysvars and
+\ token buffer 0x413000..0x414000) so our buffers
 \ do not overlap runtime VM state.
 skip-vm-pages                                   \ HERE = 0x414000
 

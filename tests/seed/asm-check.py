@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Check seed/000-seed.hex0's comments against its bytes: every byte line
 carries the field or instruction it encodes as a ';' comment, and GNU as,
-given only the comments, must write the same 1,772 bytes.
+given only the comments, must write the same bytes.
 
   python3 tests/seed/asm-check.py [--as ASSEMBLER] [--keep FILE.S] [SEED]
                                                   (from the repository root)
@@ -15,8 +15,8 @@ file offset and a length.  Every line with bytes must be a data field or an
 instruction; a line that is neither fails the check.
 
 Verified, for instructions (everything after the program header):
-  - The text after the first ';' (up to the next ';' and with the notes below
-    taken out) is the instruction.  It goes into one .intel_syntax noprefix
+  - The text after the first ';' (up to the next ';' that follows a space,
+    and with the notes below taken out) is the instruction.  It goes into one .intel_syntax noprefix
     source, with every data line in the same place as the .byte/.quad that
     its comment states, so that GNU as gives each line the offset the hex
     gives it.  The bytes as writes for the line must equal the line's hex.
@@ -36,11 +36,13 @@ Verified, for instructions (everything after the program header):
     NAME's header address.  Any other literal operand inside the image
     (0x400000 to 0x400000 + file size) must be the address of a routine.
   - The memory map (the ";;   0x4NNNNN = ..." block) is parsed for the
-    sysvar names STATE, LATEST, HERE, LAST_FOUND and their addresses (the
-    page base plus 8 each, and the listed addresses must agree); the
-    instructions use those names.  The "first push lands at" address must
-    be the data-stack base minus 8.  Every literal operand outside the image
-    must be an address the map names.
+    regions and for the sysvar page's "NAME +N, ..." line: each NAME is an
+    offset from rbx, which the map must state holds the page's address; the
+    instructions use those names ([rbx+HERE]), and as is given only the
+    offsets, so a wrong offset in the map gives different bytes.  The
+    "first push lands at" address must be the data-stack base minus 8.
+    Every literal operand outside the image must be an address the map
+    names.
 
 Verified, for data:
   - ELF64 header and program header: the fields must come in Elf64_Ehdr and
@@ -57,7 +59,7 @@ Verified, for data:
     says IMMEDIATE; nlen (1 byte) equals the comment and the name's length;
     name equals the quoted string and the heading's NAME.  The code
     heading that follows sits at header + 10 + nlen.  The chain is walked
-    from LATEST's initial value (in sysvar_init): it must reach every header
+    from LATEST's initial value (in _start): it must reach every header
     once and end at link 0.
   - Every ";;" line that looks like a heading or label (it has " @ 0x",
     starts with ";; ---", or is ";; .x:") must match one of the patterns
@@ -149,23 +151,20 @@ def read_lines(path):
 
 
 def memory_map(rows, ck):
-    """Names and addresses from the ';;   0x4NNNNN = ...' block."""
+    """Regions from the ';;   0x4NNNNN = ...' block; sysvar names and their
+    offsets from the sysvar page (which rbx holds) from its 'NAME +N' line."""
     text = "\n".join(c for _, off, _, c in rows if off is None)
     regions = dict((int(a, 16), d.strip()) for a, d in
                    re.findall(r"^;;\s+0x(4[0-9A-F]{5}) = (.*)$", text, re.M))
-    names = {}
     lineno = next((r[0] for r in rows if r[1] is None and "data-stack base" in r[3]), 0)
-    for addr, desc in regions.items():
-        m = re.match(r"sysvar page, 8 bytes each: ([A-Z_, ]+)$", desc)
-        if m:
-            for i, n in enumerate(x.strip() for x in m.group(1).split(",")):
-                names[n] = addr + 8 * i
-    listed = re.search(r"^;;\s+\((0x[0-9A-F]+(?:, 0x[0-9A-F]+)*)\)$", text, re.M)
-    if not names or not listed:
-        sys.exit("seed asm-check: memory map has no sysvar page line")
-    ck.expect([number(x) for x in listed.group(1).split(", ")] == list(names.values()),
-              lineno, "memory-map", f"sysvar addresses listed {listed.group(1)}, "
-              f"page base + 8 each gives {[hex(v) for v in names.values()]}")
+    page = [a for a, d in regions.items() if d.startswith("sysvar page")]
+    listed = re.search(r"^;;\s+([A-Z_]+ \+\d+(?:, [A-Z_]+ \+\d+)*)$", text, re.M)
+    if len(page) != 1 or not listed:
+        sys.exit("seed asm-check: memory map has no sysvar page line with its offsets")
+    names = {n: int(o) for n, o in re.findall(r"([A-Z_]+) \+(\d+)", listed.group(1))}
+    rbx = re.search(r"^;;\s+rbx\s+= the sysvar page, 0x([0-9A-F]+)", text, re.M)
+    ck.expect(rbx and int(rbx.group(1), 16) == page[0], lineno, "memory-map",
+              f"rbx stated as {rbx and rbx.group(1)}, the sysvar page is {page[0]:#x}")
     stack = next(a for a, d in regions.items() if d.startswith("data-stack base"))
     push = re.search(r"first push lands at 0x([0-9A-F]+)", regions[stack])
     ck.expect(push and int(push.group(1), 16) == stack - 8, lineno, "memory-map",
@@ -279,8 +278,11 @@ def build(rows, size, ck):
 
 def instruction(lineno, off, data, comment, routine, labels, sysvars, headers, size, ck):
     """GNU as text for one instruction line, after its notes are checked."""
-    insn = comment.split(";", 1)[0].strip()
-    after = comment.split(";", 1)[1] if ";" in comment else ""
+    # The note starts at the first ';' that follows a space: the word named
+    # ; appears in "(; header)", which is part of the instruction.
+    parts = re.split(r"(?:^|(?<=\s));", comment, maxsplit=1)
+    insn = parts[0].strip()
+    after = parts[1] if len(parts) == 2 else ""
     end = off + len(data)
     if not insn:
         ck.fail(lineno, "byte line without an instruction comment")
@@ -427,7 +429,6 @@ def main():
     rows, size = read_lines(pathlib.Path(args.seed))
     regions, sysvars, labels, headers, order = build(rows, size, ck)
     MAPPED.update(regions)
-    MAPPED.update(sysvars.values())
 
     asm = []                    # (lineno, text): one per byte line, in order
     n_elf = check_elf(rows, ck, labels, size, asm)
@@ -471,8 +472,9 @@ def main():
             line = instruction(lineno, off, data, text, routine, labels, sysvars,
                                headers, size, ck)
             kinds[lineno] = "insn"
-            if line and "[LATEST]," in line.replace(" ", "").replace("ptr", "") and latest_init is None:
-                latest_init = (lineno, number(line.rsplit(",", 1)[1]))
+            init = line and re.fullmatch(r"mov qword ptr \[rbx\+LATEST\], (0x[0-9A-Fa-f]+)", line)
+            if init and latest_init is None:
+                latest_init = (lineno, number(init.group(1)))
         if line is None:               # rejected and reported; keep later offsets
             line = raw(data)
             kinds[lineno] = "rejected"
@@ -483,7 +485,7 @@ def main():
 
     # The dictionary chain from LATEST's initial value.
     if latest_init is None:
-        ck.fail(0, "no mov qword [LATEST], imm in sysvar_init")
+        ck.fail(0, "no mov qword [rbx+LATEST], imm in _start")
     else:
         by_addr = {BASE + off: n for n, (off, _, _) in headers.items()}
         seen, addr, links = [], latest_init[1], {}

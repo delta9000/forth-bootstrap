@@ -98,28 +98,15 @@ variable kd-n
   kd-n @ ;
 
 \ ----- A light optimizing compile -----
-\ The seed compiles every word as a CALL.  For literals and branches that
-\ CALL goes to lit, branch or 0branch, which pop and rewrite their own
-\ return address, so the processor mispredicts the return each time.  From
-\ here on [lit] lays an inline push, the control-flow words lay test and
-\ jump instructions, and the commonest primitives are copied in place of
-\ the CALL.  Each new word acts only while compiling (state @); run from
+\ The seed compiles every word as a CALL, and 010-lib.fth's branches are
+\ CALLs to branch or 0branch, which take their own return address off the
+\ return stack and put another back, so the processor mispredicts the
+\ return each time.  From here on the control-flow words lay test and jump
+\ instructions, and the commonest primitives are copied in place of the
+\ CALL.  (Literals are an inline push already: 010-lib.fth's
+\ compile-literal.)  Each new word acts only while compiling (state @); run from
 \ the interpreter it does what the old one did.  Words already compiled,
 \ 010-lib.fth's included, keep their CALLs.
-\ [lit] first: the seed's [lit] compiles CALL lit and the value's cell (13
-\ bytes); take the value back out and lay the 18-byte push instead.  The
-\ push is compile-literal's from here on, so a bare number read by
-\ 010-lib.fth's interpret compiles to the same bytes as [lit] does.
-' [lit] constant seed-lit
-: here-8   here 8 - ;
-: here-13  here 13 - ;
-: [lit]
-  seed-lit execute
-  state @ if,
-    here-8 @  here-13 here-addr !  compile-literal
-  then, ;
-immediate
-' push-imm64, is compile-literal
 \ Branches: if, while, and until, pop the flag and jz rel32; else, repeat,
 \ and again, jmp rel32.  A forward fixup is the address of the rel32 field.
 : rel32!  ( target fixup -- )

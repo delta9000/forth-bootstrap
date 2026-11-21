@@ -17,67 +17,85 @@ fail() { echo "  FAIL: $*"; FAILED=$((FAILED + 1)); }
 # under `set -e`.
 #
 # Forth source goes to seed-forth as-is: the seed's token reader skips
-# `\ ...` line comments and `( ... )` comments itself.
+# `\ ...` line comments itself, and forth/010-lib.fth's interpreter skips
+# `( ... )` comments.
 
-# ----- Seed primitives -----
+# ----- The seed alone -----
+
+# The seed has no emit (forth/010-lib.fth defines it), so these tests
+# define one first: the byte goes to a free address 400 bytes into the
+# sysvar page and is written from there with syscall6 (SYS_write = 1).
+E=': emit state 400 + c! 1 state 400 + 1 0 0 0 1 syscall6 drop ;'
 
 # The REPL exits 0 on EOF with no input.
 ec=0; ./seed-forth </dev/null || ec=$?
 [ "$ec" = 0 ] && pass "repl: EOF exits 0" || fail "repl: EOF exit $ec"
 
-# The REPL executes `bye` from its input.
-ec=0; echo "bye" | ./seed-forth || ec=$?
-[ "$ec" = 0 ] && pass "repl: bye" || fail "repl: bye exit $ec"
+# EOF in the middle of a definition exits 0 too.
+ec=0; printf ': t dup' | ./seed-forth || ec=$?
+[ "$ec" = 0 ] && pass "repl: EOF in a definition exits 0" || fail "repl: EOF in a definition: exit $ec"
 
-# An unknown word is echoed back followed by "?\n", and the REPL reads on.
-ec=0; out=$(printf 'wibble\n[lit] 65 emit\n' | ./seed-forth) || ec=$?
-[ "$ec" = 0 ] && [ "$out" = $'wibble?\nA' ] && pass "repl: unknown -> wibble?, then continues" || fail "unknown word: exit $ec, got '$out'"
+# A token that is neither a word nor an unsigned decimal number is fatal:
+# the seed prints it followed by "?" and exits 2; nothing after it runs.
+ec=0; out=$(printf '%s\nwibble\n65 emit\n' "$E" | ./seed-forth) || ec=$?
+[ "$ec" = 2 ] && [ "$out" = "wibble?" ] && pass "repl: unknown -> wibble?, exit 2" || fail "unknown word: exit $ec, got '$out'"
+ec=0; out=$(printf '%s\n: t wibble 65 emit ;\n' "$E" | ./seed-forth) || ec=$?
+[ "$ec" = 2 ] && [ "$out" = "wibble?" ] && pass "repl: unknown while compiling -> exit 2" || fail "unknown word, compiling: exit $ec, got '$out'"
+for tok in -5 0x41 '$41' 1x 12a '(' ; do
+    ec=0; out=$(printf '%s\n65 emit %s 66 emit\n' "$E" "$tok" | ./seed-forth) || ec=$?
+    [ "$ec" = 2 ] && [ "$out" = "A$tok?" ] && pass "repl: $tok -> '$tok?', exit 2" || fail "not a number: $tok: exit $ec, got '$out'"
+done
 
-# The reader skips \ line comments and ( ... ) comments itself.
-ec=0; out=$(printf '\\ emit this line is a comment\n[lit] 65 ( emit [lit] 66 ) emit\n( a comment\nover two lines ) [lit] 67 emit \\ trailing\n[lit] 68 emit \\' | ./seed-forth) || ec=$?
-[ "$ec" = 0 ] && [ "$out" = "ACD" ] && pass "reader: \\ and ( ) comments skipped" || fail "comments: exit $ec, got '$out'"
+# The reader skips \ line comments itself.
+ec=0; out=$(printf '%s\n\\ emit this line is a comment\n65 emit\n\\\n67 emit \\ trailing\n68 emit \\' "$E" | ./seed-forth) || ec=$?
+[ "$ec" = 0 ] && [ "$out" = "ACD" ] && pass "reader: \\ comments skipped" || fail "comments: exit $ec, got '$out'"
+
+# Tab, carriage return and newline separate tokens as space does.
+ec=0; out=$(printf '%s\n65\temit\r\n66\remit' "$E" | ./seed-forth) || ec=$?
+[ "$ec" = 0 ] && [ "$out" = "AB" ] && pass "reader: tab, CR and newline are whitespace" || fail "whitespace: exit $ec, got '$out'"
 
 # A 255-byte name is accepted; a 256-byte token is fatal (exit 2).
 n255=$(printf 'a%.0s' $(seq 255))
-ec=0; out=$(printf ': %s [lit] 65 emit ; %s\n' "$n255" "$n255" | ./seed-forth) || ec=$?
+ec=0; out=$(printf '%s\n: %s 65 emit ; %s\n' "$E" "$n255" "$n255" | ./seed-forth) || ec=$?
 [ "$ec" = 0 ] && [ "$out" = "A" ] && pass "reader: 255-byte token accepted" || fail "255-byte token: exit $ec, got '$out'"
-ec=0; out=$(printf '%sa [lit] 65 emit\n' "$n255" | ./seed-forth) || ec=$?
+ec=0; out=$(printf '%sa 65 emit\n' "$n255" | ./seed-forth) || ec=$?
 [ "$ec" = 2 ] && [ "$out" = "${n255}a?" ] && pass "reader: 256-byte token -> prints it + ?, exit 2" || fail "256-byte token: exit $ec, got '${out:250}'"
 
-# A colon definition that calls `bye` exits cleanly when invoked.
-ec=0; out=$(printf ': greet bye ;\ngreet\nemit\n' | timeout 3 ./seed-forth) || ec=$?
-[ "$ec" = 0 ] && [ -z "$out" ] && pass "colon: define+invoke" || fail "colon: exit $ec, got '$out'"
+# A number in interpret mode is pushed; in a definition it is compiled.
+ec=0; out=$(printf '%s\n65 emit\n' "$E" | timeout 3 ./seed-forth) || ec=$?
+[ "$ec" = 0 ] && [ "$out" = "A" ] && pass "number, interpreting -> A" || fail "number interpret: exit $ec, got '$out'"
+ec=0; out=$(printf '%s\n: greet 72 emit 105 emit ;\ngreet greet\n' "$E" | timeout 3 ./seed-forth) || ec=$?
+[ "$ec" = 0 ] && [ "$out" = "HiHi" ] && pass "number, compiled -> HiHi" || fail "number compile: exit $ec, got '$out'"
 
-# [lit] in interpret mode pushes a decimal value.
-ec=0; out=$(echo "[lit] 65 emit" | timeout 3 ./seed-forth) || ec=$?
-[ "$ec" = 0 ] && [ "$out" = "A" ] && pass "[lit] interpret -> A" || fail "[lit] interpret: exit $ec, got '$out'"
+# Large values (4337704 = 0x423028; emit prints the low byte), and the
+# largest: 2^64 - 191 has low byte 0x41.
+ec=0; out=$(printf '%s\n4337704 emit 18446744073709551425 emit\n' "$E" | timeout 3 ./seed-forth) || ec=$?
+[ "$ec" = 0 ] && [ "$out" = "(A" ] && pass "number: large values" || fail "number large: exit $ec, got '$out'"
 
-# [lit] in compile mode compiles 'lit + cell' into a colon definition.
-ec=0; out=$(printf ': greet [lit] 72 emit [lit] 105 emit ;\ngreet\n' | timeout 3 ./seed-forth) || ec=$?
-[ "$ec" = 0 ] && [ "$out" = "Hi" ] && pass "[lit] compile -> Hi" || fail "[lit] compile: exit $ec, got '$out'"
+# A name that starts with digits is a word when it is defined: find comes
+# before number.
+ec=0; out=$(printf '%s\n: 2x dup + ; 33 2x emit\n' "$E" | timeout 3 ./seed-forth) || ec=$?
+[ "$ec" = 0 ] && [ "$out" = "B" ] && pass "number: a defined word wins" || fail "2x: exit $ec, got '$out'"
 
-# A [lit] token that is not unsigned decimal is fatal: the seed prints it
-# followed by "?" and exits 2 instead of compiling a silent 0.
-ec=0; out=$(echo "[lit] -5 [lit] 65 emit" | ./seed-forth) || ec=$?
-[ "$ec" = 2 ] && [ "$out" = "-5?" ] && pass "[lit] -5 -> '-5?', exit 2" || fail "[lit] -5: exit $ec, got '$out'"
-ec=0; out=$(printf ': t [lit] 0x41 emit ;\nt\n' | ./seed-forth) || ec=$?
-[ "$ec" = 2 ] && [ "$out" = "0x41?" ] && pass "[lit] 0x41 in a definition -> exit 2" || fail "[lit] 0x41: exit $ec, got '$out'"
-ec=0; out=$(printf '[lit]' | ./seed-forth) || ec=$?
-[ "$ec" = 2 ] && [ "$out" = "?" ] && pass "[lit] at EOF -> '?', exit 2" || fail "[lit] at EOF: exit $ec, got '$out'"
+# The arithmetic words.
+ec=0; out=$(printf '%s\n4096 16 / 48 + emit 17 5 / 48 + emit 7 9 * emit 60 5 + emit\n' "$E" | timeout 3 ./seed-forth) || ec=$?
+[ "$ec" = 0 ] && [ "$out" = "03?A" ] && pass "/ * +: 4096/16, 17/5, 7*9, 60+5" || fail "arithmetic: exit $ec, got '$out'"
+ec=0; out=$(printf '%s\n0 0= 66 + emit 5 0= 65 + emit 12 10 nand 74 + emit\n' "$E" | timeout 3 ./seed-forth) || ec=$?
+[ "$ec" = 0 ] && [ "$out" = "AAA" ] && pass "0= nand" || fail "0= nand: exit $ec, got '$out'"
 
-# [lit] handles large values (4337704 = 0x423028); emit prints the low byte.
-ec=0; out=$(echo "[lit] 4337704 emit" | timeout 3 ./seed-forth) || ec=$?
-[ "$ec" = 0 ] && [ "$out" = "(" ] && pass "[lit] large value (low byte of 0x423028 is 0x28)" || fail "[lit] large: exit $ec, got '$out'"
+# The stack and memory words.
+ec=0; out=$(printf '%s\n65 66 swap emit emit 67 dup emit emit 68 69 drop emit\n: t 70 >r 71 emit r> emit ; t\n' "$E" | timeout 3 ./seed-forth) || ec=$?
+[ "$ec" = 0 ] && [ "$out" = "ABCCDGF" ] && pass "swap dup drop >r r>" || fail "stack words: exit $ec, got '$out'"
+ec=0; out=$(printf '%s\n16961 state 500 + ! state 500 + c@ emit state 501 + c@ emit 67 state 500 + c! state 500 + @ 256 / emit state 500 + c@ emit\n' "$E" | timeout 3 ./seed-forth) || ec=$?
+[ "$ec" = 0 ] && [ "$out" = "ABBC" ] && pass "@ ! c@ c!" || fail "memory words: exit $ec, got '$out'"
 
-# The divide primitive.
-ec=0; out=$(echo "[lit] 4096 [lit] 16 / [lit] 48 + emit" | timeout 3 ./seed-forth) || ec=$?
-[ "$ec" = 0 ] && [ "$out" = "0" ] && pass "div: 4096/16=256, low byte+'0' = '0'" || fail "div 4096/16: exit $ec, got '$out'"
-ec=0; out=$(echo "[lit] 17 [lit] 5 / [lit] 48 + emit" | timeout 3 ./seed-forth) || ec=$?
-[ "$ec" = 0 ] && [ "$out" = "3" ] && pass "div: 17/5=3" || fail "div 17/5: exit $ec, got '$out'"
+# token and find: ' is `token find` in the library.
+ec=0; out=$(printf '%s\n: tick token find ; 65 tick emit state 600 + ! : run state 600 + @ >r ; run\n' "$E" | timeout 3 ./seed-forth) || ec=$?
+[ "$ec" = 0 ] && [ "$out" = "A" ] && pass "token find: an xt runs" || fail "token find: exit $ec, got '$out'"
 
-# syscall6 writes a byte to stdout through the raw Linux write syscall.
-ec=0; out=$(printf ': t [lit] 65 [lit] 4268032 c! [lit] 1 [lit] 4268032 [lit] 1 [lit] 0 [lit] 0 [lit] 0 [lit] 1 syscall6 drop bye ;\nt\n' | timeout 3 ./seed-forth) || ec=$?
-[ "$ec" = 0 ] && [ "$out" = "A" ] && pass "syscall6: write 'A'" || fail "syscall6: exit $ec, got '$out'"
+# key reads the byte after the token that called it.
+ec=0; out=$(printf '%s\n: k key emit ; k\nZ' "$E" | timeout 3 ./seed-forth) || ec=$?
+[ "$ec" = 0 ] && [ "$out" = "Z" ] && pass "key: next input byte" || fail "key: exit $ec, got '$out'"
 
 # ----- forth/010-lib.fth -----
 
@@ -116,7 +134,7 @@ ec=0; out=$(cat forth/010-lib.fth forth/test-010-lib.fth | timeout 5 ./seed-fort
 # The library ends by handing over to interpret, so everything after it is
 # read by interpret.  interp_case NAME EXIT STDOUT INPUT runs each case twice:
 # after the library alone, and after cc/020-cc-arena.fth too, whose native!
-# replaces key and find and whose [lit] lays an inline push.
+# replaces key and find.
 interp_case() {
     local name=$1 want_ec=$2 want=$3 input=$4 ec out pre
     for pre in "" cc/020-cc-arena.fth; do
@@ -177,7 +195,7 @@ ec=0; out=$(cat forth/010-lib.fth cc/020-cc-arena.fth <(printf '%s\n' \
 # c{ ... } and x{ ... }: hex byte strings.  Interpreting, c{ lays the bytes
 # at HERE; inside a definition it compiles what `N c,` compiles, so the two
 # definitions of t below differ only in their link cell, before and after
-# cc/020 (whose [lit] and numbers lay an inline push).  Both definitions
+# cc/020.  Both definitions
 # start at the same address (HERE and LATEST are reset in between), so their CALLs'
 # rel32 fields agree too.
 interp_case "c{ lays bytes" 0 "ABC" $'here c{ 41 ( A ) 4243 } here over - 1 rot rot write drop\n'

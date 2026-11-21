@@ -6,7 +6,7 @@
 # Writes build-out/tinycc/tcc-first: janneke's tcc-0.9.26-1147-gee75a10c
 # targeting i386, the compiler live-bootstrap builds with MesCC as
 # /usr/bin/tcc-mes, here compiled by the Forth compiler in native mode.
-# The only program that runs to build it is seed-forth (1,772 bytes, from
+# The only program that runs to build it is seed-forth (1,092 bytes, from
 # seed/000-seed.hex0), reading forth/010-lib.fth, the compiler layers,
 # tinycc/tcc-compile.fth and the C source on stdin.  No host compiler,
 # preprocessor, assembler or linker takes part.

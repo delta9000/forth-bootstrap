@@ -260,3 +260,84 @@ tools then have to agree on every byte: nasm (via `asm2hex0.py`),
 stage0's hex0 (`seed/check.sh` compares its output with nasm's) and GNU
 as on the hex0's comments (`tests/seed/asm-check.py`, which needed only
 the new memory-map form: sysvar names are offsets from `rbx`).
+
+## 3. The prototype, measured
+
+| | 1,772-byte seed | this seed |
+|---|---|---|
+| file | 1,772 | 1,092 |
+| ELF headers | 120 | 120 |
+| dictionary header fields | 421 (32 headers) | 267 (21 headers) |
+| code | 1,231 | 705 |
+| instructions (lines of machine code) | 338 | 220 |
+| words with a header | 32 | 21 |
+
+Where the 705 bytes of code are:
+
+| routine | bytes | | routine | bytes |
+|---|---|---|---|---|
+| `_start` | 26 | | `token` | 82 |
+| `repl` | 61 | | `key` | 29 |
+| `number` | 74 | | `find` | 64 |
+| `fatal` | 33 | | `:` | 61 |
+| `end_of_input`, `exit` | 9 | | `;` | 22 |
+| `read_char` | 14 | | `syscall6` | 37 |
+| `compile_call` | 26 | | `state` | 9 |
+| `lit` | 15 | | the other 14 words | 143 |
+
+Forth code lines (not counting comments, blank lines, or `[lit] N`
+becoming `N`):
+
+| file | added | removed | tokens before | after |
+|---|---|---|---|---|
+| `forth/010-lib.fth` | 34 | 25 | 1,042 | 1,022 |
+| `cc/020-cc-arena.fth` | 0 | 10 | 1,976 | 1,940 |
+| `cc/driver/seed-cc-start.fth` | 10 | 8 | 1,993 | 1,829 |
+| `kernel/tools/k1-direct-start.fth` | 9 | 8 | 934 | 811 |
+| `tinycc/catm-start.fth` | 10 | 8 | 691 | 634 |
+
+The library's 34 lines are the replacements of section 2 (`latest`,
+`here`, `,`, `execute`, `r@`, `'`, `bye`, `branch`, `0branch`, `[lit]`,
+`read-token`, `emit`); its 25 removed lines are what worked around the
+old seed: `read-word-addr`, which decoded the CALL inside `'` to reach
+the reader; `token`, which blanked the token buffer to recover a length
+the seed kept in a register; `tib`; `lit-xt` and `lit-literal`.  The
+launchers lose the same `token` and `tib` and gain the replacements they
+use.  No machine code moved into Forth: the library lays the same bytes
+with `c,` as before (the 18-byte push and the CALL opcode).
+
+Loading the library and every compiler layer (775 KB, then failing on an
+empty C source), `perf stat`, three runs each:
+
+| | instructions | cycles |
+|---|---|---|
+| 1,772-byte seed | 126.1 M | 353 to 358 M |
+| this seed | 175.0 M | 320 to 352 M |
+
+More instructions, because `here`, `,`, `c,`, `branch` and `0branch` are
+Forth now; no more cycles, because the library's literals are an inline
+push from the start instead of a CALL to `lit`, whose rewritten return
+address the processor mispredicts.  `./check-all.sh` takes 29.9 s with
+either seed.  HERE is 0x40F2xx after `cc/020` (0x40F0xx before), below
+the 0x410000 that `skip-vm-pages` needs.
+
+Every oracle, on a clean `build-out`, with `seed-forth` 9c1de563...:
+
+- `./check-all.sh`: 10 OK, 0 SKIP, 0 FAIL; `check-outputs: 5 as pinned,
+  0 differ, 0 not built` (seed-cc, seed-ar, Stage A's `cc-out-v1`, the K1
+  runner, K1).
+- `tinycc/build-first-tcc.sh`: `d9e97270...`, as pinned.
+- `tests/tinycc/junction-check.sh`: `/usr/bin/tcc` `b9dce87d...` and the
+  six libraries the same as live-bootstrap's.
+- `kernel/k1/run-chain.sh --direct-smoke` (the seed under K0 in QEMU):
+  PASS.
+- `tests/seed/asm-check.py`: GNU as on the comments writes 1092 of 1092
+  bytes; `seed/check.sh`: nasm's bytes equal hex0-seed's.
+
+Not run: `CHECK_CHAIN=1` and `CHECK_K1=linux`.
+
+What adopting it would still need: the book (forth-bootstrap-book)
+quotes `seed/000-seed.hex0`, `forth/010-lib.fth` and
+`cc/020-cc-arena.fth` byte for byte, and its seed chapters teach the 32
+primitives in the old order; `HISTORY.md` and the results table in
+`README.md` still describe the 1,772-byte seed as history.
