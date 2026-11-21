@@ -62,14 +62,51 @@ not_run=(
 # Die gates: programs the compiler must reject.  "<fixture>|<expected
 # compiler exit>|<expected last stderr line>"; the line is cc-die's
 # "cc: line N: error C" (cc/020-cc-arena.fth), and no /tmp/cc-out may be
-# written.  A few of seed-forth's die gates at 0dd2b88, one per code.
+# written.  These are seed-forth's die gates at 0dd2b88, one per code.  A
+# .c fixture is fed as it is.  A .sh fixture is a generator for an input
+# too large or too repetitive to check in: run with sh, it prints the C
+# source on stdout and may write helper files (a header to #include) into
+# $CC_DIE_TMP, which is build-out/gates/die-tmp, not /tmp, because the
+# compiler may run with a private /tmp.  die-31-include-deep.c includes
+# itself as "gates/die-31-include-deep.c" for the reason G14b.c does.
 die_gates=(
+  "die-10-arena-full.sh|10|cc: line 88: error 10"
+  "die-20-input-too-big.sh|20|cc: line 1: error 20"
+  "die-21-output-full.sh|21|cc: line 38819: error 21"
   "die-30-include-missing.c|30|cc: line 2: error 30"
+  "die-31-include-deep.c|31|cc: line 11: error 31"
+  "die-32-include-too-big.sh|32|cc: line 1: error 32"
+  "die-33-include-path-long.sh|33|cc: line 1: error 33"
+  "die-34-macro-table-full.sh|34|cc: line 1014: error 34"
+  "die-35-macro-pool-full.sh|35|cc: line 328: error 35"
+  "die-36-source-too-big.sh|36|cc: line 69: error 36"
+  "die-37-macro-scratch-full.sh|37|cc: line 2: error 37"
+  "die-38-if-too-deep.sh|38|cc: line 65: error 38"
   "die-39-if-unterminated.c|39|cc: line 7: error 39"
   "die-40-error-directive.c|40|cc: line 5: error 40"
+  "die-41-else-without-if.c|41|cc: line 5: error 41"
+  "die-42-ifdef-no-name.c|42|cc: line 2: error 42"
+  "die-43-macro-scratch-deep.sh|43|cc: line 2: error 43"
+  "die-44-macro-call-open.c|44|cc: line 6: error 44"
+  "die-45-macro-args.c|45|cc: line 5: error 45"
+  "die-46-macro-args-max.c|46|cc: line 4: error 46"
+  "die-47-define-params.c|47|cc: line 3: error 47"
+  "die-48-define-params-max.c|48|cc: line 2: error 48"
   "die-50-struct-fields.c|50|cc: line 19: error 50"
+  "die-60-symbols-full.sh|60|cc: line 8162: error 60"
+  "die-61-scopes-deep.c|61|cc: line 66: error 61"
+  "die-80-globals-full.sh|80|cc: line 515: error 80"
+  "die-81-global-refs-full.sh|81|cc: line 16387: error 81"
+  "die-82-bss-full.c|82|cc: line 3: error 82"
   "die-113-inc-not-lvalue.c|113|cc: line 4: error 113"
+  "die-124-const-div-zero.c|124|cc: line 2: error 124"
+  "die-125-const-not-enum.c|125|cc: line 4: error 125"
+  "die-126-const-bad.c|126|cc: line 4: error 126"
+  "die-127-const-paren.c|127|cc: line 2: error 127"
+  "die-128-const-colon.c|128|cc: line 2: error 128"
+  "die-129-if-trailing.c|129|cc: line 2: error 129"
   "die-162-frame-full.c|162|cc: line 7: error 162"
+  "die-171-labels-full.sh|171|cc: line 67: error 171"
   "die-206-fn-undefined.c|206|cc: line 8: error 206"
   "die-207-no-main.c|207|cc: line 5: error 207"
 )
@@ -79,6 +116,8 @@ WORK=build-out/gates
 rm -rf "$WORK"
 mkdir -p "$WORK/tmp"
 WORK=$(cd "$WORK" && pwd)
+CC_DIE_TMP=$WORK/die-tmp
+export CC_DIE_TMP
 if unshare -rm sh -c 'mount --bind "$1" /tmp' _ "$WORK/tmp" 2>/dev/null; then
     OUT=$WORK/tmp/cc-out
     private=1
@@ -129,7 +168,16 @@ done
 
 for g in "${die_gates[@]}"; do
     IFS='|' read -r file want want_err <<< "$g"
-    compile "$D/$file"
+    src=$D/$file
+    case "$file" in
+        *.sh)
+            rm -rf "$CC_DIE_TMP"
+            mkdir -p "$CC_DIE_TMP"
+            sh "$D/$file" > "$WORK/die-src.c"
+            src=$WORK/die-src.c
+            ;;
+    esac
+    compile "$src"
     got_err=$(tail -n 1 "$WORK/err")
     if [ "$crc" != "$want" ]; then
         fail "$file: expected compiler exit $want, got $crc ($got_err)"

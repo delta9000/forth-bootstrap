@@ -12,7 +12,7 @@
 #       seed-ar; that seed-cc rebuilds both, byte for byte the same
 #   05  tests/cc/gates/run-gates.sh: the Forth compiler compiles the gate
 #       fixtures G0.c to M1b.c, each program exits as expected, and it
-#       rejects the die-*.c fixtures with the expected error code
+#       rejects the die-* fixtures with the expected error code
 #   06  tools/check-pins.py: every archive pin agrees with MANIFEST.sha256
 #   07  Stage A (tests/cc/stage-a-check.sh): the Forth compiler's M1 for
 #       M2-Planet equals a GCC-built M2-Planet's (needs gcc; SKIP without)
