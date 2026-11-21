@@ -18,6 +18,8 @@
 #                      preparation tools seed Forth builds in native mode
 #                      against M2libc (tinycc/build-tools.sh);
 #                      the same in two checkouts at different paths
+#   tinycc/bin-i386/*  build-out/tinycc/bin-i386/, the same tools compiled
+#                      by the i386 back end (tinycc/build-tools-i386.sh)
 #   tinycc/hex0-handoff/boot1/...
 #                      what boot 1 of tests/tinycc/hex0-handoff-check.sh
 #                      hands to boot 2 besides tcc-mes and tcc-boot0: the
@@ -58,3 +60,14 @@ ba8a06172889a3e59c94cd50810db2513c78cf38445b7616efa5fd7f1fb71d25  tinycc/bin/ung
 73dcfc1038ef762320d00a716e3a82f24cc79e38567a0a5161b65b1c4dffcd06  tinycc/hex0-handoff/boot1/usr/bin/match
 0bbaa390cf9d536da80f16d6748cca48b26cb70a7facef1f518135241ea7746f  tinycc/hex0-handoff/boot1/usr/bin/rm
 498dea62744eed530314e87c4864d0b84d7d676f0bfba6b9f52ceb3fe9bb851a  tinycc/hex0-handoff/boot1/usr/bin/hex0-export
+a7ceff1e1eab52d5eb4fe5618bfdd6e95e4dff0c50b30af6c4c8ceb067fede9f  tinycc/bin-i386/catm
+3ebb67d5e3a8128afca1ff8567b3b683e9d8ba905aa23d125787694f86832c7c  tinycc/bin-i386/checksum-transcriber
+fba7585f86a374e6f00c805ea18c25b8c41b14423a3476f4cef7cdb719a6eaed  tinycc/bin-i386/chmod
+64afafc58a3c66886c24fa73462d158084ba5acbf4c8db178750bff42f439cee  tinycc/bin-i386/cp
+90c6c7e1810a64647f215ff217bd69c063272456547ef0f4f7e006d8628f714d  tinycc/bin-i386/match
+069b4ae3986f838b0f4d4979505e4c3f783c95022025c385c227b71f98e75094  tinycc/bin-i386/mkdir
+afd5abe1964175f3771a1fe5f32ed7022db820813842e89c222d4e2c4ff14f69  tinycc/bin-i386/rm
+5ce00dedfea8a3d2f0a65048839a4c5dde1e757ad21525baca77c43828db2d97  tinycc/bin-i386/sha256sum
+08209e4703e23239da6a3a29f553dd486a7f035e156d4dfd05a524fac5e66d1a  tinycc/bin-i386/simple-patch
+41645a9a31b1d3ca76a4f2a5f31e079b38f6cf06df3329b2499e35eaddf4cdc5  tinycc/bin-i386/ungz
+3482feab3c18e57edf0fe054ecfff329733556a85ea4126bd9b0d27a6e589bbf  tinycc/bin-i386/untar
