@@ -1,6 +1,6 @@
 # kernel/
 
-The two kernels the QEMU run boots.  `k0/` is K0, 1,461 bytes of hex0
+The two kernels the QEMU run boots.  `k0/` is K0, 1,453 bytes of hex0
 (`k0.hex0`, assembled by `hex0-seed`, and written directly in that form,
 as commented hex0, by AI models under the owner's direction; there is no
 generator) that enters long mode and runs one program at a time:

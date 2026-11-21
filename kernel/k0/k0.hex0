@@ -23,8 +23,8 @@
 ;; arithmetic, (rel8 = target - end of this instruction).  The constants
 ;; below are the names instructions use; their stated values are what the
 ;; check assembles with.  ";; ===== bits 32" and ";; ===== bits 64" lines
-;; say which mode the code after them runs in.  The file is 1461 bytes,
-;; loaded at 0x100000 to 0x1005B5.
+;; say which mode the code after them runs in.  The file is 1453 bytes,
+;; loaded at 0x100000 to 0x1005AD.
 ;;
 ;; Build:  hex0-seed kernel/k0/k0.hex0 k0.bin  (stage0-posix's 229-byte hex0)
 ;; Check:  kernel/k0/check.sh  (asm-check.py, then the pinned sha256)
@@ -109,8 +109,8 @@
 FE 4F 51 E4                               ; dd 0xE4514FFE  ; checksum: magic + flags + this = 0 (mod 2^32)
 00 00 10 00                               ; dd 0x100000 (hdr)
 00 00 10 00                               ; dd 0x100000 (hdr)
-B5 05 10 00                               ; dd 0x1005B5 (file_end)
-B5 05 10 00                               ; dd 0x1005B5 (file_end)
+AD 05 10 00                               ; dd 0x1005AD (file_end)
+AD 05 10 00                               ; dd 0x1005AD (file_end)
 20 00 10 00                               ; dd 0x100020 (start32)
 
 ;; ----- start32 @ 0x020 -----
@@ -151,7 +151,7 @@ B8 98 00 10 00                            ; mov eax, 0x100098 (syscall_entry)
 0F 30                                     ; wrmsr
 BF 10 30 00 50                            ; mov edi, INIT + 16
 BE 00 30 00 50                            ; mov esi, INIT
-E8 50 04 00 00                            ; call sys_execve (rel32 = 0x4E6 - 0x096)
+E8 4E 04 00 00                            ; call sys_execve (rel32 = 0x4E4 - 0x096)
 EB 4E                                     ; jmp ret_user (rel8 = 0x0E6 - 0x098)
 
 ;; ---- entry and exit -------------------------------------------------------
@@ -220,43 +220,43 @@ FF E1                                     ; jmp rcx
 00                                        ; db 0
 06 01                                     ; dw sys_read - handlers
 01                                        ; db 1
-35 01                                     ; dw sys_write - handlers
+34 01                                     ; dw sys_write - handlers
 02                                        ; db 2
 A5 00                                     ; dw sys_open - handlers
 03                                        ; db 3
 F3 00                                     ; dw sys_close - handlers
 06                                        ; db 6
-C4 01                                     ; dw sys_lstat - handlers
+C3 01                                     ; dw sys_lstat - handlers
 08                                        ; db 8
-8F 01                                     ; dw sys_lseek - handlers
+8E 01                                     ; dw sys_lseek - handlers
 09                                        ; db 9
-CB 02                                     ; dw sys_mmap - handlers
+CA 02                                     ; dw sys_mmap - handlers
 0C                                        ; db 12
-E4 02                                     ; dw sys_brk - handlers
+E3 02                                     ; dw sys_brk - handlers
 21                                        ; db 33
-AF 01                                     ; dw sys_dup2 - handlers
+AE 01                                     ; dw sys_dup2 - handlers
 39                                        ; db 57
-FB 02                                     ; dw sys_fork - handlers
+F9 02                                     ; dw sys_fork - handlers
 3B                                        ; db 59
-9F 03                                     ; dw sys_execve - handlers
+9D 03                                     ; dw sys_execve - handlers
 3C                                        ; db 60
-2A 03                                     ; dw sys_exit - handlers
+28 03                                     ; dw sys_exit - handlers
 3D                                        ; db 61
-96 03                                     ; dw sys_wait4 - handlers
+94 03                                     ; dw sys_wait4 - handlers
 4F                                        ; db 79
-E7 01                                     ; dw sys_getcwd - handlers
+E6 01                                     ; dw sys_getcwd - handlers
 50                                        ; db 80
-FB 01                                     ; dw sys_chdir - handlers
+FA 01                                     ; dw sys_chdir - handlers
 52                                        ; db 82
-1E 02                                     ; dw sys_rename - handlers
+1D 02                                     ; dw sys_rename - handlers
 53                                        ; db 83
-44 02                                     ; dw sys_mkdir - handlers
+43 02                                     ; dw sys_mkdir - handlers
 57                                        ; db 87
-AF 02                                     ; dw sys_unlink - handlers
+AE 02                                     ; dw sys_unlink - handlers
 5A                                        ; db 90
-BC 02                                     ; dw ok - handlers
+BB 02                                     ; dw ok - handlers
 F8                                        ; db 248
-54 02                                     ; dw sys_disk - handlers
+53 02                                     ; dw sys_disk - handlers
 FF                                        ; db 0xFF
 
 ;; ---- paths and the file table --------------------------------------------
@@ -365,13 +365,13 @@ E8 9B FF FF FF                            ; call resolve (rel32 = 0x18D - 0x1F2)
 5E                                        ; pop rsi
 75 13                                     ; jnz .have (rel8 = 0x208 - 0x1F5)
 0F BA E6 06                               ; bt esi, 6  ; O_CREAT
-0F 83 07 02 00 00                         ; jnc enoent (rel32 = 0x406 - 0x1FF)
+0F 83 06 02 00 00                         ; jnc enoent (rel32 = 0x405 - 0x1FF)
 B3 01                                     ; mov bl, 1
 E8 BC FF FF FF                            ; call newent (rel32 = 0x1C2 - 0x206)
 EB 18                                     ; jmp .fd (rel8 = 0x220 - 0x208)
 ;; .have @ 0x208
 0F BA E6 07                               ; bt esi, 7  ; O_EXCL
-0F 82 FC 01 00 00                         ; jc eexist (rel32 = 0x40E - 0x212)
+0F 82 FB 01 00 00                         ; jc eexist (rel32 = 0x40D - 0x212)
 0F BA E6 09                               ; bt esi, 9  ; O_TRUNC: past size stays zero
 73 08                                     ; jnc .fd (rel8 = 0x220 - 0x218)
 83 60 0C 00                               ; and dword [rax + E_SIZE], 0
@@ -392,17 +392,17 @@ C3                                        ; ret
 ;; ----- sys_close @ 0x23A -----
 
 E8 A3 FF FF FF                            ; call fdp (rel32 = 0x1E2 - 0x23F)
-0F 82 C5 01 00 00                         ; jc ebadf (rel32 = 0x40A - 0x245)
+0F 82 C4 01 00 00                         ; jc ebadf (rel32 = 0x409 - 0x245)
 83 23 00                                  ; and dword [rbx], 0
-E9 B6 01 00 00                            ; jmp ok (rel32 = 0x403 - 0x24D)
+E9 B5 01 00 00                            ; jmp ok (rel32 = 0x402 - 0x24D)
 
 ;; ----- sys_read @ 0x24D -----
 ;; rdi fd, rsi buf, rdx count
 E8 90 FF FF FF                            ; call fdp (rel32 = 0x1E2 - 0x252)
-0F 82 B2 01 00 00                         ; jc ebadf (rel32 = 0x40A - 0x258)
+0F 82 B1 01 00 00                         ; jc ebadf (rel32 = 0x409 - 0x258)
 8B 48 0C                                  ; mov ecx, [rax + E_SIZE]
 2B 4B 04                                  ; sub ecx, [rbx + 4]
-0F 86 9F 01 00 00                         ; jbe ok (rel32 = 0x403 - 0x264)
+0F 86 9E 01 00 00                         ; jbe ok (rel32 = 0x402 - 0x264)
 48 39 D1                                  ; cmp rcx, rdx
 76 02                                     ; jbe .n (rel8 = 0x26B - 0x269)
 89 D1                                     ; mov ecx, edx
@@ -411,35 +411,34 @@ E8 90 FF FF FF                            ; call fdp (rel32 = 0x1E2 - 0x252)
 8B 70 08                                  ; mov esi, [rax + E_DATA]
 03 73 04                                  ; add esi, [rbx + 4]
 01 4B 04                                  ; add [rbx + 4], ecx
-91                                        ; xchg eax, ecx
-89 C1                                     ; mov ecx, eax
+89 C8                                     ; mov eax, ecx  ; read returns the count; the entry in eax is done with
 F3 A4                                     ; rep movsb
 C3                                        ; ret
 
-;; ----- sys_write @ 0x27C -----
+;; ----- sys_write @ 0x27B -----
 ;; rdi fd, rsi buf, rdx count
-E8 61 FF FF FF                            ; call fdp (rel32 = 0x1E2 - 0x281)
-0F 82 83 01 00 00                         ; jc ebadf (rel32 = 0x40A - 0x287)
+E8 62 FF FF FF                            ; call fdp (rel32 = 0x1E2 - 0x280)
+0F 82 83 01 00 00                         ; jc ebadf (rel32 = 0x409 - 0x286)
 89 D1                                     ; mov ecx, edx
 51                                        ; push rcx
 FF C8                                     ; dec eax
-75 0C                                     ; jnz .file (rel8 = 0x29A - 0x28E)
+75 0C                                     ; jnz .file (rel8 = 0x299 - 0x28D)
 66 BA F8 03                               ; mov dx, 0x3F8
-E3 04                                     ; jrcxz .wdone (rel8 = 0x298 - 0x294)  ; a byte loop, not rep outsb: QEMU 8.2's
-;; .wout @ 0x294
+E3 04                                     ; jrcxz .wdone (rel8 = 0x297 - 0x293)  ; a byte loop, not rep outsb: QEMU 8.2's
+;; .wout @ 0x293
 AC                                        ; lodsb  ; TCG aborts on K0's rep outsb
 EE                                        ; out dx, al
-E2 FC                                     ; loop .wout (rel8 = 0x294 - 0x298)
-;; .wdone @ 0x298
+E2 FC                                     ; loop .wout (rel8 = 0x293 - 0x297)
+;; .wdone @ 0x297
 
 58                                        ; pop rax
 C3                                        ; ret
-;; .file @ 0x29A
+;; .file @ 0x299
 FF C0                                     ; inc eax
 8B 53 04                                  ; mov edx, [rbx + 4]  ; pos
 01 CA                                     ; add edx, ecx  ; end
 3B 50 10                                  ; cmp edx, [rax + E_CAP]
-76 19                                     ; jbe .fits (rel8 = 0x2BF - 0x2A6)
+76 19                                     ; jbe .fits (rel8 = 0x2BE - 0x2A5)
 56                                        ; push rsi  ; grow to twice the new end;
 8D 0C 12                                  ; lea ecx, [rdx + rdx]  ; fresh heap is zero, so bytes
 89 48 10                                  ; mov [rax + E_CAP], ecx  ; past size always read as zero
@@ -450,60 +449,60 @@ FF C0                                     ; inc eax
 8B 48 0C                                  ; mov ecx, [rax + E_SIZE]
 F3 A4                                     ; rep movsb
 5E                                        ; pop rsi
-;; .fits @ 0x2BF
+;; .fits @ 0x2BE
 8B 78 08                                  ; mov edi, [rax + E_DATA]
 03 7B 04                                  ; add edi, [rbx + 4]
 89 53 04                                  ; mov [rbx + 4], edx
 3B 50 0C                                  ; cmp edx, [rax + E_SIZE]
-76 03                                     ; jbe .cp (rel8 = 0x2D0 - 0x2CD)
+76 03                                     ; jbe .cp (rel8 = 0x2CF - 0x2CC)
 89 50 0C                                  ; mov [rax + E_SIZE], edx
-;; .cp @ 0x2D0
+;; .cp @ 0x2CF
 59                                        ; pop rcx
 89 C8                                     ; mov eax, ecx
 F3 A4                                     ; rep movsb
 C3                                        ; ret
 
-;; ----- sys_lseek @ 0x2D6 -----
+;; ----- sys_lseek @ 0x2D5 -----
 ;; rdi fd, rsi offset, rdx whence
-E8 07 FF FF FF                            ; call fdp (rel32 = 0x1E2 - 0x2DB)
-0F 82 29 01 00 00                         ; jc ebadf (rel32 = 0x40A - 0x2E1)
+E8 08 FF FF FF                            ; call fdp (rel32 = 0x1E2 - 0x2DA)
+0F 82 29 01 00 00                         ; jc ebadf (rel32 = 0x409 - 0x2E0)
 31 C9                                     ; xor ecx, ecx
 FF CA                                     ; dec edx
-78 08                                     ; js .set (rel8 = 0x2EF - 0x2E7)
+78 08                                     ; js .set (rel8 = 0x2EE - 0x2E6)
 8B 4B 04                                  ; mov ecx, [rbx + 4]
-74 03                                     ; jz .set (rel8 = 0x2EF - 0x2EC)
+74 03                                     ; jz .set (rel8 = 0x2EE - 0x2EB)
 8B 48 0C                                  ; mov ecx, [rax + E_SIZE]
-;; .set @ 0x2EF
+;; .set @ 0x2EE
 01 F1                                     ; add ecx, esi
 89 4B 04                                  ; mov [rbx + 4], ecx
 91                                        ; xchg eax, ecx
 C3                                        ; ret
 
-;; ----- sys_dup2 @ 0x2F6 -----
+;; ----- sys_dup2 @ 0x2F5 -----
 ;; rdi old, rsi new
-E8 E7 FE FF FF                            ; call fdp (rel32 = 0x1E2 - 0x2FB)
-0F 82 09 01 00 00                         ; jc ebadf (rel32 = 0x40A - 0x301)
+E8 E8 FE FF FF                            ; call fdp (rel32 = 0x1E2 - 0x2FA)
+0F 82 09 01 00 00                         ; jc ebadf (rel32 = 0x409 - 0x300)
 48 8B 03                                  ; mov rax, [rbx]
 48 89 44 F5 58                            ; mov [rbp + P_FDS + rsi*8], rax
 96                                        ; xchg eax, esi
 C3                                        ; ret
 
-;; ----- sys_lstat @ 0x30B -----
+;; ----- sys_lstat @ 0x30A -----
 ;; rdi path, rsi buf: only st_mode
 56                                        ; push rsi
-E8 7C FE FF FF                            ; call resolve (rel32 = 0x18D - 0x311)
+E8 7D FE FF FF                            ; call resolve (rel32 = 0x18D - 0x310)
 5F                                        ; pop rdi
-0F 84 EE 00 00 00                         ; jz enoent (rel32 = 0x406 - 0x318)
+0F 84 EE 00 00 00                         ; jz enoent (rel32 = 0x405 - 0x317)
 B6 81                                     ; mov dh, 0x81  ; S_IFREG
 80 78 14 02                               ; cmp byte [rax + E_TYPE], 2
-75 02                                     ; jne .m (rel8 = 0x322 - 0x320)
+75 02                                     ; jne .m (rel8 = 0x321 - 0x31F)
 B6 41                                     ; mov dh, 0x41  ; S_IFDIR
-;; .m @ 0x322
+;; .m @ 0x321
 88 77 19                                  ; mov [rdi + 25], dh
 C6 47 18 ED                               ; mov byte [rdi + 24], 0xED
-E9 D5 00 00 00                            ; jmp ok (rel32 = 0x403 - 0x32E)
+E9 D5 00 00 00                            ; jmp ok (rel32 = 0x402 - 0x32D)
 
-;; ----- sys_getcwd @ 0x32E -----
+;; ----- sys_getcwd @ 0x32D -----
 ;; rdi buf
 B0 2F                                     ; mov al, 0x2F
 AA                                        ; stosb
@@ -514,58 +513,58 @@ F3 A4                                     ; rep movsb
 88 0F                                     ; mov [rdi], cl
 C3                                        ; ret
 
-;; ----- sys_chdir @ 0x342 -----
+;; ----- sys_chdir @ 0x341 -----
 
-E8 46 FE FF FF                            ; call resolve (rel32 = 0x18D - 0x347)
-0F 84 B9 00 00 00                         ; jz enoent (rel32 = 0x406 - 0x34D)
+E8 47 FE FF FF                            ; call resolve (rel32 = 0x18D - 0x346)
+0F 84 B9 00 00 00                         ; jz enoent (rel32 = 0x405 - 0x34C)
 BE 00 00 00 30                            ; mov esi, PB
 8D BD 58 02 00 00                         ; lea edi, [rbp + P_CWD]
 8B 4D A8                                  ; mov ecx, [rbp + G_PBLEN]
 89 4D 30                                  ; mov [rbp + P_CWDLEN], ecx
 F3 A4                                     ; rep movsb
-E9 9E 00 00 00                            ; jmp ok (rel32 = 0x403 - 0x365)
+E9 9E 00 00 00                            ; jmp ok (rel32 = 0x402 - 0x364)
 
-;; ----- sys_rename @ 0x365 -----
+;; ----- sys_rename @ 0x364 -----
 ;; rdi old, rsi new
 56                                        ; push rsi
-E8 22 FE FF FF                            ; call resolve (rel32 = 0x18D - 0x36B)
+E8 23 FE FF FF                            ; call resolve (rel32 = 0x18D - 0x36A)
 5F                                        ; pop rdi
-0F 84 94 00 00 00                         ; jz enoent (rel32 = 0x406 - 0x372)
+0F 84 94 00 00 00                         ; jz enoent (rel32 = 0x405 - 0x371)
 50                                        ; push rax
-E8 15 FE FF FF                            ; call resolve (rel32 = 0x18D - 0x378)
+E8 16 FE FF FF                            ; call resolve (rel32 = 0x18D - 0x377)
 5A                                        ; pop rdx
-74 08                                     ; jz .set (rel8 = 0x383 - 0x37B)
+74 08                                     ; jz .set (rel8 = 0x382 - 0x37A)
 39 D0                                     ; cmp eax, edx
-74 04                                     ; je .set (rel8 = 0x383 - 0x37F)
+74 04                                     ; je .set (rel8 = 0x382 - 0x37E)
 C6 40 14 00                               ; mov byte [rax + E_TYPE], 0
-;; .set @ 0x383
+;; .set @ 0x382
 92                                        ; xchg eax, edx
-E8 43 FE FF FF                            ; call setname (rel32 = 0x1CC - 0x389)
-EB 78                                     ; jmp ok (rel8 = 0x403 - 0x38B)
+E8 44 FE FF FF                            ; call setname (rel32 = 0x1CC - 0x388)
+EB 78                                     ; jmp ok (rel8 = 0x402 - 0x38A)
 
-;; ----- sys_mkdir @ 0x38B -----
+;; ----- sys_mkdir @ 0x38A -----
 
-E8 FD FD FF FF                            ; call resolve (rel32 = 0x18D - 0x390)
-75 7C                                     ; jnz eexist (rel8 = 0x40E - 0x392)
+E8 FE FD FF FF                            ; call resolve (rel32 = 0x18D - 0x38F)
+75 7C                                     ; jnz eexist (rel8 = 0x40D - 0x391)
 B3 02                                     ; mov bl, 2
-E8 29 FE FF FF                            ; call newent (rel32 = 0x1C2 - 0x399)
-EB 68                                     ; jmp ok (rel8 = 0x403 - 0x39B)
+E8 2A FE FF FF                            ; call newent (rel32 = 0x1C2 - 0x398)
+EB 68                                     ; jmp ok (rel8 = 0x402 - 0x39A)
 
 ;; The file open on fd rdi becomes the IDE primary master's first
 ;; size/512 sectors (the caller pads it to whole sectors), by LBA28 PIO
 ;; one sector at a time.  Boot 1 of the hex0 hand-off writes
 ;; builder-hex0's disk with it (tinycc/hex0-disk.c).
 
-;; ----- sys_disk @ 0x39B -----
+;; ----- sys_disk @ 0x39A -----
 
-E8 42 FE FF FF                            ; call fdp (rel32 = 0x1E2 - 0x3A0)
-72 68                                     ; jc ebadf (rel8 = 0x40A - 0x3A2)
+E8 43 FE FF FF                            ; call fdp (rel32 = 0x1E2 - 0x39F)
+72 68                                     ; jc ebadf (rel8 = 0x409 - 0x3A1)
 8B 70 08                                  ; mov esi, [rax + E_DATA]
 8B 58 0C                                  ; mov ebx, [rax + E_SIZE]
 C1 EB 09                                  ; shr ebx, 9  ; sectors
-74 56                                     ; jz ok (rel8 = 0x403 - 0x3AD)
+74 56                                     ; jz ok (rel8 = 0x402 - 0x3AC)
 31 FF                                     ; xor edi, edi  ; LBA
-;; .sec @ 0x3AF
+;; .sec @ 0x3AE
 89 F8                                     ; mov eax, edi
 BA F3 01 00 00                            ; mov edx, 0x1F3
 EE                                        ; out dx, al  ; LBA 0-7
@@ -585,55 +584,55 @@ EE                                        ; out dx, al  ; one sector
 B2 F7                                     ; mov dl, 0xF7
 B0 30                                     ; mov al, 0x30
 EE                                        ; out dx, al  ; WRITE SECTORS
-;; .drq @ 0x3D5
+;; .drq @ 0x3D4
 EC                                        ; in al, dx
 A8 08                                     ; test al, 8  ; DRQ: the drive takes the data
-74 FB                                     ; jz .drq (rel8 = 0x3D5 - 0x3DA)
+74 FB                                     ; jz .drq (rel8 = 0x3D4 - 0x3D9)
 B2 F0                                     ; mov dl, 0xF0
 B9 00 01 00 00                            ; mov ecx, 256
-;; .w @ 0x3E1
+;; .w @ 0x3E0
 66 AD                                     ; lodsw  ; a word loop, not rep outsw
 66 EF                                     ; out dx, ax  ; (see sys_write)
-E2 FA                                     ; loop .w (rel8 = 0x3E1 - 0x3E7)
+E2 FA                                     ; loop .w (rel8 = 0x3E0 - 0x3E6)
 B2 F7                                     ; mov dl, 0xF7
-;; .bsy @ 0x3E9
+;; .bsy @ 0x3E8
 EC                                        ; in al, dx
 A8 80                                     ; test al, 0x80  ; BSY: the sector is written
-75 FB                                     ; jnz .bsy (rel8 = 0x3E9 - 0x3EE)
+75 FB                                     ; jnz .bsy (rel8 = 0x3E8 - 0x3ED)
 FF C7                                     ; inc edi
 FF CB                                     ; dec ebx
-75 BB                                     ; jnz .sec (rel8 = 0x3AF - 0x3F4)
-EB 0D                                     ; jmp ok (rel8 = 0x403 - 0x3F6)
+75 BB                                     ; jnz .sec (rel8 = 0x3AE - 0x3F3)
+EB 0D                                     ; jmp ok (rel8 = 0x402 - 0x3F5)
 
-;; ----- sys_unlink @ 0x3F6 -----
+;; ----- sys_unlink @ 0x3F5 -----
 
-E8 92 FD FF FF                            ; call resolve (rel32 = 0x18D - 0x3FB)
-74 09                                     ; jz enoent (rel8 = 0x406 - 0x3FD)
+E8 93 FD FF FF                            ; call resolve (rel32 = 0x18D - 0x3FA)
+74 09                                     ; jz enoent (rel8 = 0x405 - 0x3FC)
 C6 40 14 00                               ; mov byte [rax + E_TYPE], 0
-EB 00                                     ; jmp ok (rel8 = 0x403 - 0x403)
+EB 00                                     ; jmp ok (rel8 = 0x402 - 0x402)
 
-;; ----- ok @ 0x403 -----
+;; ----- ok @ 0x402 -----
 31 C0                                     ; xor eax, eax
 C3                                        ; ret
 
-;; ----- enoent @ 0x406 -----
+;; ----- enoent @ 0x405 -----
 6A FE                                     ; push -2
 58                                        ; pop rax
 C3                                        ; ret
 
-;; ----- ebadf @ 0x40A -----
+;; ----- ebadf @ 0x409 -----
 6A F7                                     ; push -9
 58                                        ; pop rax
 C3                                        ; ret
 
-;; ----- eexist @ 0x40E -----
+;; ----- eexist @ 0x40D -----
 6A EF                                     ; push -17
 58                                        ; pop rax
 C3                                        ; ret
 
 ;; ---- memory and processes ------------------------------------------------
 
-;; ----- sys_mmap @ 0x412 -----
+;; ----- sys_mmap @ 0x411 -----
 ;; rsi length; anonymous only
 8B 7D A0                                  ; mov edi, [rbp + G_BUMP]
 57                                        ; push rdi
@@ -649,23 +648,22 @@ C3                                        ; ret
 ;; the image.  Mes libc's malloc only grows it; a lower address returns
 ;; the break unchanged.
 
-;; ----- sys_brk @ 0x42B -----
+;; ----- sys_brk @ 0x42A -----
 ;; rdi addr
 8B 45 40                                  ; mov eax, [rbp + P_HI]
 48 39 C7                                  ; cmp rdi, rax
-76 0E                                     ; jbe .d (rel8 = 0x441 - 0x433)  ; brk(0): the break
+76 0D                                     ; jbe .d (rel8 = 0x43F - 0x432)  ; brk(0): the break
 97                                        ; xchg eax, edi  ; eax new break, edi old
 89 C1                                     ; mov ecx, eax
 29 F9                                     ; sub ecx, edi
-50                                        ; push rax
 31 C0                                     ; xor eax, eax
 F3 AA                                     ; rep stosb  ; fresh memory reads as zero
-58                                        ; pop rax
+97                                        ; xchg eax, edi  ; rep stosb left edi at the new break: return it
 89 45 40                                  ; mov [rbp + P_HI], eax
-;; .d @ 0x441
+;; .d @ 0x43F
 C3                                        ; ret
 
-;; ----- sys_fork @ 0x442 -----
+;; ----- sys_fork @ 0x440 -----
 
 8B 5D A0                                  ; mov ebx, [rbp + G_BUMP]
 8B 45 80                                  ; mov eax, [rbp + G_FP]
@@ -676,17 +674,17 @@ FF 45 88                                  ; inc dword [rbp + G_PID]
 89 43 04                                  ; mov [rbx + 4], eax
 83 C3 08                                  ; add ebx, 8
 31 D2                                     ; xor edx, edx
-E8 45 00 00 00                            ; call xfer (rel32 = 0x4A5 - 0x460)
+E8 45 00 00 00                            ; call xfer (rel32 = 0x4A3 - 0x45E)
 81 C3 FF 0F 00 00                         ; add ebx, 4095
 81 E3 00 F0 FF FF                         ; and ebx, -4096
 89 5D A0                                  ; mov [rbp + G_BUMP], ebx
-EB 92                                     ; jmp ok (rel8 = 0x403 - 0x471)
+EB 93                                     ; jmp ok (rel8 = 0x402 - 0x46F)
 
-;; ----- sys_exit @ 0x471 -----
+;; ----- sys_exit @ 0x46F -----
 
 8B 5D 80                                  ; mov ebx, [rbp + G_FP]
 85 DB                                     ; test ebx, ebx
-74 29                                     ; jz .halt (rel8 = 0x4A1 - 0x478)
+74 29                                     ; jz .halt (rel8 = 0x49F - 0x476)
 89 5D A0                                  ; mov [rbp + G_BUMP], ebx
 8B 03                                     ; mov eax, [rbx]
 89 45 80                                  ; mov [rbp + G_FP], eax
@@ -695,12 +693,12 @@ EB 92                                     ; jmp ok (rel8 = 0x403 - 0x471)
 41 C1 E5 08                               ; shl r13d, 8
 83 C3 08                                  ; add ebx, 8
 B2 01                                     ; mov dl, 1
-E8 0F 00 00 00                            ; call xfer (rel32 = 0x4A5 - 0x496)
+E8 0F 00 00 00                            ; call xfer (rel32 = 0x4A3 - 0x494)
 44 89 65 48                               ; mov [rbp + P_LPID], r12d
 44 89 6D 50                               ; mov [rbp + P_LST], r13d
 41 94                                     ; xchg eax, r12d
 C3                                        ; ret
-;; .halt @ 0x4A1
+;; .halt @ 0x49F
 97                                        ; xchg eax, edi
 E6 F4                                     ; out 0xF4, al  ; isa-debug-exit
 F4                                        ; hlt
@@ -709,73 +707,71 @@ F4                                        ; hlt
 ;; registers and process state, the image, then the stack.  On restore
 ;; each range is computed from what the previous copy put back.
 
-;; ----- xfer @ 0x4A5 -----
+;; ----- xfer @ 0x4A3 -----
 
 8D 45 B0                                  ; lea eax, [rbp + U]
 B9 A8 04 00 00                            ; mov ecx, P_END - U
-E8 1C 00 00 00                            ; call .r (rel32 = 0x4CE - 0x4B2)
+E8 1C 00 00 00                            ; call .r (rel32 = 0x4CC - 0x4B0)
 8B 45 38                                  ; mov eax, [rbp + P_LO]
 8B 4D 40                                  ; mov ecx, [rbp + P_HI]
 29 C1                                     ; sub ecx, eax
-E8 0F 00 00 00                            ; call .r (rel32 = 0x4CE - 0x4BF)
+E8 0F 00 00 00                            ; call .r (rel32 = 0x4CC - 0x4BD)
 8B 45 28                                  ; mov eax, [rbp + U_RSP]
 2D 80 00 00 00                            ; sub eax, 128  ; red zone
 B9 00 00 00 40                            ; mov ecx, STOP
 29 C1                                     ; sub ecx, eax
-;; .r @ 0x4CE
+;; .r @ 0x4CC
 89 C6                                     ; mov esi, eax
 89 DF                                     ; mov edi, ebx
 01 CB                                     ; add ebx, ecx
 84 D2                                     ; test dl, dl
-74 02                                     ; jz .c (rel8 = 0x4DA - 0x4D8)
+74 02                                     ; jz .c (rel8 = 0x4D8 - 0x4D6)
 87 F7                                     ; xchg edi, esi
-;; .c @ 0x4DA
+;; .c @ 0x4D8
 F3 A4                                     ; rep movsb
 C3                                        ; ret
 
-;; ----- sys_wait4 @ 0x4DD -----
+;; ----- sys_wait4 @ 0x4DB -----
 ;; rsi status*
 8B 45 48                                  ; mov eax, [rbp + P_LPID]
 8B 4D 50                                  ; mov ecx, [rbp + P_LST]
 89 0E                                     ; mov [rsi], ecx
 C3                                        ; ret
 
-;; ----- sys_execve @ 0x4E6 -----
+;; ----- sys_execve @ 0x4E4 -----
 ;; rdi path, rsi argv
 56                                        ; push rsi
-E8 A1 FC FF FF                            ; call resolve (rel32 = 0x18D - 0x4EC)
+E8 A3 FC FF FF                            ; call resolve (rel32 = 0x18D - 0x4EA)
 5E                                        ; pop rsi
-0F 84 13 FF FF FF                         ; jz enoent (rel32 = 0x406 - 0x4F3)
+0F 84 14 FF FF FF                         ; jz enoent (rel32 = 0x405 - 0x4F1)
 44 8B 60 08                               ; mov r12d, [rax + E_DATA]
 ;; argv block in KB, laid out for SP0:
 ;; argc, argv[], NULL, NULL envp, AT_NULL, strings
-31 C9                                     ; xor ecx, ecx
-;; .cnt @ 0x4F9
-48 83 3C CE 00                            ; cmp qword [rsi + rcx*8], 0
-74 04                                     ; je .cntd (rel8 = 0x504 - 0x500)
+83 C9 FF                                  ; or ecx, -1  ; argc: from -1, so the loop's first inc makes it 0
+;; .cnt @ 0x4F8
 FF C1                                     ; inc ecx
-EB F5                                     ; jmp .cnt (rel8 = 0x4F9 - 0x504)
-;; .cntd @ 0x504
+48 83 3C CE 00                            ; cmp qword [rsi + rcx*8], 0
+75 F7                                     ; jne .cnt (rel8 = 0x4F8 - 0x501)
 49 89 F1                                  ; mov r9, rsi
 BF 00 00 01 30                            ; mov edi, KB
 48 89 0F                                  ; mov [rdi], rcx
 44 8D 47 08                               ; lea r8d, [rdi + 8]
 8D 7C CF 28                               ; lea edi, [rdi + rcx*8 + 40]
-;; .arg @ 0x517
+;; .arg @ 0x514
 49 8B 31                                  ; mov rsi, [r9]
 49 83 C1 08                               ; add r9, 8
 48 85 F6                                  ; test rsi, rsi
-74 15                                     ; jz .argd (rel8 = 0x538 - 0x523)
+74 15                                     ; jz .argd (rel8 = 0x535 - 0x520)
 8D 87 00 00 FE 0F                         ; lea eax, [rdi + SP0 - KB]
 49 89 00                                  ; mov [r8], rax
 41 83 C0 08                               ; add r8d, 8
-;; .str @ 0x530
+;; .str @ 0x52D
 AC                                        ; lodsb
 AA                                        ; stosb
 84 C0                                     ; test al, al
-75 FA                                     ; jnz .str (rel8 = 0x530 - 0x536)
-EB DF                                     ; jmp .arg (rel8 = 0x517 - 0x538)
-;; .argd @ 0x538
+75 FA                                     ; jnz .str (rel8 = 0x52D - 0x533)
+EB DF                                     ; jmp .arg (rel8 = 0x514 - 0x535)
+;; .argd @ 0x535
 57                                        ; push rdi
 44 89 C7                                  ; mov edi, r8d
 31 C0                                     ; xor eax, eax
@@ -787,7 +783,7 @@ F3 48 AB                                  ; rep stosq
 8B 43 10                                  ; mov eax, [rbx + 16]
 89 45 38                                  ; mov [rbp + P_LO], eax
 45 0F B7 6C 24 38                         ; movzx r13d, word [r12 + 56]  ; e_phnum
-;; .ph @ 0x555
+;; .ph @ 0x552
 8B 73 08                                  ; mov esi, [rbx + 8]
 44 01 E6                                  ; add esi, r12d
 8B 7B 10                                  ; mov edi, [rbx + 16]
@@ -800,7 +796,7 @@ F3 AA                                     ; rep stosb
 89 7D 40                                  ; mov [rbp + P_HI], edi
 83 C3 38                                  ; add ebx, 56
 41 FF CD                                  ; dec r13d
-75 DD                                     ; jnz .ph (rel8 = 0x555 - 0x578)
+75 DD                                     ; jnz .ph (rel8 = 0x552 - 0x575)
 BF 00 00 7F 3F                            ; mov edi, SP0 - 0x800000  ; the new stack's 8 MiB read as
 B9 00 00 80 00                            ; mov ecx, 0x800000  ; zero, as Linux's fresh pages do:
 31 C0                                     ; xor eax, eax  ; tcc -g reads its getcwd buffer
@@ -808,8 +804,7 @@ F3 AA                                     ; rep stosb  ; even when getcwd fails
 59                                        ; pop rcx  ; argv block -> SP0
 81 E9 00 00 01 30                         ; sub ecx, KB
 BE 00 00 01 30                            ; mov esi, KB
-BF 00 00 FF 3F                            ; mov edi, SP0
-F3 A4                                     ; rep movsb
+F3 A4                                     ; rep movsb  ; edi is SP0 already: the zero fill above ended there
 45 8B 64 24 18                            ; mov r12d, [r12 + 24]  ; e_entry
 8D 7D B0                                  ; lea edi, [rbp + U]  ; all registers zero
 31 C0                                     ; xor eax, eax
@@ -820,4 +815,4 @@ F3 48 AB                                  ; rep stosq
 C7 45 28 00 00 FF 3F                      ; mov dword [rbp + U_RSP], SP0
 C3                                        ; ret
 
-;; ----- file_end @ 0x5B5 -----
+;; ----- file_end @ 0x5AD -----

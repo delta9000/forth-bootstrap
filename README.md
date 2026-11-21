@@ -17,7 +17,7 @@ binaries through M2-Planet and GNU Mes; this route uses neither.
 
 ```
 hex0-seed (229 bytes)
- ├─ K0 (kernel/k0/k0.hex0, 1,461 bytes)            boot 1, x86_64, under QEMU
+ ├─ K0 (kernel/k0/k0.hex0, 1,453 bytes)            boot 1, x86_64, under QEMU
  │   └─ seed-forth (seed/000-seed.hex0, 1,051 bytes)
  │       └─ Forth library (forth/010-lib.fth)
  │           └─ C compiler in Forth, native mode (cc/020-119)
@@ -72,7 +72,7 @@ stage0-posix's `hex0-seed` assembles a 1,051-byte Forth; a C compiler
 written in that Forth builds a C driver, a shell and the first Unix tools;
 those build GCC 4.0.4 until it reproduces itself, then GCC 10.5.0, then
 Linux 7.2.8.  The whole run can happen inside two small kernels under QEMU:
-K0, 1,461 bytes of hex0, and K1, a C kernel that seed Forth compiles.  K1
+K0, 1,453 bytes of hex0, and K1, a C kernel that seed Forth compiles.  K1
 then hands the machine to the Linux kernel the run built.  A host `gcc`
 appears only in the checks, as the reference Stage A compares against.
 The terms in the tree below are defined under Names.
