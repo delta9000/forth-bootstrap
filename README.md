@@ -139,7 +139,8 @@ git submodule update --init --recursive
 (`tests/asm/hi-check.sh`), seed-cc rebuilding itself
 (`tests/cc/seed-cc-rebuild-check.sh`), the compiler's gate fixtures
 (`tests/cc/gates/run-gates.sh`), the archive pins, Stage A, K1's build
-check, and the seed's comments against GNU as (`tests/seed/asm-check.py`).
+check, the seed's comments against GNU as (`tests/seed/asm-check.py`), and
+the outputs they build against `tests/pins/outputs.sha256`.
 The steps below run them one at a time, and then the long runs.
 
 **1. The seed and the Forth** (seconds):
