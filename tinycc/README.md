@@ -132,8 +132,9 @@ Host programs left, from `strace -f -e trace=execve`:
   and `cut` print the size and compare tools and tcc-first with their
   pins.  None of them reads or writes a source file or the Forth input;
   the seed-built `catm` joins that (`catm-start.fth` for catm's own), and
-  seed-forth reads it as stdin.  bash's builtin `printf` writes each
-  tool's three-line names file.
+  seed-forth reads it as stdin.  One part of each tool's Forth input is
+  not a file from the repository or an archive: the three-line names
+  file, which bash itself writes with its builtin `printf`.
 - Replay (`tests/tinycc/junction-check.sh`), in addition: `bwrap` makes the
   root; `--probe` runs `chmod`, `mktemp`, `true` and `rm` for its i386
   test; `realpath` names the host's dynamic loader for the bind mount;

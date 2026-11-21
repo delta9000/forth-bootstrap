@@ -46,6 +46,12 @@ own files that go into it, `tinycc/direct-input.c`, `tinycc/mes-libc.c`
 this route: Mes's function names and signatures, our bodies; no Mes code
 is copied), are MIT.
 
+`tinycc/m2libc-native.c` (MIT, written for this route) stands in for
+M2libc's GPL-3.0-or-later `amd64/linux/unistd.c`, `fcntl.c`,
+`sys/stat.c` and `libc-full.M1`.  It restates their constants, function
+names and signatures and the three-line logic of `getcwd`, `exit` and
+`_start`; the system calls are rewritten in C.
+
 ## People and projects
 
 The route stands on the work of the bootstrappable-builds community:
