@@ -133,6 +133,12 @@ variable cc-out-pos
   cc-out-buf cc-out-pos @ + c!
   [lit] 1 cc-out-pos +! ;
 
+\ x{ hh ... }  010-lib.fth's c{ with cc-emit-byte as the sink: `x{ 48 89 f8 }`
+\ emits what `[lit] 72 cc-emit-byte [lit] 137 cc-emit-byte [lit] 248
+\ cc-emit-byte` emits, and compiles to the same code.
+' cc-emit-byte constant cc-emit-byte-xt
+: x{  cc-emit-byte-xt hex{ ; immediate
+
 \ cc-emit-4le ( v -- )  Emit low 4 bytes of v in little-endian.
 : cc-emit-4le
   dup cc-emit-byte                              \ byte 0

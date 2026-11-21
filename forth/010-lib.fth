@@ -582,3 +582,49 @@ immediate
     r> 1-                                        ( a1+1 a2+1 u-1 )
   repeat,
   drop 2drop true ;                              \ all u bytes matched
+
+\ ===== Bytes in hex: c{ ... } =====
+\ c{ hh ... }  lay bytes spelt in hex, as objdump and the Intel manual spell
+\ them: `c{ 48 89 f8 }` lays what `72 c, 137 c, 248 c,` lays, now when
+\ interpreting and as compiled code inside a definition.  A token between
+\ the braces is an even number of hex digits, so `4889f8` is the same
+\ bytes; \ and ( ) comments may sit between them, so a long string can
+\ take one instruction per line.  Any other token, or the end of input
+\ before }, is fatal as an unknown word is (the token and "?", exit 2).
+\ cc/030-cc-io.fth's x{ is the same reader with cc-emit-byte as the sink.
+
+\ hex-digit ( c -- n )  c's value as a hex digit, or 256 if it is not one.
+: hex-digit  digit dup 15 > if, drop 256 then, ;
+
+\ hex-byte ( a -- n )  the byte spelt by the two digits at a; above 255 if
+\ either is not a hex digit.
+: hex-byte  dup c@ hex-digit 16 *  swap 1+ c@ hex-digit + ;
+
+\ hex-check ( a u -- a u )  fatal unless a u is an even run of hex digits.
+: hex-check
+  dup 1 and if, unknown then,
+  2dup begin, dup while,
+    over hex-byte 255 > if, 2drop unknown then,
+    advance advance
+  repeat, 2drop ;
+
+\ hex-lay ( sink n -- sink )  give byte n to sink: interpreting, now;
+\ compiling, as `n sink` would compile (a literal, then CALL sink).
+: hex-lay  state @ if, compile-literal dup call, else, over execute then, ;
+
+\ hex-bytes ( sink a u -- sink )  hex-lay each byte the digits spell.
+: hex-bytes
+  begin, dup while,
+    >r dup >r hex-byte hex-lay r> 2 + r> 2 -
+  repeat, 2drop ;
+
+\ hex{ ( sink "hh ... }" -- )  read hex tokens up to }, laying each byte.
+: hex{
+  begin,
+    read-token  dup 0= if, unknown then,
+    over c@ [char] } = over 1 = and if, 2drop drop exit, then,
+    hex-check hex-bytes
+  again, ;
+
+' c, constant c,-xt
+: c{  c,-xt hex{ ; immediate

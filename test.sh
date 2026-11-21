@@ -174,6 +174,36 @@ ec=0; out=$(cat forth/010-lib.fth cc/020-cc-arena.fth <(printf '%s\n' \
 [ "$ec" = 0 ] && [ ${#out} = 232 ] && [ "${out:0:116}" = "${out:116}" ] &&
     pass "interpret after 020: bare numbers lay [lit]'s bytes" || fail "bare vs [lit] bytes: exit $ec, got '$out'"
 
+# c{ ... } and x{ ... }: hex byte strings.  Interpreting, c{ lays the bytes
+# at HERE; inside a definition it compiles what `N c,` compiles, so the two
+# definitions of t below differ only in their link cell, before and after
+# cc/020 (whose [lit] and numbers lay an inline push).  Both definitions
+# start at the same address (HERE and LATEST are reset in between), so their CALLs'
+# rel32 fields agree too.
+interp_case "c{ lays bytes" 0 "ABC" $'here c{ 41 ( A ) 4243 } here over - 1 rot rot write drop\n'
+interp_case "c{ compiled" 0 "CDE" $': t c{ 43 \\ C\n 4445 } ; here t here over - 1 rot rot write drop\n'
+for bad in '4' '4g' '0x41' 'zz'; do
+    interp_case "c{ $bad }: exit 2" 2 "$bad?" "c{ $bad }"$'\n'
+done
+interp_case "c{ at EOF: exit 2" 2 "?" $'c{ 41'
+for pre in "" cc/020-cc-arena.fth; do
+    ec=0; out=$(cat forth/010-lib.fth $pre <(printf '%s\n' \
+        'latest @ here : t c{ 48 89 f8 } ; dup here over - >r 8 + 1 swap r> 8 - write drop here-addr ! latest !' \
+        'here : t 72 c, 137 c, 248 c, ; here over - >r 8 + 1 swap r> 8 - write drop') |
+        timeout 5 ./seed-forth | od -An -tx1 -v | tr -d ' \n') || ec=$?
+    half=$((${#out} / 2))
+    [ "$ec" = 0 ] && [ "$half" -gt 0 ] && [ "${out:0:half}" = "${out:half}" ] &&
+        pass "c{ compiles as N c,${pre:+ after 020}" || fail "c{ vs N c,${pre:+ after 020}: exit $ec, got '$out'"
+done
+ec=0; out=$(cat forth/010-lib.fth cc/020-cc-arena.fth cc/030-cc-io.fth <(printf '%s\n' \
+    'cc-out-init x{ 41 4243 } : t x{ 44 } ; t 1 cc-out-buf cc-out-pos @ write drop' \
+    'latest @ here : t x{ 48 89 f8 } ; dup here over - >r 8 + 1 swap r> 8 - write drop here-addr ! latest !' \
+    'here : t 72 cc-emit-byte 137 cc-emit-byte 248 cc-emit-byte ; here over - >r 8 + 1 swap r> 8 - write drop') |
+    timeout 5 ./seed-forth | od -An -tx1 -v | tr -d ' \n') || ec=$?
+rest=${out:8}; half=$((${#rest} / 2))
+[ "$ec" = 0 ] && [ "${out:0:8}" = "41424344" ] && [ "$half" -gt 0 ] && [ "${rest:0:half}" = "${rest:half}" ] &&
+    pass "x{ emits to cc-out-buf and compiles as N cc-emit-byte" || fail "x{: exit $ec, got '$out'"
+
 # ----- cc-*.fth layer -----
 
 # Each layer test loads the library and the layers up to the one under
