@@ -38,8 +38,8 @@ void phys_init(void)
 {
     /* Keep out: the low 4 MiB (BIOS, K0, K1), K0's boot image and file
      * heap (released after the import), and K0's mmap area. */
-    u64 fs_end = *(u32 *)P2V(FSIMG + 0x18);         /* K0's G_HEAP */
-    u64 k0bump = *(u32 *)P2V(FSIMG + 0x20);         /* K0's G_BUMP */
+    u64 fs_end = *(u32 *)P2V(FSIMG + 0x18);         /* K0's file heap end */
+    u64 k0bump = *(u32 *)P2V(FSIMG + 0x20);         /* K0's mmap bump */
     int i, j;
     for (i = 0; i < e820_n; i++) {
         u64 s = e820_map[i].addr, e = s + e820_map[i].len;

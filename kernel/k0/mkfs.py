@@ -3,7 +3,7 @@
 
 The image is K0's initial state, not an archive K0 parses:
 
-  +0x0000  kernel state (rbp = FSIMG + 0x80; layout in k0.hex0)
+  +0x0000  kernel state page: zero except the fields written below
   +0x1000  PML4, +0x2000 PDPT: the first 4 GiB identity-mapped, 1 GiB pages
   +0x3000  init's argv: { path, NULL }, then the path string
   +0x4000  file table, 24-byte entries: name, nlen, data, size, cap, type
@@ -19,7 +19,6 @@ import os, struct
 from pathlib import Path
 
 FSIMG = 0x50000000
-BASE = FSIMG + 0x80
 ENTS = FSIMG + 0x4000
 MAXENT = 16384
 HEAP0 = ENTS + MAXENT * 24
@@ -59,12 +58,14 @@ def write(out, repo, extra=None, stdin=STDIN):
     for i, (name, nlen, data, size, typ) in enumerate(ents):
         struct.pack_into("<6I", img, ENTS - FSIMG + 24 * i,
                          name, nlen, data, size, size, typ)
-    def put(off, fmt, *v):
-        struct.pack_into(fmt, img, BASE - FSIMG + off, *v)
-    put(-112, "<I", ENTS + 24 * len(ents))      # G_END
-    put(-104, "<I", HEAP0 + len(heap))          # G_HEAP
-    put(-96, "<I", MMAPB)                       # G_BUMP
-    put(88, "<6I", addr[stdin], 0, 1, 0, 1, 0)  # P_FDS: fd 0, 1, 2
+    # The state page's fields: the end of the file table, the start of the
+    # free file heap, the start of the free mmap area, and init's
+    # descriptors 0, 1 and 2 as (target, position) pairs, target 1 being
+    # the console.
+    struct.pack_into("<I", img, 0x10, ENTS + 24 * len(ents))
+    struct.pack_into("<I", img, 0x18, HEAP0 + len(heap))
+    struct.pack_into("<I", img, 0x20, MMAPB)
+    struct.pack_into("<6I", img, 0xD8, addr[stdin], 0, 1, 0, 1, 0)
     struct.pack_into("<Q", img, 0x1000, FSIMG + 0x2000 + 3)
     for i in range(4):
         struct.pack_into("<Q", img, 0x2000 + 8 * i, (i << 30) | 0x83)

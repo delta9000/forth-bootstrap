@@ -31,7 +31,7 @@ Verified:
     become .equ NAME, VALUE, and the instructions use the names.  as sees
     only the stated value, so a wrong value gives different bytes.
   - Data: "db/dw/dd/dq EXPR" becomes .byte/.short/.long/.quad EXPR.  EXPR
-    may name labels (sctab's "dw sys_read - handlers").
+    may name labels (for example "dw b - a", a difference of two labels).
   - Labels: ";; ----- NAME @ 0xNNN" headings name a routine at NNN, and
     ";; .x @ 0xNNN" lines a label inside the last routine (symbol NAME.x).
     The stated address must equal the offset of the next byte line.
@@ -130,7 +130,7 @@ def labels_of(rows, ck):
             ck.expect(name not in labels, plineno, "label", f"label {name} defined twice")
             labels[name] = off
         pending = []
-    for plineno, name, stated in pending:      # labels after the last byte (file_end)
+    for plineno, name, stated in pending:      # labels after the last byte
         ck.expect(stated == offset_end(rows), plineno, "label",
                   f"{name} stated at {stated:#x}, the file ends at {offset_end(rows):#x}")
         labels[name] = offset_end(rows)
