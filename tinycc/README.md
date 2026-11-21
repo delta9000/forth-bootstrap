@@ -205,7 +205,8 @@ boots and under a minute with KVM.
 **Boot 1, K0.**  QEMU starts K0 with an empty 64 MiB drive.  K0 runs seed
 Forth, which builds the recipe runner, which runs
 `tinycc/hex0-handoff.recipe`:
-1. seed Forth compiles the first tcc: `d9e97270…`, as on the host;
+1. seed Forth compiles the first tcc: `d9e97270…`, as on the host.  Its
+   Mes libc's malloc grows the heap with brk, which K0 has for it;
 2. the first tcc, as `/usr/bin/tcc-mes`, runs pass1.kaem's `tcc-mes` lines
    (translated into runner commands): crt1.o, crti.o, crtn.o, libc.a,
    libtcc1.a, libgetopt.a and tcc-boot0 `c1696e57…`, as on the host;

@@ -173,6 +173,7 @@ sctab:  SC 0, sys_read
         SC 6, sys_lstat
         SC 8, sys_lseek
         SC 9, sys_mmap
+        SC 12, sys_brk
         SC 33, sys_dup2
         SC 57, sys_fork
         SC 59, sys_execve
@@ -518,6 +519,23 @@ sys_mmap:                               ; rsi length; anonymous only
         rep stosb
         pop rax
         ret
+
+; The break is the end of the loaded image, so fork saves the heap with
+; the image.  Mes libc's malloc only grows it; a lower address returns
+; the break unchanged.
+sys_brk:                                ; rdi addr
+        mov eax, [rbp + P_HI]
+        cmp rdi, rax
+        jbe .d                          ; brk(0): the break
+        xchg eax, edi                   ; eax new break, edi old
+        mov ecx, eax
+        sub ecx, edi
+        push rax
+        xor eax, eax
+        rep stosb                       ; fresh memory reads as zero
+        pop rax
+        mov [rbp + P_HI], eax
+.d:     ret
 
 sys_fork:
         mov ebx, [rbp + G_BUMP]

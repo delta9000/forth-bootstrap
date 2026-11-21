@@ -1,6 +1,6 @@
 # kernel/
 
-The two kernels the QEMU run boots.  `k0/` is K0, 1,435 bytes of hex0
+The two kernels the QEMU run boots.  `k0/` is K0, 1,461 bytes of hex0
 (`k0.hex0`, assembled by `hex0-seed`; `k0.asm` is the same program as
 commented NASM) that enters long mode and runs one program at a time:
 seed Forth.  For the TinyCC route it also writes live-bootstrap's

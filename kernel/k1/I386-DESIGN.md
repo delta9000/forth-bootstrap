@@ -77,6 +77,10 @@ programs need:
   ENOENT), exit.  No brk, mmap, stat or getcwd.  One `PT_LOAD` at
   0x400000, 26 MiB in memory; no path with `..`, `/./` or `//`.
 
+(Since route/tinycc's merge the first tcc has Mes libc, whose malloc
+calls brk; K0 gained it, 1,461 bytes.  Its remove also calls stat, which
+K0 still lacks: tcc -ar leaves its .tmp file, outside boot 2's stream.)
+
 K0 has every one of these, with the semantics used (O_CREAT, O_TRUNC,
 ENOENT on a missing file, lseek's three origins, files grown by write).
 K0's runner (`kernel/tools/amd64-runner.c`) already has `cd`, `copy`,

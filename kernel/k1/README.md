@@ -4,7 +4,7 @@ K1 is a small kernel in C that runs ordinary static Linux x86-64 programs
 as real processes, imports the route's sources and archives from a disk,
 runs the whole chain from `hex0-seed` to GCC 10.5.0 and Linux 7.2.8, and
 finally hands the machine to the Linux kernel the chain built.  Nothing
-but seed Forth compiles it: K0 (1,435 bytes of hex0, `kernel/k0/`) runs
+but seed Forth compiles it: K0 (1,461 bytes of hex0, `kernel/k0/`) runs
 seed Forth, which builds K1 with its own C compiler, assembler writer and
 linker, and K0 then starts it.
 

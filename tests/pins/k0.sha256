@@ -1,10 +1,12 @@
 # tests/pins/k0.sha256 -- sha256 of K0 as hex0-seed assembles kernel/k0/k0.hex0
-# (1,435 bytes).  kernel/k0/check.sh compares.  When a change to k0.asm is
+# (1,461 bytes).  kernel/k0/check.sh compares.  When a change to k0.asm is
 # meant to alter it, update this line in the same commit and say why.
 #   1,313 bytes, 40da2915...: K0 before the hex0 hand-off.
-#   1,435 bytes: call 248 writes a file to the IDE disk by PIO (boot 1 of
-#   tests/tinycc/hex0-handoff-check.sh writes builder-hex0's disk with it),
-#   and execve zeroes the new stack's 8 MiB, as Linux's fresh pages are, so
-#   a program reading stack it never wrote (tcc -g's getcwd buffer) sees
-#   what it sees on Linux.
-fb2093a323c60bd43c57c281c75e71ddb8870a0f67c767dc006619c77fada165  k0.bin
+#   1,435 bytes, fb2093a3...: call 248 writes a file to the IDE disk by PIO
+#   (boot 1 of tests/tinycc/hex0-handoff-check.sh writes builder-hex0's
+#   disk with it), and execve zeroes the new stack's 8 MiB, as Linux's
+#   fresh pages are, so a program reading stack it never wrote (tcc -g's
+#   getcwd buffer) sees what it sees on Linux.
+#   1,461 bytes: brk (12), for Mes libc's malloc in the first tcc, grows
+#   the loaded image's end and zeroes what it adds.
+fc7380030e4d0a4239c2febc3c4776ceef5558df4c8271160e336f33f53aeec5  k0.bin
