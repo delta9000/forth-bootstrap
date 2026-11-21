@@ -15,8 +15,8 @@ file offset and a length.  Every line with bytes must be a data field or an
 instruction; a line that is neither fails the check.
 
 Verified, for instructions (everything after the program header):
-  - The text after the first ';' (up to the next ';' that follows a space,
-    and with the notes below taken out) is the instruction.  It goes into one .intel_syntax noprefix
+  - The text after the first ';' (up to the next ';' and with the notes below
+    taken out) is the instruction.  It goes into one .intel_syntax noprefix
     source, with every data line in the same place as the .byte/.quad that
     its comment states, so that GNU as gives each line the offset the hex
     gives it.  The bytes as writes for the line must equal the line's hex.
@@ -278,11 +278,8 @@ def build(rows, size, ck):
 
 def instruction(lineno, off, data, comment, routine, labels, sysvars, headers, size, ck):
     """GNU as text for one instruction line, after its notes are checked."""
-    # The note starts at the first ';' that follows a space: the word named
-    # ; appears in "(; header)", which is part of the instruction.
-    parts = re.split(r"(?:^|(?<=\s));", comment, maxsplit=1)
-    insn = parts[0].strip()
-    after = parts[1] if len(parts) == 2 else ""
+    insn = comment.split(";", 1)[0].strip()
+    after = comment.split(";", 1)[1] if ";" in comment else ""
     end = off + len(data)
     if not insn:
         ck.fail(lineno, "byte line without an instruction comment")

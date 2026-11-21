@@ -118,7 +118,7 @@ hdr_%1:
 _start:                         ; entry point: the two stacks' registers and the sysvars
         mov ebp, 0x411000       ; data-stack base (empty: TOS holds nothing yet)
         mov ebx, 0x413000       ; the sysvar page
-        mov qword [rbx+LATEST], hdr_semicolon ; the last header in this file
+        mov qword [rbx+LATEST], hdr_state ; the last header in this file
         mov qword [rbx+HERE], 0x401000
 ;; STATE and LAST_FOUND start at 0: the page is past the end of the file,
 ;; and the kernel zero-fills the segment from p_filesz to p_memsz.
@@ -439,14 +439,8 @@ syscall6_code:                  ; ( a b c d e f n -- rax )
         mov rdi, rax            ; TOS = result
         ret
 
-;; The compiler: state gives the library the sysvar page, : and ; make
-;; definitions.
-
-HEADER state, "state", 0
-state_code:                     ; ( -- addr ) address of STATE, which is the sysvar page
-        call dup_code           ; push the old TOS
-        mov rdi, rbx
-        ret
+;; The compiler: : and ; make definitions; state gives the library the
+;; sysvar page, and with it STATE, LATEST and HERE.
 
 HEADER colon, ":", 0
 colon_code:                     ; ( -- ) read a name, lay down its header at HERE, STATE = 1
@@ -474,5 +468,11 @@ semicolon_code:                 ; ( -- ) IMMEDIATE: append ret, STATE = 0
         inc rax
         mov [rbx+HERE], rax     ; HERE += 1
         mov qword [rbx+STATE], 0
+        ret
+
+HEADER state, "state", 0
+state_code:                     ; ( -- addr ) address of STATE, which is the sysvar page
+        call dup_code           ; push the old TOS
+        mov rdi, rbx
         ret
 file_end:

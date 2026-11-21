@@ -183,6 +183,8 @@ interp_case "bye" 0 "A" $'65 emit bye 66 emit\n'
 interp_case "255-byte name" 0 "A" ": $n255 65 emit ; $n255"$'\n'
 interp_case "256-byte token: exit 2" 2 "${n255}a?" "${n255}a 65 emit"$'\n'
 interp_case "[lit] -5: exit 2" 2 "-5?" $'[lit] -5 65 emit\n'
+interp_case "[lit] 0x41 in a definition: exit 2" 2 "0x41?" $': t [lit] 0x41 emit ; t\n'
+interp_case "[lit] at EOF: exit 2" 2 "?" $'[lit]'
 # A bare number compiles to the same bytes as [lit] N: after 020 both lay
 # the inline push, so two definitions of t differ only in their link cell.
 ec=0; out=$(cat forth/010-lib.fth cc/020-cc-arena.fth <(printf '%s\n' \

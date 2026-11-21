@@ -110,17 +110,35 @@ seed's own loop needs it before any Forth exists.  That gives 21:
 | reader | `key token find` | the loop needs them before any Forth exists |
 | compiler | `state : ;` | the loop needs them; `state` is how Forth finds the sysvars |
 
-Compared with other small Forths: sectorforth and milliforth keep `@ !
-sp@ rp@ 0= + nand exit key emit` plus `:` and `;` and build the rest in
-Forth, with indirect threading on a 16-bit machine.  This seed keeps the
-same core, with `dup drop swap >r r>` in place of `sp@ rp@` (the top of
-stack is in a register, so `sp@`-built stack words would be slower and
-harder to follow than three two-instruction words), no `emit` (see
-below), and adds only what a C compiler's host needs to be usable:
-bytes (`c@ c!`), `* /` and `syscall6`.  jonesforth is the other extreme:
-well over a hundred words in assembly, including the number parser, the
-interpreter and the control-flow words; the previous seed was a small
-step in that direction with 32.
+Compared with other small Forths (their sources read for this note):
+
+- sectorforth (`sectorforth.asm`, a 512-byte 16-bit boot sector) has
+  `@ ! sp@ rp@ 0= + nand exit key emit`, `:` and `;`, and the variables
+  `tib state >in here latest`.  It has no number parser at all (its
+  example library builds `-1`, `0` and `1` from `nand`), and an unknown
+  token prints `!!` and resets.  Its examples define `dup`, `swap`,
+  `branch` and `?branch` in Forth; `?branch` picks its return address by
+  arithmetic, as `0branch` does here.  milliForth (`sector.asm`) is a
+  smaller variant of the same word set.
+- jonesforth (`jonesforth.S`, i386) is the other extreme: about a hundred
+  dictionary entries in assembly, among them `WORD`, `NUMBER`, `FIND`,
+  `INTERPRET`, `BRANCH`, `0BRANCH`, the comparisons and four syscall
+  words; only the control structures are Forth.
+- stage0's own Forth (`stage2/forth.s`, for stage0's register machine)
+  is like jonesforth: about 70 words in assembly, including `NUMBER`,
+  `FIND`, `INTERPRET`, `EXECUTE`, `BRANCH`, `0BRANCH`, `LIT`, `HERE`,
+  the comma, the comparisons and `R@`.
+
+The 1,772-byte seed sat between the two, with 32 words.  This one keeps
+sectorforth's core, with three differences.  It has `dup drop swap >r r>`
+in place of `sp@ rp@`: the top of stack is in a register and the code is
+subroutine-threaded, so stack words built on `sp@` would be slower and
+harder to follow than three two-instruction words.  It parses unsigned
+decimal numbers, because the library lays machine code and system call
+numbers from its first lines, and seventy constants built from `nand`
+would be less readable than 74 bytes of parser.  And it adds what a C
+compiler's host needs to be usable: bytes (`c@ c!`), `* /` and
+`syscall6` in place of `emit`.
 
 ### The loop
 
@@ -171,12 +189,12 @@ compiled code, it finds its own return address on the return stack, and
 that is the address of the inline target cell.  It must return either to
 the cell's contents or to the address after the cell, and it has no
 branch to choose with, so it computes `past + (mask and (target - past))`
-with `mask = flag 0=`.  sectorforth's `?branch` does the same.
+with `mask = flag 0=`.
 
 ### Encoding changes that are not removals
 
 - `rbx` holds the sysvar page.  `mov rax, [rbx+HERE]` is 4 bytes where
-  `mov rax, [0x413010]` is 8, and the seed has about twenty such lines.
+  `mov rax, [0x413010]` is 8, and the seed has 26 such lines.
   The cost is a rule for all machine code that ever runs in the process:
   `rbx` is the seed's.  `cc/020`'s native words use `rax rdx rsi rdi`
   only, Linux and K0 preserve `rbx` across SYSCALL, and the compiler's
@@ -226,12 +244,13 @@ with `mask = flag 0=`.  sectorforth's `?branch` does the same.
 ### Considered and kept
 
 - `*` and `/` (49 bytes with headers).  They can be Forth: shift-and-add
-  and long division, 64 iterations each, about 15 lines, in the library
+  and long division, 64 iterations each, an estimated 15 lines (not
+  written), in the library
   and again in each launcher that multiplies or divides (all three
   divide).  `forth/130-asm.fth` and the launchers run without `cc/020`,
   so they would run at that speed.  Nine instructions of the plainest
-  machine code in the file against 15 lines of intricate Forth in four
-  places: kept.
+  machine code in the file against some 15 lines of intricate Forth in
+  four places: kept.  It is the next 49 bytes if the owner wants them.
 - `c@` and `c!` (43 bytes).  `: c@ @ 255 and ;` reads 7 bytes past the
   address, and a `c!` built on `@` and `!` writes them; both fault at the
   end of a mapping.  Kept.
@@ -318,29 +337,47 @@ More instructions, because `here`, `,`, `c,`, `branch` and `0branch` are
 Forth now; no more cycles, because the library's literals are an inline
 push from the start instead of a CALL to `lit`, whose rewritten return
 address the processor mispredicts.  `./check-all.sh` takes 29.9 s with
-either seed.  HERE is 0x40F2xx after `cc/020` (0x40F0xx before), below
-the 0x410000 that `skip-vm-pages` needs.
+either seed.  The library's dictionary is about 510 bytes larger.  HERE
+after `cc/020`, which must stay below 0x410000 for `skip-vm-pages`, is
+0x40F2xx in the host's load order (0x40F0xx before) and 0x40F7CC in
+K1's, where `kernel/k1/boot/k0-syscalls.fth` comes first (0x40F5xx
+before): 2,100 bytes of headroom left there, of about 2,600.
 
 Every oracle, on a clean `build-out`, with the seed as it is after the
-review of section 4 (`seed-forth` c7d82c51...):
+review of section 4 (`seed-forth` 8a1a5655...):
 
-- `./check-all.sh`: 10 OK, 0 SKIP, 0 FAIL; `check-outputs: 5 as pinned,
+- `CHECK_TINYCC=1 CHECK_HEX0_HANDOFF=1 ./check-all.sh`: 12 OK, 0 SKIP,
+  0 FAIL (the two extra steps are the junction check below and the
+  hand-off: K0 runs the seed, which builds the first tcc and
+  builder-hex0's disk, and boot 2 reaches live-bootstrap's `tcc`); `check-outputs: 5 as pinned,
   0 differ, 0 not built` (seed-cc, seed-ar, Stage A's `cc-out-v1`, the K1
   runner, K1).
 - `tinycc/build-first-tcc.sh`: `d9e97270...`, as pinned.
 - `tests/tinycc/junction-check.sh`: `/usr/bin/tcc` `b9dce87d...` and the
   six libraries the same as live-bootstrap's.
 - `kernel/k1/run-chain.sh --direct-smoke` (the seed under K0 in QEMU):
-  PASS.
+  PASS in 17.4 s (18.1 s with the 1,772-byte seed).  Its serial log has
+  `k0: K1 built by seed Forth; handing over`, `k1: seed-forth built by
+  hex0-seed` and the K1 PASS line.
 - `tests/seed/asm-check.py`: GNU as on the comments writes 1091 of 1091
   bytes; `seed/check.sh`: nasm's bytes equal hex0-seed's.
 
-Not run: `CHECK_CHAIN=1` and `CHECK_K1=linux`.
+Not run: `CHECK_CHAIN=1` and `CHECK_K1=linux`.  Swept instead: every
+place either runs `seed-forth` gives it a ported launcher
+(`cc/driver/seed-cc-start.fth` in `chain/plumbing-root.sh` and
+`kernel/k1/direct.recipe`; `kernel/tools/k1-direct-start.fth` as K0's
+init) or an input that starts with `forth/010-lib.fth` (seed-cc's
+generated inputs, `kernel/tools/k1-direct.recipe`); no file under
+`chain/` or `kernel/` states the seed's size or hash; the Linux
+initramfs holds only `chain/ladder/init.c`'s program.  The smoke run
+covers the first minute of `CHECK_K1=linux` (K0, the seed building K1,
+K1 running the seed and seed-cc).
 
 What adopting it would still need: the book (forth-bootstrap-book)
-quotes `seed/000-seed.hex0`, `forth/010-lib.fth` and
-`cc/020-cc-arena.fth` byte for byte, and its seed chapters teach the 32
-primitives in the old order; `HISTORY.md` and the results table in
+quotes `seed/000-seed.hex0`, `forth/010-lib.fth`, `forth/130-asm.fth`,
+`cc/020-cc-arena.fth` and `cc/030-cc-io.fth` byte for byte (130 and 030
+change by one comment each, naming the seed's pages), and its seed
+chapters teach the 32 primitives in the old order; `HISTORY.md` and the results table in
 `README.md` still describe the 1,772-byte seed as history.
 
 ## 4. Readability review
@@ -356,10 +393,15 @@ Changed for clarity, at a cost in bytes:
   end-of-input path (+3 bytes).
 - `read_char` sat among the loop's routines; it moved next to `token`,
   its only caller (and `token`'s jump to `fatal` became short, -4 bytes).
+- `;` was the last header, so `_start`'s LATEST line read
+  `0x400423 (; header) ; the last header`, a comment that seems to start
+  inside the parentheses, and `asm-check.py` needed a special case to
+  split it.  `state` is last now and the checker's split is as it was.
 
 Chosen for size, and why it is still clear enough:
 
-- `rbx` as the sysvar page (about 75 bytes).  One more reserved register,
+- `rbx` as the sysvar page (about 100 bytes, computed from the encodings
+  of the 26 lines that use it, not assembled both ways).  One more reserved register,
   stated in the conventions block and in `cc/020`'s note on native words.
   The lines get shorter and name what they touch: `mov rax, [rbx+HERE]`.
 - `jmp drop_code` at the end of `>r`, `!`, `c!`, `compile_call` and
@@ -376,7 +418,7 @@ Chosen for size, and why it is still clear enough:
 - Whitespace is one compare, `cmp al, 0x20`, with end of input (0) falling
   on the whitespace side; the two loops that would spin on it test for 0
   first.  The header comment of `token` says so.  Four compares, as
-  before, would cost about 14 bytes more.
+  before, would cost an estimated 14 bytes more.
 - `cmp eax, 9` / `ja` after subtracting '0' rejects bytes on both sides of
   the digits with one unsigned compare; the line says so.
 
