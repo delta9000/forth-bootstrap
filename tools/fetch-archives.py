@@ -68,6 +68,9 @@ URLS = {
     "mes-0.28.tar.gz": f"{GNU}/mes/mes-0.28.tar.gz",
     "live-bootstrap-a49273cbb5c381b851198bc1e53c294702f4f7c9.tar.gz":
         "https://github.com/fosslinux/live-bootstrap/archive/a49273cbb5c381b851198bc1e53c294702f4f7c9.tar.gz",
+    # builder-hex0 at live-bootstrap's submodule commit (the hex0 hand-off)
+    "builder-hex0-a2781242d19e6be891b453d8fa827137ab5db31a.tar.gz":
+        "https://github.com/ironmeld/builder-hex0/archive/a2781242d19e6be891b453d8fa827137ab5db31a.tar.gz",
 }
 COPIES = {  # MANIFEST path: the MANIFEST path it is a copy of
     "build-out/direct-gcc-inputs/gcc-4.0.4-git-944765863e.tar": "build-out/distfiles/gcc-4.0.4-git-944765863e.tar",

@@ -47,6 +47,15 @@
 #                   (seconds; needs bwrap, the host kernel's i386 support,
 #                   the vendor/stage0-posix submodule and the archives of
 #                   tinycc/SOURCES; SKIP without the first two)
+#   CHECK_HEX0_HANDOFF=1  tests/tinycc/hex0-handoff-check.sh: K0 runs seed
+#                   Forth, which builds the first tcc; the first tcc makes
+#                   tcc-boot0 and mes libc and writes live-bootstrap's
+#                   builder-hex0 disk through K0; builder-hex0 boots it and
+#                   runs pass1.kaem from tcc-boot0 to their published tcc and
+#                   libraries (under a minute with KVM; needs QEMU, KVM,
+#                   bwrap, the vendor/stage0-posix submodule and the
+#                   archives of tinycc/SOURCES and tinycc/hex0-handoff.SOURCES;
+#                   SKIP without them)
 #
 # Each step's output goes to $TMPDIR/check-all-NAME.log (default /tmp); the
 # console shows one OK, SKIP or FAIL line per step and the verdict.
@@ -114,6 +123,13 @@ if [ "${CHECK_TINYCC:-0}" = 1 ]; then
         run "13-tinycc-junction" tests/tinycc/junction-check.sh
     else
         skip "13-tinycc-junction" "$why"
+    fi
+fi
+if [ "${CHECK_HEX0_HANDOFF:-0}" = 1 ]; then
+    if why=$(tests/tinycc/hex0-handoff-check.sh --probe); then
+        run "14-hex0-handoff" tests/tinycc/hex0-handoff-check.sh
+    else
+        skip "14-hex0-handoff" "$why"
     fi
 fi
 case ${CHECK_K1:-} in

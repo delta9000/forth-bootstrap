@@ -181,7 +181,8 @@ bytes from tcc-boot1 on.
 
 **What it does not prove:**
 - The i386 stages run on the host's Linux kernel through its 32-bit
-  support, not under K0 or K1.  K1 loads only x86_64 ELF.
+  support, not under K0 or K1.  K1 loads only x86_64 ELF.  The hex0
+  hand-off below runs them on builder-hex0 instead.
 - Host bash stands in for kaem.  The other commands of the kaem text are
   the programs live-bootstrap uses, built by seed Forth in native mode
   against M2libc (above); two of them carry a patch of ours.
@@ -194,6 +195,85 @@ tcc-mes: the study found that a first tcc built with the boot stages'
 full feature set (`HAVE_FLOAT`, `HAVE_BITFIELD`, `HAVE_LONG_LONG`) gives
 tcc-boot1 `b9dce87d…` already, so the boot1 line does not match although
 `tcc` and the libraries do.
+
+## The hex0 hand-off: the i386 stages on builder-hex0
+
+`tests/tinycc/hex0-handoff-check.sh`, also `CHECK_HEX0_HANDOFF=1
+./check-all.sh`, runs the junction without the host kernel, in two QEMU
+boots and under a minute with KVM.
+
+**Boot 1, K0.**  QEMU starts K0 with an empty 64 MiB drive.  K0 runs seed
+Forth, which builds the recipe runner, which runs
+`tinycc/hex0-handoff.recipe`:
+1. seed Forth compiles the first tcc: `d9e97270…`, as on the host.  Its
+   Mes libc's malloc grows the heap with brk, which K0 has for it;
+2. the first tcc, as `/usr/bin/tcc-mes`, runs pass1.kaem's `tcc-mes` lines
+   (translated into runner commands): crt1.o, crti.o, crtn.o, libc.a,
+   libtcc1.a, libgetopt.a and tcc-boot0 `c1696e57…`, as on the host;
+3. the first tcc builds the i386 kaem, cp, chmod, match and rm
+   (`vendor/`) and `tinycc/hex0-export.c` against that libc;
+4. hex0-seed assembles builder-hex0's stage 1, and `tinycc/hex0-disk.c`
+   (compiled by seed Forth like the runner) writes the disk image
+   live-bootstrap's `lib/generator.py` writes: stage 1, the stage-2 hex0
+   source, zeros to sector 175, then a stream of `src` records holding the
+   trees, the boot-1 files and boot 2's script as `/kaem.run`, and the
+   command `/usr/bin/kaem --verbose`.  K0's call 248 copies the image to
+   the drive by PIO.
+
+**Boot 2, builder-hex0.**  QEMU boots the drive with the arguments
+live-bootstrap's `rootfs.py` uses, less its network card.  builder-hex0's stage 1 compiles stage 2 from hex0,
+which reads the stream and runs kaem.  The script
+(`tinycc/hex0-handoff-stream.py`) is live-bootstrap's text: their
+variables, `cd build`, `cd ${TCC_PKG}` and ARCH blocks, and pass1.kaem from
+"# Install" to "# Checksums".  Its last line, ours, runs `hex0-export`,
+which writes the ten checksummed files as `src` records to `/dev/hda`;
+builder-hex0 writes that file to the drive's first sectors when its
+stream ends.
+
+The host then reads the drive (`tinycc/hex0-records.py`) and hashes:
+
+| file | live-bootstrap | boot 2 |
+|---|---|---|
+| `/usr/bin/tcc-mes` | `2b15c85f…` | `d9e97270…` (pinned) |
+| `/usr/bin/tcc-boot0` | `ea464b2f…` | `c1696e57…` (pinned) |
+| `/usr/bin/tcc-boot1` | `d9116def…` | same |
+| `/usr/bin/tcc` | `b9dce87d…` | same |
+| `/usr/lib/mes/libc.a` | `a6172e52…` | same |
+| `/usr/lib/mes/libgetopt.a` | `12c07ae1…` | same |
+| `/usr/lib/mes/crt1.o` | `76d280e0…` | same |
+| `/usr/lib/mes/crti.o` | `09d4f982…` | same |
+| `/usr/lib/mes/crtn.o` | `461ca149…` | same |
+| `/usr/lib/mes/tcc/libtcc1.a` | `136f97c3…` | same |
+
+Before boot 2 it also hashes the hand-off files in boot 1's stream
+against `tests/pins/tinycc.sha256` (`tinycc/hex0-handoff/boot1/…`).
+
+The hashes are taken on the host, not in boot 2: mescc-tools-extra's
+`sha256sum.c` linked against this mes libc hashes every file as that many
+zero bytes ("abc" gives `709e80c8…`, the sha256 of three NULs), because
+it reads after `rewind` and the libc's `rewind` is `stub/rewind.c`.  A
+guest-side `sha256sum -c` would prove nothing.
+
+**Host involvement, item by item:** no host program unpacks or patches
+a source.  The seed-built tools do it, as for the junction:
+`tinycc/build-first-tcc.sh --prepare` (which runs `tinycc/build-tools.sh`)
+checks the archives and lays out `build-out/tcc-sources/`; the seed-built
+`sha256sum`, `ungz` and `untar` check and unpack builder-hex0; and
+`tinycc/lb-replay.sh --prepare` runs pass1.kaem's lines before MesCC in
+bwrap, on the live-bootstrap tree `build-tools.sh` unpacked.  What the
+host still does: bash runs those scripts and stands in for kaem in
+`lb-replay.sh`, whose kaem text is cut by host grep, awk, sed and cat;
+bash's printf writes each tool's three-line names file, part of its
+Forth input (`tinycc/build-tools.sh`); the scripts' rm, mkdir, dirname,
+wc, sha256sum, sed and cut clear `build-out/` directories and compare the
+tools and the first tcc with their pins; host hex0-seed builds seed-forth
+and K0;
+`tinycc/hex0-handoff-stream.py` cuts boot 2's script from the pinned
+pass1.kaem and lists the stream's files; `kernel/k0/mkfs.py` (via
+`tinycc/hex0-handoff-image.py`) writes K0's memory image, copying every
+prepared source file into it; the host creates the empty drive, starts
+QEMU twice and reads the drive (`tinycc/hex0-records.py`).  It writes no
+byte of boot 2's disk.
 
 ## What does not reproduce
 
@@ -224,10 +304,17 @@ seed-built `sha256sum --check` reads it as it is:
 - live-bootstrap at `a49273cb`: the simple-patches, simple-patch and
   checksum-transcriber, and the kaem text and checksums of the junction.
 
-GitHub generates the live-bootstrap archive from the commit and does not
-promise its bytes stay the same.  If it changes, the commit in its name is
-the identity of the source: compare `git archive` of that commit with the
-new archive's contents before moving its pin.
+`tinycc/hex0-handoff.SOURCES` and `MANIFEST.sha256` pin a fourth,
+builder-hex0 at `a2781242`, live-bootstrap's submodule commit, which only
+the hex0 hand-off reads.  It has its own file so that the junction, which
+checks `tinycc/SOURCES` whole, does not need it; the hand-off checks it
+with the seed-built `sha256sum`.
+
+GitHub generates the live-bootstrap and builder-hex0 archives from the
+commit and does not promise their bytes stay the same.  If one changes,
+the commit in its name is the identity of the source: compare `git
+archive` of that commit with the new archive's contents before moving its
+pin.
 
 `python3 tools/fetch-archives.py build-out/tinycc-inputs/<name>` downloads
 them.

@@ -16,6 +16,10 @@
 ;
 ; Every address K0 handles is below 4 GiB, so it works in 32-bit
 ; registers wherever a value is its own.
+;
+; Output is the serial port, and one call of K0's own (248, sys_disk)
+; writes a file to the IDE disk: the TinyCC route's hex0 hand-off
+; (tests/tinycc/hex0-handoff-check.sh) writes builder-hex0's disk with it.
 
 bits 32
 org 0x100000
@@ -169,6 +173,7 @@ sctab:  SC 0, sys_read
         SC 6, sys_lstat
         SC 8, sys_lseek
         SC 9, sys_mmap
+        SC 12, sys_brk
         SC 33, sys_dup2
         SC 57, sys_fork
         SC 59, sys_execve
@@ -180,6 +185,7 @@ sctab:  SC 0, sys_read
         SC 83, sys_mkdir
         SC 87, sys_unlink
         SC 90, ok                       ; no permissions
+        SC 248, sys_disk                ; K0's own: not Linux's add_key
         db 0xFF
 
 ; ---- paths and the file table --------------------------------------------
@@ -436,6 +442,54 @@ sys_mkdir:
         call newent
         jmp ok
 
+; The file open on fd rdi becomes the IDE primary master's first
+; size/512 sectors (the caller pads it to whole sectors), by LBA28 PIO
+; one sector at a time.  Boot 1 of the hex0 hand-off writes
+; builder-hex0's disk with it (tinycc/hex0-disk.c).
+sys_disk:
+        call fdp
+        jc ebadf
+        mov esi, [rax + E_DATA]
+        mov ebx, [rax + E_SIZE]
+        shr ebx, 9                      ; sectors
+        jz ok
+        xor edi, edi                    ; LBA
+.sec:   mov eax, edi
+        mov edx, 0x1F3
+        out dx, al                      ; LBA 0-7
+        inc edx
+        shr eax, 8
+        out dx, al                      ; 8-15
+        inc edx
+        shr eax, 8
+        out dx, al                      ; 16-23
+        inc edx
+        shr eax, 8
+        or al, 0xE0
+        out dx, al                      ; 0x1F6: master, LBA, 24-27
+        mov dl, 0xF2
+        mov al, 1
+        out dx, al                      ; one sector
+        mov dl, 0xF7
+        mov al, 0x30
+        out dx, al                      ; WRITE SECTORS
+.drq:   in al, dx
+        test al, 8                      ; DRQ: the drive takes the data
+        jz .drq
+        mov dl, 0xF0
+        mov ecx, 256
+.w:     lodsw                           ; a word loop, not rep outsw
+        out dx, ax                      ; (see sys_write)
+        loop .w
+        mov dl, 0xF7
+.bsy:   in al, dx
+        test al, 0x80                   ; BSY: the sector is written
+        jnz .bsy
+        inc edi
+        dec ebx
+        jnz .sec
+        jmp ok
+
 sys_unlink:
         call resolve
         jz enoent
@@ -465,6 +519,23 @@ sys_mmap:                               ; rsi length; anonymous only
         rep stosb
         pop rax
         ret
+
+; The break is the end of the loaded image, so fork saves the heap with
+; the image.  Mes libc's malloc only grows it; a lower address returns
+; the break unchanged.
+sys_brk:                                ; rdi addr
+        mov eax, [rbp + P_HI]
+        cmp rdi, rax
+        jbe .d                          ; brk(0): the break
+        xchg eax, edi                   ; eax new break, edi old
+        mov ecx, eax
+        sub ecx, edi
+        push rax
+        xor eax, eax
+        rep stosb                       ; fresh memory reads as zero
+        pop rax
+        mov [rbp + P_HI], eax
+.d:     ret
 
 sys_fork:
         mov ebx, [rbp + G_BUMP]
@@ -587,6 +658,10 @@ sys_execve:                             ; rdi path, rsi argv
         add ebx, 56
         dec r13d
         jnz .ph
+        mov edi, SP0 - 0x800000         ; the new stack's 8 MiB read as
+        mov ecx, 0x800000               ; zero, as Linux's fresh pages do:
+        xor eax, eax                    ; tcc -g reads its getcwd buffer
+        rep stosb                       ; even when getcwd fails
         pop rcx                         ; argv block -> SP0
         sub ecx, KB
         mov esi, KB
