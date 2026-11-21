@@ -417,6 +417,22 @@ the boot, which the Mes-libc one of the hand-off does not.
   tcc-mes gives `ea464b2f…`.  Every first compiler other than MesCC now
   agrees from tcc-boot0 on.  Before the first tcc had a real `getcwd`,
   it recorded `/` as the `-g` directory, giving `4e3e525a…`.
+- The gcc `-m32` stand-in of `tests/tinycc/i386-standin-check.sh` does
+  not always make that tcc-boot0, so the check fails about one run in
+  eight.  Compiling tcc-boot0 1,000 times in the replay's root, the
+  stand-in made `c1696e57…` 869 times and `9cb082b3…`, 356 bytes longer,
+  131 times; the i386 first tcc made `c1696e57…` 1,000 times.  The two
+  files differ in `unary`, where the longer one computes three
+  floating-point constant expressions at run time that the other has
+  folded.  The outcome follows the stand-in's stack address: with
+  `setarch -R` (stack at `0xffff…`) it made `9cb082b3…` 100 times of 100,
+  with `setarch -R -3` (stack below `0xc0000000`) `c1696e57…` 100 times of
+  100; the i386 first tcc made `c1696e57…` 200 times of 200 under
+  `setarch -R`.  Not found: which value the stand-in reads before
+  writing it.  A stack address of `0xfff00000` or more read as the high
+  half of a double is not finite, which tcc's folder checks, and one
+  eighth of an 8 MiB range of stack addresses lies there; that reading
+  fits the numbers but was not traced.
 - Changing the first tcc's libc from pnut's to Mes's (tcc-first
   `1a3a95ab…` to `d9e97270…`) left tcc-boot0 at `c1696e57…`.  A libc's
   float parsing could reach boot0 through float literals, but this tcc,
