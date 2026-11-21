@@ -1,7 +1,8 @@
 \ tinycc/tcc-compile.fth -- the native-mode driver that compiles the first tcc.
 \
-\ From seed-forth's tools/tcc-compile.fth (origin/qemu-final), with the
-\ output path changed from build-out/tcc-seed.partial.  Loaded after
+\ From seed-forth's tools/tcc-compile.fth (commit 550a0c5, on
+\ origin/qemu-final), with the output path changed from
+\ build-out/tcc-seed.partial.  Loaded after
 \ forth/010-lib.fth and the compiler layers 020 to 119 (without 081, which
 \ native mode does not call); tinycc/build-first-tcc.sh gives the list.
 \ The bytes after it on stdin are exactly build-out/tcc-sources/direct-input.c.

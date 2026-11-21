@@ -9,7 +9,9 @@
 #                      the first tcc makes of tcc.c in live-bootstrap's
 #                      pass1.kaem (tests/tinycc/junction-check.sh).  MesCC's
 #                      tcc-mes makes ea464b2f...; from boot1 on the two
-#                      routes have the same bytes.
+#                      routes have the same bytes.  It differs from what
+#                      gcc-built stand-ins make (c1696e57...) only in the -g
+#                      directory string (see tinycc/direct-input.c).
 # When a change is meant to alter one, update its line in the same commit
 # and say why.
 7b2efd95a84f1d7c83369db586ffc113a8931c7c417b6d7854f7e577b42f4d97  tinycc/tcc-first

@@ -2,8 +2,9 @@
 in FILE with AFTER's bytes, the job live-bootstrap's simple-patch does in
 its kaem steps.  Fails, leaving FILE alone, when BEFORE occurs other than once.
 
-Used for live-bootstrap's simple-patches and for tinycc/patches/*.before
-and *.after.  Run with python3 -I.
+Used for live-bootstrap's simple-patches to tcctools.c, by
+tinycc/build-first-tcc.sh and, through tinycc/kaem-shims.sh, inside the
+junction chroot.  Run with python3 -I.
 """
 import sys
 

@@ -68,8 +68,26 @@ bytes from tcc-boot1 on.
 - MesCC itself was not run.  Its column above is live-bootstrap's
   published file.
 
-`tests/tinycc/junction-check.sh FIRST_TCC` runs the same replay from any
-other first compiler.
+`tests/tinycc/junction-check.sh FIRST_TCC` runs the same replay from
+another first compiler.  It expects that compiler to be configured like
+tcc-mes: the study found that a first tcc built with the boot stages'
+full feature set (`HAVE_FLOAT`, `HAVE_BITFIELD`, `HAVE_LONG_LONG`) gives
+tcc-boot1 `b9dce87d…` already, so the boot1 line does not match although
+`tcc` and the libraries do.
+
+## What does not reproduce
+
+- tcc-boot0 is `4e3e525a…`.  MesCC's tcc-mes gives `ea464b2f…`.  The stand-ins
+  that the junction study built with gcc, tcc 0.9.27 and seed-cc, using the
+  same defines, gave `c1696e57…`.  The difference from `c1696e57…` is the
+  `-g` directory string.  Under `PNUT_CC`, portable libc's `getcwd` returns
+  NULL, because the native runtime has no getcwd call.  So the first tcc
+  records `/` instead of `/steps/tcc-0.9.26/build/tcc-0.9.26-1147-gee75a10c/`.
+  Compiled without `-g`, `tcc.c` gives the same object from both.  A getcwd
+  primitive in `cc/119-cc-native-runtime.fth` would probably close the gap,
+  but this was not tried.
+- tcc-mes is a different program by design: an x86_64 binary with pnut's
+  libc, not MesCC's i386 one.
 
 ## Inputs
 

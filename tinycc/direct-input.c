@@ -2,9 +2,9 @@
    compiles into the first tcc (tinycc/build-first-tcc.sh copies it to
    build-out/tcc-sources/direct-input.c).
 
-   From tinycc-subset-scripts/direct-input-0.9.26-i386.c of the study that
-   found the route, itself seed-forth's tools/tcc-direct-input.c with
-   TinyCC 0.9.27 and x86_64 replaced by janneke's 0.9.26 fork and i386.
+   From seed-forth's tools/tcc-direct-input.c (commit 550a0c5, on
+   origin/qemu-final), with TinyCC 0.9.27 and the x86_64 target replaced
+   by janneke's 0.9.26 fork and i386, and with live-bootstrap's paths.
 
    The tcc defines are live-bootstrap's for tcc-mes on x86 in
    steps/tcc-0.9.26/pass1.kaem: BOOTSTRAP, HAVE_LONG_LONG 0, TCC_TARGET_I386
@@ -17,7 +17,15 @@
    The host side is x86_64 Linux: pnut's portable libc is compiled into the
    same image, PNUT_CC selects its configuration without inline assembly,
    and the Forth compiler's native runtime supplies the system calls.  The
-   target is i386. */
+   target is i386.
+
+   One known difference from tcc-mes: under PNUT_CC, portable libc's
+   getcwd returns NULL (the native runtime has no getcwd system call), so
+   with -g this tcc records the directory of tcc.c as "/" where tcc-mes
+   records /steps/tcc-0.9.26/build/tcc-0.9.26-1147-gee75a10c/.  That is
+   the only difference in tcc-boot0's object code from the stand-ins the
+   junction study built with gcc, tcc 0.9.27 and seed-cc; without -g the
+   objects are identical.  It is gone from tcc-boot1 on. */
 #define PNUT_CC 1
 #define PNUT_EXE 1
 #define PNUT_EXE_64 1
