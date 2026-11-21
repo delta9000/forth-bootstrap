@@ -620,7 +620,7 @@ defer cc-emit-restore-callee-fwd
   x{ be } 1089 cc-emit-4le                        \ mov esi, 0x441
   x{ 5f }                                         \ pop rdi
   x{ 48 c7 c0 } 2 cc-emit-4le                     \ mov rax, 2
-  x{ ba } 420 cc-emit-4le                         \ mov edx, 0x1a4
+  x{ ba } 420 cc-emit-4le                         \ mov edx, 0x1a4  (mode 0644)
   x{ 0f 05 }                                      \ syscall
   x{ 48 85 c0 }                                   \ test rax, rax
   x{ 79 02 }                                      \ jns +2
@@ -734,7 +734,7 @@ defer cc-emit-restore-callee-fwd
   x{ 31 ff }                                      \ xor edi, edi
   x{ be } 268435456 cc-emit-4le                   \ mov esi, 0x10000000  (256 MB heap)
   x{ ba } 3 cc-emit-4le                           \ mov edx, 3
-  x{ 41 ba } 34 cc-emit-4le                       \ mov r10d, 34
+  x{ 41 ba } 34 cc-emit-4le                       \ mov r10d, 0x22
   x{ 41 b8 ff ff ff ff }                          \ mov r8d, 0xffffffff  (4 explicit bytes)
   x{ 45 31 c9 }                                   \ xor r9d, r9d
   x{ b8 } 9 cc-emit-4le                           \ mov eax, 9
