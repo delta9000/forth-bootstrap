@@ -5,7 +5,7 @@ Briefing for Claude Code sessions on forth-bootstrap.
 ## What this is
 
 One bootstrap route, from stage0-posix's 229-byte `hex0-seed` to a Linux
-kernel: a 1,051-byte hex0 Forth (`seed/`), a Forth library (`forth/`), a
+kernel: a 930-byte hex0 Forth (`seed/`), a Forth library (`forth/`), a
 C compiler written in Forth (`cc/`), the kernels K0 and K1 that host the
 run under QEMU (`kernel/`), and the build chain from plumbing tools to
 GCC 4.0.4, GCC 10.5.0 and Linux (`chain/`).  `README.md` has the map,

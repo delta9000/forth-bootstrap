@@ -3,7 +3,7 @@
 #
 # Quick steps (under a minute):
 #   01  seed/build.sh: hex0-seed assembles seed/000-seed.hex0 into the
-#       1,051-byte seed-forth
+#       930-byte seed-forth
 #   02  ./test.sh: the seed primitives, forth/010-lib.fth and the first
 #       compiler layers
 #   03  tests/asm/hi-check.sh: forth/130-asm.fth assembles and links a small
@@ -89,7 +89,7 @@ skip() {
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
-run "01-seed" bash -c 'seed/build.sh && [ "$(wc -c < seed-forth)" -eq 1051 ]'
+run "01-seed" bash -c 'seed/build.sh && [ "$(wc -c < seed-forth)" -eq 930 ]'
 run "02-test" ./test.sh
 run "03-asm" tests/asm/hi-check.sh
 run "04-seed-cc" tests/cc/seed-cc-rebuild-check.sh
