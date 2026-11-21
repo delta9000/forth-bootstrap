@@ -1,7 +1,7 @@
 #ifndef SEED_GCC_FLOAT_PRIVATE_H
 #define SEED_GCC_FLOAT_PRIVATE_H
 /* Private runtime interface between stdio.c and floatfmt.c; see
-   ../PRINTF-FLOAT.md. Not a public header: programs must not use it. */
+   ../README.md. Not a public header: programs must not use it. */
 
 /* One formatted floating conversion, as pieces that stdio pads and writes:
    sign prefix lead lead_zeros [.] frac_zeros frac trail_zeros suffix.

@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and DRIVER-RUNTIME.md.
+/* Original implementation; see LICENSE and README.md.
    Linux AMD64 working-directory and name operations used by GCC's driver. */
 #include <unistd.h>
 #include <stdio.h>

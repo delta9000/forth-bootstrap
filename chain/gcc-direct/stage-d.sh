@@ -24,7 +24,7 @@
 # same bytes.  Archives are compared member by member (names, order and
 # member bytes), because binutils 2.30 `ar` stores member timestamps.  Stage 2
 # can match only because the runtime's qsort is musl's (see
-# chain/runtime/gcc-seed/SORT.md).
+# chain/runtime/gcc-seed/README.md).
 #
 # Source adaptation, applied to a fresh unpacking of the pinned tar: gcc's
 # system.h exempts parser-generator code (FLEX_SCANNER, YYBISON) from its

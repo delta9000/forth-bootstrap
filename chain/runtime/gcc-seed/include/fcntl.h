@@ -1,10 +1,10 @@
 #ifndef SEED_GCC_FCNTL_H
 #define SEED_GCC_FCNTL_H
 #include <sys/types.h>
-/* Bounded Linux AMD64 open flags; see ../DESCRIPTOR-IO.md. Unsupported flag
+/* Bounded Linux AMD64 open flags; see ../README.md. Unsupported flag
    bits fail with EINVAL. O_CREAT or the full O_TMPFILE requires a mode_t
    argument (unsigned int on this target); other calls need no third argument.
-   fcntl supports only the commands below; see ../FCNTL.md. */
+   fcntl supports only the commands below; see ../README.md. */
 #define O_ACCMODE 3
 #define O_RDONLY 0
 #define O_WRONLY 1
@@ -41,6 +41,6 @@ int open(const char *path, int flags, ...);
 /* F_DUPFD, F_DUPFD_CLOEXEC, F_SETFD and F_SETFL read one int argument;
    F_GETFD and F_GETFL read none. Other commands fail with EINVAL. */
 int fcntl(int descriptor, int command, ...);
-/* open(PATH, O_WRONLY | O_CREAT | O_TRUNC, MODE); see ../FILE-CALLS.md. */
+/* open(PATH, O_WRONLY | O_CREAT | O_TRUNC, MODE); see ../README.md. */
 int creat(const char *path, mode_t mode);
 #endif

@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and PROCESS-POSIX.md.
+/* Original implementation; see LICENSE and README.md.
    execl, execlp and execle: collect the NULL-terminated argument list. */
 #include <unistd.h>
 #include <stdarg.h>

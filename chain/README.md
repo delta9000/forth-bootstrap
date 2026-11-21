@@ -11,6 +11,6 @@ build the late tools.  `ladder/` and `gcc64/` climb from there to GCC
 the few patches the chain applies; `plumbing-root.sh` runs everything up to stage D on the
 host inside a root whose only executable is `hex0-seed`.  Start with
 `plumbing/README.md`, then `plumbing/CHAIN.md` and `plumbing/LATE.md`.
-Checks: `tools/check-pins.py` (`./check-all.sh` step 05);
+Checks: `tools/check-pins.py` (`./check-all.sh` step 06);
 `CHECK_CHAIN=1 ./check-all.sh` runs `plumbing-root.sh`; under K1 the
 whole chain runs in `kernel/k1/run-chain.sh --direct-linux`.

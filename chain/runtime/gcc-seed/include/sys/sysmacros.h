@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_SYS_SYSMACROS_H
 #define SEED_GCC_SYS_SYSMACROS_H
-/* Original seed-forth interface; see ../../FILE-CALLS.md. The Linux 64-bit
+/* Original interface; see ../../README.md. The Linux 64-bit
    dev_t encoding: major in bits 8-19 and 32-63, minor in bits 0-7 and 20-31
    (glibc's layout). Each macro evaluates its arguments once. */
 #define major(device) ((unsigned int)((((unsigned long)(device) >> 8) & 0xfffUL) \

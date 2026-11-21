@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_SYS_WAIT_H
 #define SEED_GCC_SYS_WAIT_H
-/* Linux AMD64 child status; see ../../PROCESS-API.md. Each macro evaluates
+/* Linux AMD64 child status; see ../../README.md. Each macro evaluates
    its int status argument once. Exit: status << 8. Signal death: the signal
    in bits 0-6 (bit 7 records a core dump). Stopped: signal << 8 | 0x7f. */
 #include <sys/types.h>
@@ -18,7 +18,7 @@
 #define WIFSIGNALED(status) (((((status) & 127) + 1) & 127) > 1)
 pid_t waitpid(pid_t process, int *status, int options);
 pid_t wait(int *status);
-/* BSD forms with resource usage (Linux wait4); see ../../PROCESS-POSIX.md. */
+/* BSD forms with resource usage (Linux wait4); see ../../README.md. */
 struct rusage;
 pid_t wait3(int *status, int options, struct rusage *usage);
 pid_t wait4(pid_t process, int *status, int options, struct rusage *usage);

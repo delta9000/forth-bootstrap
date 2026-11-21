@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_TIME_H
 #define SEED_GCC_TIME_H
-/* Linux AMD64 time interfaces; see ../CLOCK-REMOVE.md and ../CALENDAR.md. */
+/* Linux AMD64 time interfaces; see ../README.md and ../README.md. */
 #include <sys/types.h>
 #ifndef SEED_CLOCK_T_DEFINED
 #define SEED_CLOCK_T_DEFINED
@@ -48,7 +48,7 @@ double difftime(time_t end, time_t start);
 /* C-locale C99/POSIX conversions plus the GNU ones (%k %l %P %s ...),
    the flags _ - 0 ^ #, field widths, and ignored E/O modifiers. */
 size_t strftime(char *out, size_t size, const char *format, const struct tm *value);
-/* POSIX clocks and sleeping; see ../SYSINFO.md. */
+/* POSIX clocks and sleeping; see ../README.md. */
 #include <seed-timespec.h>
 typedef int clockid_t;
 #define CLOCK_REALTIME 0

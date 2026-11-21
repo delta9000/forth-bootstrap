@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. */
+/* Original implementation; see LICENSE. */
 #include <stdlib.h>
 
 int abs(int value)

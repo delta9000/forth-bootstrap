@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and SYSINFO.md.
+/* Original implementation; see LICENSE and README.md.
    Resource limits, usage, scheduling priority and process times. */
 #include <sys/resource.h>
 #include <sys/times.h>

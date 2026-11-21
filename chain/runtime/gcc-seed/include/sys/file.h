@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_SYS_FILE_H
 #define SEED_GCC_SYS_FILE_H
-/* Original seed-forth interface; see LICENSE and ../../FILE-CALLS.md.
+/* Original interface; see LICENSE and ../../README.md.
    BSD whole-file advisory locks (Linux flock, syscall 73). */
 #include <fcntl.h>
 #define LOCK_SH 1

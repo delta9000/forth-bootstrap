@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. Linux AMD64 only. */
+/* Original implementation; see LICENSE. Linux AMD64 only. */
 #include <dirent.h>
 #include <stdlib.h>
 #include <errno.h>

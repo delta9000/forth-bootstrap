@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and SIGNALS.md.
+/* Original implementation; see LICENSE and README.md.
    Signal descriptions in glibc's C-locale wording. */
 #include <signal.h>
 #include <string.h>

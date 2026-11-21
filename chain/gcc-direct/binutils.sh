@@ -8,10 +8,9 @@
 #
 # WORK must be new.  The pinned
 # binutils-2.30.tar (chain/plumbing/chain.SOURCES) is unpacked into WORK/src, and
-# the parser and scanner C shipped in the release is deleted, so that the
-# original Makefiles must regenerate it from the .y and .l sources with the
-# chain's oyacc and flex; hand-written ldlex.h, itbl-lex.h and m68k-parse.h
-# stay.  configure.sh --package binutils --forth-ar configures the top level.
+# the parser and scanner C shipped in the release (chain/gcc-direct/
+# binutils-2.30.generated) is deleted, so that the original Makefiles must
+# regenerate it from the .y and .l sources with the chain's oyacc and flex.  configure.sh --package binutils --forth-ar configures the top level.
 #
 # make runs from WORK/build/top with WORK/configure-env.sh.  Empty CFLAGS and
 # LDFLAGS avoid the templates' debug, optimization and host-link flags.  Empty
@@ -33,15 +32,11 @@ ROOT=$(cd "${0%/*}/../.." && pwd)
 . "$ROOT/chain/gcc-direct/chain-lib.sh"
 
 TOOLS="gas/as-new ld/ld-new binutils/ar binutils/nm-new binutils/objdump binutils/readelf"
-# Shipped generated parser/scanner C and headers.
-GENERATED="binutils/arlex.c binutils/arparse.c binutils/arparse.h
-  binutils/deflex.c binutils/defparse.c binutils/defparse.h
-  binutils/mcparse.c binutils/mcparse.h binutils/nlmheader.c
-  binutils/nlmheader.h binutils/rcparse.c binutils/rcparse.h
-  binutils/sysinfo.c binutils/sysinfo.h binutils/syslex.c
-  gas/itbl-lex.c gas/itbl-parse.c gas/itbl-parse.h
-  intl/plural.c ld/deffilep.c ld/deffilep.h
-  ld/ldgram.c ld/ldgram.h ld/ldlex.c"
+# Shipped generated parser/scanner C and headers (one per line, # comments).
+GENERATED=
+while read -r name; do
+  case $name in ''|'#'*) ;; *) GENERATED="$GENERATED $name" ;; esac
+done < "$ROOT/chain/gcc-direct/binutils-2.30.generated"
 
 work= oyacc= flex= jobs=6
 while [ $# -gt 0 ]; do

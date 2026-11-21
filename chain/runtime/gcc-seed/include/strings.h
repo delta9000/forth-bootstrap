@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_STRINGS_H
 #define SEED_GCC_STRINGS_H
-/* Original seed-forth interface; see LICENSE and ../STRINGS-POSIX.md.
+/* Original interface; see LICENSE and ../README.md.
    BSD string helpers in the ASCII C locale. */
 #include <stddef.h>
 /* Case-insensitive comparison of ASCII letters only; bytes compare as

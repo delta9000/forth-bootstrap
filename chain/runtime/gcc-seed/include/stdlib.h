@@ -28,7 +28,7 @@ int mkstemp(char *template);
    the template becomes "" (EINVAL or EEXIST). Racy by design: prefer mkstemp. */
 char *mktemp(char *template);
 /* Correctly rounded C99 decimal/hexadecimal input with glibc's end pointer,
-   NaN payload and ERANGE rules; see ../DECIMAL-INPUT.md. atof is strtod. */
+   NaN payload and ERANGE rules; see ../README.md. atof is strtod. */
 double atof(const char *text);
 double strtod(const char *text, char **end);
 float strtof(const char *text, char **end);
@@ -39,10 +39,10 @@ extern char *__progname;
 /* Searches the current environ; returns a pointer into that entry. */
 char *getenv(const char *name);
 /* Inserts STRING itself (not a copy) into a runtime-owned environ vector;
-   NAME without '=' removes NAME. See ../ENVIRONMENT.md. */
+   NAME without '=' removes NAME. See ../README.md. */
 int putenv(char *string);
 /* Runs atexit/on_exit handlers newest first, flushes stdio, then ends the
-   process; returning from main does the same. See ../PROCESS-POSIX.md. */
+   process; returning from main does the same. See ../README.md. */
 void exit(int status);
 /* Ends the process at once: no handlers and no flushing. */
 void _Exit(int status);
@@ -51,16 +51,16 @@ int atexit(void (*handler)(void));
 int on_exit(void (*handler)(int, void *), void *argument);
 void abort(void);
 /* "/bin/sh -c COMMAND" with SIGINT/SIGQUIT ignored and SIGCHLD blocked in
-   the caller; NULL asks whether a shell exists. See ../PROCESS-POSIX.md. */
+   the caller; NULL asks whether a shell exists. See ../README.md. */
 int system(const char *command);
 /* Canonical absolute name with no ".", ".." or symbolic links; RESOLVED
    needs PATH_MAX bytes, or NULL returns a malloc'd copy. See
-   ../FILE-CALLS.md. */
+   ../README.md. */
 char *realpath(const char *path, char *resolved);
-/* Copying environment updates; see ../ENVIRONMENT.md. */
+/* Copying environment updates; see ../README.md. */
 int setenv(const char *name, const char *value, int overwrite);
 int unsetenv(const char *name);
-/* Integer conversions and arithmetic; see ../STRINGS-POSIX.md. */
+/* Integer conversions and arithmetic; see ../README.md. */
 /* The long long forms are C99; strict C90 compilation hides them. */
 #if !defined __STRICT_ANSI__ || (defined __STDC_VERSION__ && __STDC_VERSION__ >= 199901L)
 long long strtoll(const char *text, char **end, int base);
@@ -83,7 +83,7 @@ int rand(void);
 void srand(unsigned int seed);
 long random(void);
 void srandom(unsigned int seed);
-/* ASCII C locale, as mbtowc; see ../WIDE.md. */
+/* ASCII C locale, as mbtowc; see ../README.md. */
 int mblen(const char *bytes, size_t count);
 size_t wcstombs(char *bytes, const wchar_t *wide, size_t count);
 #define EXIT_SUCCESS 0

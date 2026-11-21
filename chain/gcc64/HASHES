@@ -5,11 +5,13 @@
 #         m4 path, ...), so the hash holds only for the BUILDROOT on the "root" line:
 #         /build-out/g64, where chain/ladder/stage11.sh builds under K1.
 # Values: matched by the run under K1 of 2026-10-08 (kernel/k1/run-chain.sh
-# --direct-linux; results/k1-2026-10-08/gcc64-hashes.txt).
+# --direct-linux; results/k1-2026-10-08/gcc64-hashes.txt), except bu/bin/ld
+# and bu/bin/ar: since the bridge regenerates binutils' parsers with oyacc and
+# flex (chain/gcc-direct/binutils-2.30.generated), they are the run of 2026-11-20.
 root /build-out/g64
 c1a8867055f70b25cdd53f30c7f908f66833417ece9e091f7893a43e5dfea62d  bu/bin/as  root
-aca2fe4394d47502a9344730bbf17f7912d56e2e25705f0387b405455ceeba51  bu/bin/ld  root
-5315378d018cd95f2117725a81d4d9f4cd011b5ded61303af0abf4684ee117fc  bu/bin/ar  root
+87271cf134c76ada6cceaea5e8ce3d8c943490a90fc8aa9fe5eb3b8e796e77b8  bu/bin/ld  root
+b4555e024e1a97c4dec2992d670d23678f2fde3e2394733ad24ffb9b2ae79309  bu/bin/ar  root
 bc465f8fd442de5201a481c51d51b12ed178af26c7f78f35e8f7040b45f7c3ce  tools/bin/flex  root
 b66e1abfabfdb3478ce13292182005e6bb0ca7e9f14ffb298f583f0128cbb801  g4/bin/gcc  root
 030e5eee9e6f3dbf973b9fd2359e219364a478e7a16edc89323530fc782edfbf  g4/libexec/gcc/x86_64-unknown-linux-gnu/4.0.4/cc1  root

@@ -1,0 +1,9 @@
+	/* forth-bootstrap: & 0xFF, as bits() does, so that the bytes read the
+	 * same where plain char is signed (gcc-seed, x86_64 SysV). */
+	len = (s->in[s->incnt] & 0xFF);
+	s->incnt = s->incnt + 1;
+	len = len | ((s->in[s->incnt] & 0xFF) << 8);
+	s->incnt = s->incnt + 1;
+	if((s->in[s->incnt] & 0xFF) != (~len & 0xff)) return -2;                              /* didn't match complement! */
+	s->incnt = s->incnt + 1;
+	if((s->in[s->incnt] & 0xFF) != ((~len >> 8) & 0xff)) return -2;                              /* didn't match complement! */

@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and STRINGS-POSIX.md.
+/* Original implementation; see LICENSE and README.md.
    Collation in the only supported (C/POSIX) locale is byte order. */
 #include <string.h>
 

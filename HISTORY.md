@@ -103,25 +103,29 @@ G0   int main() { return N; }                                     [G0.c]
 G1   locals, arithmetic, precedence                               [G1.c]
 G2   if/else, comparisons                                         [G2.c]
 G3   user functions, SysV ABI calls                               [G3.c]
-G4   while/for                                                    [G4.c]
-G5   arrays                                                       [G5.c]
-G6   struct member access                                         [G6a.c, G6b.c]
+G4   library calls through <stdio.h> (putchar)                    [G4.c]
+G5   while/for                                                    [G5.c]
+G6   do/while with break and continue; goto                       [G6a.c, G6b.c]
 G7   pointers, address-of                                         [G7.c]
-G8   string literals                                              [G8.c]
-G9   enum                                                         [G9a.c, G9b.c]
-G10  typedef                                                      [G10a.c..G10c.c]
-G11  function pointers                                            [G11.c]
-G12  hex literals                                                 [G12.c]
-G13  nested includes                                              [G13.c]
-G14  switch/case/default with fall-through                        [G14a.c..G14d.c]
+G8   arrays                                                       [G8.c]
+G9   struct member access, . and ->                               [G9a.c, G9b.c]
+G10  enum, typedef, sizeof                                        [G10a.c..G10c.c]
+G11  ++/--, shifts, bitwise and logical operators                 [G11.c]
+G12  function pointers                                            [G12.c]
+G13  switch/case/default with fall-through                        [G13.c]
+G14  #define, quoted #include, static/const locals, globals       [G14a.c..G14d.c]
 M1a  built-in libc constants (NULL, EOF, EXIT_*, std{in,out,err}) [M1a.c]
 M1b  forward decls, globals, cross-function calls                 [M1b.c]
 M1   M2-Planet's own cc.c entry point: angle-bracket includes,    [M1.c]
      struct token_list*, FILE* I/O, calloc, recursive_output
 ```
 
-G = compiler gate. M = milestone toward the M2-Planet self-host. Tracked
-fixtures live in `tests/cc/`; the byte-identical self-host itself has no
+G = compiler gate. M = milestone toward the M2-Planet self-host. The
+fixtures live in `tests/cc/gates/`, and `tests/cc/gates/run-gates.sh`
+compiles and runs each with seed-forth's expected exit status.  M1.c is
+kept but not run: it calls functions defined in the rest of M2-Planet, so
+it is no standalone program, and it targets an older M2-Planet than
+`vendor/M2-Planet`.  The byte-identical self-host itself has no
 per-feature `.c` fixture — it is verified end-to-end by
 `tests/cc/stage-a-check.sh`.
 
@@ -193,7 +197,7 @@ three-digit layer number, kept in the file names.
 | `k1/` | `kernel/k1/` |
 | `tools/amd64-runner.c`, `amd64-syscalls.fth`, `obj-asm.fth`, `k1-direct-start.fth`, `k1-direct.recipe`, `k1-direct-boot.recipe` | `kernel/tools/` |
 | `book/`, `book.toml`, `tools/tangle.sh`, `tangle.awk`, `check-numbers.py`, `check-tryit.py`, `check-links.py`, `gen-index.py` | forth-bootstrap-book, a separate project |
-| `tests/cc/`, `tests/gcc/`, `tests/gcc64/` | `tests/` (unchanged; `cc/040-cc-prep.fth` searches `tests/cc/` for quoted includes) |
+| `tests/cc/`, `tests/gcc/`, `tests/gcc64/` | `tests/` (in part; the G and M gate fixtures are in `tests/cc/gates/`; `cc/040-cc-prep.fth` searches `tests/cc/` for quoted includes) |
 | `vendor/` | unchanged |
 | `k1/chain-inputs.sha256` and the archive pins in `ladder/stage12.sh` | `MANIFEST.sha256` |
 | `k1/k1.S` | removed; `kernel/k1/k1-asm.fth` carries the instructions as comments |

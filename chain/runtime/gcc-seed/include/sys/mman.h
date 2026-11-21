@@ -1,8 +1,8 @@
 #ifndef SEED_GCC_SYS_MMAN_H
 #define SEED_GCC_SYS_MMAN_H
-/* Original seed-forth declarations; Linux AMD64 LP64, 4096-byte pages.
+/* Original declarations; Linux AMD64 LP64, 4096-byte pages.
    Only private mappings and these protection bits are implemented.
-   See ../../MAPPING.md for bounds and ownership. */
+   See ../../README.md for bounds and ownership. */
 #include <sys/types.h>
 #define PROT_NONE 0
 #define PROT_READ 1

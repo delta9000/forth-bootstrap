@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and PROCESS-API.md.
+/* Original implementation; see LICENSE and README.md.
    Bounded Linux AMD64 process creation, replacement, waiting and signals. */
 #include <unistd.h>
 #include <signal.h>

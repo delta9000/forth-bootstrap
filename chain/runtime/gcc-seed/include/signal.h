@@ -1,9 +1,9 @@
 #ifndef SEED_GCC_SIGNAL_H
 #define SEED_GCC_SIGNAL_H
-/* Original seed-forth interface; see LICENSE. Linux AMD64, single-threaded.
+/* Original interface; see LICENSE. Linux AMD64, single-threaded.
    signal() uses persistent BSD-style handlers, blocks the delivered signal
    during the handler, and requests restart of eligible interrupted calls.
-   The POSIX sigaction/sigset interfaces are described in ../SIGNALS.md. */
+   The POSIX sigaction/sigset interfaces are described in ../README.md. */
 #include <sys/types.h>
 typedef int sig_atomic_t;
 typedef void (*__seed_sighandler_t)(int);
@@ -52,7 +52,7 @@ typedef void (*__seed_sighandler_t)(int);
 #define NSIG 65
 #define _NSIG NSIG
 __seed_sighandler_t signal(int number, __seed_sighandler_t handler);
-/* A single Linux kill call; see ../PROCESS-API.md. */
+/* A single Linux kill call; see ../README.md. */
 int kill(pid_t process, int number);
 
 /* glibc-sized set; the kernel reads only the first word (signals 1..64). */

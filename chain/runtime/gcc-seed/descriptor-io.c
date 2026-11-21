@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and DESCRIPTOR-IO.md.
+/* Original implementation; see LICENSE and README.md.
    Bounded public descriptor I/O for Linux AMD64, without FILE bookkeeping. */
 #include <fcntl.h>
 #include <unistd.h>

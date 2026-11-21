@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and TERMIOS.md.
+/* Original implementation; see LICENSE and README.md.
    Terminal attributes and control over Linux AMD64 tty ioctls. */
 #include <termios.h>
 #include <sys/ioctl.h>

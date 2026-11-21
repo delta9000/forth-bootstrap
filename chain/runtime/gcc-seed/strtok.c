@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and STRINGS-POSIX.md. */
+/* Original implementation; see LICENSE and README.md. */
 #include <string.h>
 
 char *strtok_r(char *string, const char *separators, char **saved)

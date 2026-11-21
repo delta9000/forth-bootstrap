@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. Measured integer and
+/* Original implementation; see LICENSE. Measured integer and
    character scanf over a string (sscanf) or a stream (fscanf). */
 #include <stdio.h>
 #include <ctype.h>
@@ -73,7 +73,7 @@ static int seed_scan(struct seed_scan_input *input, const char *format, va_list 
             continue;
         }
         /* A width is accepted only for %s; l selects long destinations
-           for d, u, o and x (see INTEGER-INPUT.md). */
+           for d, u, o and x (see README.md). */
         width = 0;
         given = *format >= '0' && *format <= '9';
         while (*format >= '0' && *format <= '9') {

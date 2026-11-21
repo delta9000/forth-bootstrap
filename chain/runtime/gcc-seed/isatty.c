@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. Linux AMD64 TCGETS. */
+/* Original implementation; see LICENSE. Linux AMD64 TCGETS. */
 #include <unistd.h>
 #include <errno.h>
 #include <seed-syscall.h>

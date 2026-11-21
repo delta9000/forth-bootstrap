@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_ASSERT_H
 #define SEED_GCC_ASSERT_H
-/* Original seed-forth interface; see LICENSE. C89 assertion contract.
+/* Original interface; see LICENSE. C89 assertion contract.
    Reports the expression, file and line to real stderr, then calls abort.
    A function name may be supplied to the failure helper by direct callers. */
 void __assert_fail(const char *expression, const char *file,

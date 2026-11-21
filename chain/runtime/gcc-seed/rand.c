@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and STRINGS-POSIX.md.
+/* Original implementation; see LICENSE and README.md.
    The additive lagged-Fibonacci generator r[i] = r[i-3] + r[i-31] that
    glibc's random() uses (degree 31), seeded by the same Lehmer sequence,
    so a given seed yields glibc's sequence. rand and random share it. */

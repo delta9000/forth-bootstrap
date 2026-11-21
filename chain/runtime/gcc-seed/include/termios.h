@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_TERMIOS_H
 #define SEED_GCC_TERMIOS_H
-/* Original seed-forth interface; see LICENSE and ../TERMIOS.md.
+/* Original interface; see LICENSE and ../README.md.
    Linux AMD64 terminal attributes. struct termios has glibc's 60-byte
    layout; the runtime converts to the kernel's 36-byte TCGETS record.
    Speeds use the traditional Linux Bnnn codes (B9600 is 015), not the

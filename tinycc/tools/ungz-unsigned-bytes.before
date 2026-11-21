@@ -1,0 +1,7 @@
+	len = s->in[s->incnt];
+	s->incnt = s->incnt + 1;
+	len = len | (s->in[s->incnt] << 8);
+	s->incnt = s->incnt + 1;
+	if(s->in[s->incnt] != (~len & 0xff)) return -2;                              /* didn't match complement! */
+	s->incnt = s->incnt + 1;
+	if(s->in[s->incnt] != ((~len >> 8) & 0xff)) return -2;                              /* didn't match complement! */

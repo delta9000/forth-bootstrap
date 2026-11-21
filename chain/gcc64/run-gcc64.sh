@@ -269,13 +269,18 @@ bridge() {
     need binutils-2.30.tar.xz
     local s=$W/src/binutils-2.30 b=$W/src/bu-build
     rm -rf "$s" "$b"; tar -xJf "$D/binutils-2.30.tar.xz" -C "$W/src"; mkdir -p "$b"
+    # As stage B does: delete the shipped parsers and scanners, so the Makefiles
+    # regenerate the ones this build needs with the Forth-built oyacc and flex.
+    while read -r f; do
+        case $f in ''|'#'*) ;; *) rm "$s/$f" || fail "binutils-2.30: no shipped $f to delete" ;; esac
+    done < "$ROOT/chain/gcc-direct/binutils-2.30.generated"
     (
         cd "$b"
         export CXXCPP="$G -E -xc"
         PATH=$DTC:$PATH ../binutils-2.30/configure "${BU230_CONF[@]}" CC="$G" CPP="$G -E" CXX=false \
             CC_FOR_BUILD="$G" CPP_FOR_BUILD="$G -E" CXX_FOR_BUILD=false AR="$DTC/ar" RANLIB="$DTC/ranlib" \
-            NM="$DTC/nm" CFLAGS=-g0
-        PATH=$DTC:$PATH make -j"$JOBS" MAKEINFO=true
+            NM="$DTC/nm" CFLAGS=-g0 YACC="$Y" BISON="$Y" LEX="$X" FLEX="$X"
+        PATH=$DTC:$PATH make -j"$JOBS" MAKEINFO=true YACC="$Y" BISON="$Y" LEX="$X" FLEX="$X"
         PATH=$DTC:$PATH make install MAKEINFO=true
     ) > "$LOG/binutils.log" 2>&1 || fail "binutils by the direct gcc (see $LOG/binutils.log)"
     rm -rf "$s" "$b"

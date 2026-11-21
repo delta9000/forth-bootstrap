@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and FILE-CALLS.md.
+/* Original implementation; see LICENSE and README.md.
    realpath: resolve every component, following symbolic links, without
    the kernel's /proc help. Each component must exist. */
 #include <stdlib.h>

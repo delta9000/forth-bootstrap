@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and TERMIOS.md. */
+/* Original implementation; see LICENSE and README.md. */
 #include <sys/ioctl.h>
 #include <stdarg.h>
 #include <errno.h>

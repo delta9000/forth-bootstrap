@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_SYS_MTIO_H
 #define SEED_GCC_SYS_MTIO_H
-/* Original seed-forth interface; see LICENSE and ../../TERMIOS.md.
+/* Original interface; see LICENSE and ../../README.md.
    Linux AMD64 magnetic-tape ioctl records and request numbers only;
    use them with ioctl from <sys/ioctl.h>. */
 struct mtop {

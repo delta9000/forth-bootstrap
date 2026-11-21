@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_SYS_TIMES_H
 #define SEED_GCC_SYS_TIMES_H
-/* Original seed-forth interface; see LICENSE and ../../SYSINFO.md.
+/* Original interface; see LICENSE and ../../README.md.
    Process times in clock ticks of sysconf(_SC_CLK_TCK) (100 on Linux). */
 #include <sys/types.h>
 #ifndef SEED_CLOCK_T_DEFINED

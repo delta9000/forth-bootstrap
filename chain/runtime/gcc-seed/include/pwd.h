@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_PWD_H
 #define SEED_GCC_PWD_H
-/* Original seed-forth interface; see LICENSE and ../PASSWD.md.
+/* Original interface; see LICENSE and ../README.md.
    Entries come from /etc/passwd only (no NSS). Results point into one
    static record that the next call of any of these functions overwrites. */
 #include <sys/types.h>

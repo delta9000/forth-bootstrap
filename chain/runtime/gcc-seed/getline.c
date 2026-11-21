@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and STRINGS-POSIX.md.
+/* Original implementation; see LICENSE and README.md.
    getdelim/getline over fgetc; the buffer grows by doubling. */
 #define _GNU_SOURCE 1
 #include <stdio.h>

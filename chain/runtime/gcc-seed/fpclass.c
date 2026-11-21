@@ -1,9 +1,9 @@
-/* Original seed-forth implementation, MIT license (see LICENSE).
+/* Original implementation, MIT license (see LICENSE).
  * The binary64 operations a C program may use without -lm: classification
  * helpers behind the math.h macros, and the exact frexp, ldexp, scalbn, modf
  * and copysign that glibc also exports from libc. Every result is exact
  * except ldexp/scalbn, which round once (ties to even) into the subnormal
- * range. Assumes IEEE binary64 and LP64 unsigned long. See MATH.md.
+ * range. Assumes IEEE binary64 and LP64 unsigned long. See README.md.
  */
 #include <math.h>
 #include <errno.h>

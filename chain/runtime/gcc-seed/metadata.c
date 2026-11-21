@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and FILE-METADATA.md.
+/* Original implementation; see LICENSE and README.md.
    Linux AMD64 file metadata calls used by original binutils 2.30. */
 #include <sys/stat.h>
 #include <unistd.h>

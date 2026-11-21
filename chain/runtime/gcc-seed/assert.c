@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. */
+/* Original implementation; see LICENSE. */
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

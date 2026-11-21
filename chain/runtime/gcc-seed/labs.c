@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and STRINGS-POSIX.md.
+/* Original implementation; see LICENSE and README.md.
    As with abs, the most negative value has no representable result. */
 #include <stdlib.h>
 

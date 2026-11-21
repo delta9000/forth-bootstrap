@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and FILE-CALLS.md.
+/* Original implementation; see LICENSE and README.md.
    Single Linux AMD64 file-system calls; kernel errors set errno. */
 #include <unistd.h>
 #include <sys/stat.h>

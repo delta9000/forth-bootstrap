@@ -1,12 +1,78 @@
 # forth-bootstrap
 
+forth-bootstrap builds a C compiler from a 229-byte binary seed, with as
+little hand-written code as it can manage, and checks the result against
+binaries that other people built by a different path.
+
+stage0-posix's `hex0-seed` assembles a 1,772-byte Forth written as
+commented hex0.  A C compiler written in that Forth compiles TinyCC 0.9.26
+(janneke's bootstrappable fork, the source live-bootstrap's own
+`tcc-0.9.26` step builds) together with GNU Mes's C library.  That tcc
+takes the place of the copy MesCC would build, and live-bootstrap's step
+runs on from there, on live-bootstrap's own kernel, builder-hex0.  From `tcc-boot1` on, every
+binary the step produces is byte-identical to the one live-bootstrap
+publishes: `/usr/bin/tcc` is `b9dce87d...`, and `libc.a`, `libgetopt.a`,
+the crt files and `libtcc1.a` match too.  live-bootstrap reaches those
+binaries through M2-Planet and GNU Mes; this route uses neither.
+
+```
+hex0-seed (229 bytes)
+ ├─ K0 (kernel/k0/k0.hex0, 1,461 bytes)            boot 1, x86_64, under QEMU
+ │   └─ seed-forth (seed/000-seed.hex0, 1,772 bytes)
+ │       └─ Forth library (forth/010-lib.fth)
+ │           └─ C compiler in Forth, native mode (cc/020-119)
+ │               ├─ ungz, untar, sha256sum, simple-patch, ... against M2libc
+ │               └─ tcc 0.9.26 + Mes libc                  (tinycc/)
+ │                   └─ tcc-boot0, Mes libc for i386, kaem, written to disk
+ └─ builder-hex0 (live-bootstrap's)                 boot 2, i386
+     └─ live-bootstrap's steps/tcc-0.9.26: tcc-boot1, tcc  = live-bootstrap's
+```
+
+Why it is built this way:
+
+- What has to be trusted should be small enough to read.  To reach that
+  tcc, this route's own source (the seed, the Forth library, the
+  compiler's native-mode layers, two libc shims and K0) is about 9,500
+  lines.  The stage0-posix, M2-Planet, Mes and MesCC path to the same
+  compiler is about 35,000.  Both counts leave out comments and blank
+  lines, and the inputs the two routes share (Mes libc, M2libc, stage0's
+  tool sources, builder-hex0).
+- A match is evidence; a build that only works is not.  Two paths that
+  share no compiler, written by different people in different languages,
+  produce the same `tcc`.  A compromised compiler on either path would have
+  to be reproduced exactly on the other to go unnoticed.
+- Existing, small, published components are used where they exist:
+  builder-hex0 for the i386 stages, Mes's and stage0's C libraries as
+  sources, live-bootstrap's own step scripts.  Each one this route does not
+  rewrite is code nobody has to review again for it.
+- Every byte of the seed is checked against GNU `as` on its own comments
+  (`tests/seed/asm-check.py`), so the seed can be read as assembly.
+
+`tinycc/README.md` describes the route, its pins and what the host still
+does.  `CHECK_HEX0_HANDOFF=1 ./check-all.sh` runs both boots (about a
+minute with KVM); `CHECK_TINYCC=1` replays the same step in a sandbox on the
+host kernel (seconds).
+
+Most of this code was written with AI models under my direction;
+HISTORY.md records how.  I am reviewing it chapter by chapter through the
+book.
+
+## The GCC route
+
+The route this repository was first built for goes on to GCC and Linux
+without TinyCC or Mes, and the sections from Names onward describe it.  It
+needs a far larger compiler and a C runtime, and several of its packages
+run `configure` scripts and parsers shipped pre-generated in their release
+archives.  It is kept, and still checked, as a recorded result while that
+code is removed; it is no longer the route offered for trust.
+
 From a 229-byte hex0 program to a Linux kernel, with no compiler from
 outside: every compiler that builds the route is itself built by the route.
 stage0-posix's `hex0-seed` assembles a 1,772-byte Forth; a C compiler
 written in that Forth builds a C driver, a shell and the first Unix tools;
 those build GCC 4.0.4 until it reproduces itself, then GCC 10.5.0, then
 Linux 7.2.8.  The whole run can happen inside two small kernels under QEMU:
-K0, 1,313 bytes of hex0, and K1, a C kernel that seed Forth compiles.  K1
+K0, 1,461 bytes of hex0, and K1, a C kernel that seed Forth compiles.  K1
 then hands the machine to the Linux kernel the run built.  A host `gcc`
 appears only in the checks, as the reference Stage A compares against.
 The terms in the tree below are defined under Names.
@@ -14,7 +80,7 @@ The terms in the tree below are defined under Names.
 ```
 hex0-seed (229 bytes)
  └─ seed-forth (seed/000-seed.hex0, 1,772 bytes)
-     └─ Forth library and M1 assembler (forth/)
+     └─ Forth library (forth/010-lib.fth)
          └─ C compiler in Forth (cc/020-141) ── seed-cc, seed-ar (cc/driver/)
              └─ kaem, mescc-tools-extra, make 3.82, sed, grep, gawk, coreutils,
                 tar, gzip, patch, diffutils, oyacc, lex, flex 2.5.11, bash 2.05b
@@ -37,7 +103,8 @@ The tools and formats:
   a file byte for byte.  The seed and K0 are written in it.
 - **M1, hex2**: stage0-posix's assembler-level formats.  M1 is macro
   assembly (named opcodes and labels); hex2 is hex with label references.
-  `forth/130-asm.fth` assembles and links them.
+  `forth/130-asm.fth` assembles and links them; it is a check
+  (`./check-all.sh` step 03), not a step of the route.
 - **kaem**: stage0-posix's minimal shell for build scripts (`*.kaem`),
   one command per line.  It runs the plumbing stages before any real shell
   exists.
@@ -89,7 +156,7 @@ The stages:
 | QEMU, KVM and the CPU | run K0, which starts everything else | the K1 run |
 | the host's Linux kernel, `bwrap`, `strace` | the host run's system calls, and a root whose only executable is `hex0-seed` | the host run (`chain/plumbing-root.sh`) |
 | host `python3`, `sh`, `tar` | copy files into disk images and into the host run's root; check results.  They never compile, unpack, patch or configure anything | both |
-| host `gcc`, GNU `as`, `nasm` | build references to compare against: Stage A's M2-Planet, `asm-check.py`'s object, `kernel/k0/check.sh`'s K0.  None of their output is used | checks only |
+| host `gcc`, GNU `as`, `nasm` | build references to compare against: Stage A's M2-Planet, the objects of `kernel/k1/tests/asm-check.py` and `tests/seed/asm-check.py`, `kernel/k0/check.sh`'s K0.  None of their output is used | checks only |
 
 ## The parts
 
@@ -98,11 +165,12 @@ Each directory has a README that says where to start.
 | Directory | What is in it |
 |---|---|
 | `seed/` | `000-seed.hex0`, the annotated hex of the Forth; `build.sh` |
-| `forth/` | `010-lib.fth`, the Forth library on the seed's 32 primitives; `130-asm.fth`, an M1 assembler and hex2 linker; the library's test |
+| `forth/` | `010-lib.fth`, the Forth library on the seed's 32 primitives; `130-asm.fth`, an M1 assembler and hex2 linker used only by check step 03; the library's test |
 | `cc/` | the C compiler in Forth, loaded in numeric order (`020-cc-arena.fth` to `141-archive.fth`); its tests; `driver/`, seed-cc and seed-ar |
 | `kernel/` | `k0/` (K0 in hex0, with its NASM source), `k1/` (K1 in C and `k1-asm.fth`, its recipes, disk writers and tests), `tools/` (the recipe runner and the files that build K1) |
 | `chain/` | `runtime/gcc-seed` (seed-cc's C library), `plumbing/` (the first tools, as kaem scripts), `gcc-direct/` (binutils, stage C, stage D, the late tools), `ladder/` and `gcc64/` (the climb to GCC 10.5.0 and Linux), `patches/`, `plumbing-root.sh` |
-| `tests/` | Stage A and the M2-Planet headers the compiler falls back to; the assembler and seed-cc checks; the chain's test programs |
+| `tinycc/` | the TinyCC route: seed Forth builds the first tcc, and its junction with live-bootstrap (`tinycc/README.md`) |
+| `tests/` | Stage A and the M2-Planet headers the compiler falls back to; the assembler and seed-cc checks; `seed/asm-check.py`, the seed's comments against GNU as; the chain's test programs |
 | `tools/` | `fetch-archives.py`, `check-pins.py` |
 | `results/` | reports from the recorded runs |
 | `vendor/` | stage0-posix, mescc-tools and M2-Planet, as submodules |
@@ -118,7 +186,7 @@ An x86-64 Linux host.  By step below; times are from the recorded runs
 | Step | Needs | Time | Disk |
 |---|---|---|---|
 | clone | `git` (the three submodules come from GitHub) | a minute | 60 MB |
-| 1-2 | `bash`, coreutils, `python3`; `gcc` for Stage A's reference only | seconds | a few MB |
+| 1-2 | `bash`, coreutils, `python3`; `gcc` for Stage A's reference and GNU `as` for the seed's comment check only | seconds | a few MB |
 | archives | `curl`, `git`, `xz` (`tools/fetch-archives.py`) | depends on the network | 1.1 GB |
 | 3 | `bwrap` (bubblewrap) and `strace`, unprivileged user namespaces | 18 minutes on 24 threads; longer with fewer | 1.6 GB |
 | 4 | `strace` and GNU `as` (binutils) for the build check; `qemu-system-x86_64` | under a minute | small |
@@ -131,14 +199,16 @@ An x86-64 Linux host.  By step below; times are from the recorded runs
 ```sh
 git clone https://github.com/delta9000/forth-bootstrap.git && cd forth-bootstrap
 git submodule update --init --recursive
-./check-all.sh                     # the seven quick checks, under a minute
+./check-all.sh                     # the quick checks, under a minute
 ```
 
 `check-all.sh` runs: the seed build, `./test.sh`, the M1 assembler
 (`tests/asm/hi-check.sh`), seed-cc rebuilding itself
-(`tests/cc/seed-cc-rebuild-check.sh`), the archive pins, Stage A, and K1's
-build check.  The steps below run them one at a time, and then the long
-runs.
+(`tests/cc/seed-cc-rebuild-check.sh`), the compiler's gate fixtures
+(`tests/cc/gates/run-gates.sh`), the archive pins, Stage A, K1's build
+check, the seed's comments against GNU as (`tests/seed/asm-check.py`), and
+the outputs they build against `tests/pins/outputs.sha256`.
+The steps below run them one at a time, and then the long runs.
 
 **1. The seed and the Forth** (seconds):
 
@@ -146,12 +216,14 @@ runs.
 seed/build.sh                      # seed-forth, 1,772 bytes
 ./test.sh                          # seed primitives, 010-lib.fth, the first compiler layers
 tests/asm/hi-check.sh              # 130-asm.fth assembles a small M1 program; it prints "hi"
+python3 tests/seed/asm-check.py    # 000-seed.hex0's bytes equal GNU as on its comments (needs as)
 ```
 
 **2. The C compiler** (seconds; Stage A needs gcc for the reference):
 
 ```sh
 tests/cc/seed-cc-rebuild-check.sh  # seed Forth builds seed-cc and seed-ar; seed-cc rebuilds both, byte for byte
+tests/cc/gates/run-gates.sh        # the Forth compiler compiles the G and M gate fixtures; each exits as expected
 tests/cc/stage-a-check.sh          # the Forth compiler's M1 for M2-Planet equals a GCC-built M2-Planet's
 ```
 
@@ -201,13 +273,13 @@ RAM with a sparse file instead, but a full run writes terabytes through
 it: not on an SSD.
 
 `./check-all.sh` runs the quick checks; `CHECK_CHAIN=1` and
-`CHECK_K1=smoke|linux` add the long ones.
+`CHECK_K1=smoke|linux` add the long ones, and `CHECK_TINYCC=1` the TinyCC
+junction (`tinycc/README.md`).
 
 ## Reading order
 
 - **seed/, forth/:** `seed/000-seed.hex0` (the seed's 32 primitives, one
-  instruction per annotated line), then `forth/010-lib.fth`, then
-  `forth/130-asm.fth` (the M1 assembler and hex2 linker).
+  instruction per annotated line), then `forth/010-lib.fth`.
 - **cc/:** the compiler in load order: `cc/020-cc-arena.fth` to
   `cc/120-cc-main.fth` (arena, preprocessor, lexer, types, code
   generation, expressions, declarations, statements, functions, main),

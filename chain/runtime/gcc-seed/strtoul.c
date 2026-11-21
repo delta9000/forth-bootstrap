@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. Fixed ASCII C locale. */
+/* Original implementation; see LICENSE. Fixed ASCII C locale. */
 #include <stdlib.h>
 #include <ctype.h>
 #include <limits.h>

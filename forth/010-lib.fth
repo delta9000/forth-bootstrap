@@ -2,10 +2,12 @@
 \ Loaded before any Forth-level vocabulary.
 \
 \ Conventions:
-\   - All arithmetic constants use [lit] (the decimal literal compiler)
-\     because the seed has no interpret-mode number parser at all — [lit]
-\     is the only path (the seed's parse_decimal_code).  Characters use char /
-\     [char] (defined below), so no ASCII code needs a comment to explain it.
+\   - Up to the outer interpreter (interpret, near the end), all arithmetic
+\     constants use [lit] (the decimal literal compiler) because the seed
+\     has no interpret-mode number parser at all — [lit] is the only path
+\     (the seed's parse_decimal_code).  Characters use char / [char]
+\     (defined below), so no ASCII code needs a comment to explain it.
+\     After the hand-over to interpret, numbers are written bare.
 \   - No seed address is typed in: sysvar cells are found from the seed's
 \     state and latest primitives, and primitive xts with ' (tick).
 
@@ -51,18 +53,8 @@
 \ Linux x86-64 syscall numbers:
 \   read=0  write=1  open=2  close=3  exit=60  brk=12  mmap=9
 
-\ open  ( path flags mode -- fd )    SYS_open=2
-: open   [lit] 0 [lit] 0 [lit] 0 [lit]  2 syscall6 ;
-
-\ read  ( fd buf count -- n )        SYS_read=0
-: read   [lit] 0 [lit] 0 [lit] 0 [lit]  0 syscall6 ;
-
 \ write ( fd buf count -- n )        SYS_write=1
 : write  [lit] 0 [lit] 0 [lit] 0 [lit]  1 syscall6 ;
-
-\ close ( fd -- err )                SYS_close=3
-\ Pads 5 zero args + syscall #.
-: close  [lit] 0 [lit] 0 [lit] 0 [lit] 0 [lit] 0 [lit]  3 syscall6 ;
 
 \ die ( n -- )  Exit with status n via SYS_exit=60.
 \ Used by the C compiler's error paths instead of inlining the full syscall.
@@ -86,13 +78,6 @@
 
 \ alpha-upper? ( c -- flag )  true if c is 'A'..'Z' (65..90)
 : alpha-upper?  [lit] 65 - [lit] 26 / 0= ;
-
-\ alpha? ( c -- flag )  true if c is alphabetic
-: alpha?  dup alpha-lower? swap alpha-upper? or ;
-
-\ space? ( c -- flag )  true if c is ' '|tab|LF|CR
-: space?  dup [lit] 32 - 0= over [lit]  9 - 0= or
-          over [lit] 10 - 0= or  swap [lit] 13 - 0= or ;
 
 \ ===== Comparison operators =====
 \ All return -1 (true) / 0 (false), Forth boolean convention.
@@ -130,12 +115,6 @@
 \ > ( a b -- f )  signed greater-than: b < a.  Same domain as <.
 : >   swap < ;
 
-\ <= ( a b -- f )  not (a > b).
-: <=  > 0= ;
-
-\ >= ( a b -- f )  not (a < b).
-: >=  < 0= ;
-
 \ ===== Stack shuffles =====
 \ Standard Forth stack-manipulation words built on the seed primitives
 \ swap, dup, drop, >r, r>, plus over (defined above).
@@ -143,22 +122,11 @@
 \ nip ( a b -- b )  drop second-from-top.
 : nip   swap drop ;
 
-\ rot ( a b c -- b c a )  rotate third-from-top to top.
-: rot   >r swap r> swap ;
-
 \ 2dup ( a b -- a b a b )  duplicate the top pair.
 : 2dup  over over ;
 
 \ 2drop ( a b -- )  drop the top pair.
 : 2drop drop drop ;
-
-\ ===== Memory update helpers =====
-
-\ +! ( n addr -- )  add n to the cell at addr.
-: +!  swap over @ + swap ! ;
-
-\ -! ( n addr -- )  subtract n from the cell at addr.
-: -!  swap over @ swap - swap ! ;
 
 \ ===== 4-byte little-endian writer =====
 \ ,4 ( v -- )  emit low 4 bytes of v at HERE in LE order.
@@ -351,12 +319,6 @@ immediate
 ;
 immediate
 
-\ until, ( back-target -- )  Pop a flag; jump back to begin, while it is 0.
-\ A post-test loop: begin, BODY until, runs BODY at least once.
-: until,
-  0branch-xt call, , ;         \ `CALL 0branch` + back-target cell
-immediate
-
 \ again, ( back-target -- )  Jump back to begin, unconditionally: a loop
 \ that only exit, can leave.
 : again,
@@ -377,18 +339,6 @@ immediate
 \ the seed's `:` primitive to tokenize the next input word and build a
 \ dictionary header (link, flags=0, name-len, name bytes), lays down the
 \ 19-byte push body, and resets STATE=0 (since `:` left it at 1).
-
-\ allot ( n -- )  Bump HERE by n bytes (no initialization).
-\ Used after `create` to grow an array, or stand-alone for scratch buffers.
-: allot  here-addr @ + here-addr ! ;
-
-\ skip-vm-pages ( -- )  Jump HERE to the first page above the seed's fixed VM
-\ pages: data stack (below 0x411000), I/O scratch byte (0x412000), token
-\ buffer (0x412800) and the sysvar page, which starts at STATE's cell.  So
-\ HERE becomes STATE + 4096 = 0x414000.  030-cc-io.fth and 130-asm.fth call
-\ it before creating their megabyte buffers, which then cannot overlap VM
-\ state.  HERE must still be below the data stack (0x410000) when it runs.
-: skip-vm-pages  state [lit] 4096 + here-addr ! ;
 
 \ create ( "name" -- )  Define name as a word that pushes the address of
 \ the data area immediately following its body.  Caller fills the data
@@ -428,15 +378,180 @@ immediate
 \ ' finds name's code; its cell sits defer-code-size bytes further on.
 : is  ' defer-code-size + ! ;
 
+\ ===== The outer interpreter =====
+\ The seed's REPL knows words and [lit] only: a number typed bare is a miss,
+\ and a miss prints the token and "?" and reads on.  interpret, below, is a
+\ second REPL that also reads numbers and stops at the first token it cannot
+\ take.  The token `interpret` after its definition hands over to it; it
+\ never returns, and at end of input it runs bye (exit 0), as the seed does.
+\ The library above it is the preamble it needs; the rest of the library,
+\ and every file loaded after it, is read by interpret.
+\
+\ It dispatches as the seed's REPL (000-seed.hex0, repl):
+\   read a token                            -> none left: bye
+\   find it; found, IMMEDIATE or STATE = 0  -> execute
+\   found, otherwise                        -> CALL xt at HERE (call,)
+\ and then, tried only after find has failed, so 1+ and - stay words:
+\   a number: decimal, -decimal or $hex     -> push it, or compile-literal
+\   anything else                           -> the token and "?" on stdout,
+\                                              exit 2 (the seed's fatal_token)
+\ Nothing of the interpreter's sits on either stack while a word runs, so an
+\ interpreted >r ... r>, or a value left across tokens, behaves as under the
+\ seed's REPL.
+
+\ read-token ( -- a u )  the seed's own reader, made callable: the token's
+\ address in the TIB and its length, u = 0 at end of input; comments are
+\ skipped and a 256-byte token is fatal (exit 2), as the seed's REPL reads.
+\ ' is `call read_word; jmp find`, so read_word is the end of that 5-byte
+\ CALL plus its rel32.  @ fetches the rel32 and 4 bytes more; the sum is
+\ right in its low 32 bits, and the seed lives below 4 GiB.
+' ' dup [lit] 5 + swap 1+ @ + [lit] 4294967295 and constant read-word-addr
+: header:  : [lit] 0 state ! ;          \ ( "name" -- ) header only; c, lays the body
+header: read-token  read-word-addr call, ret,
+
+\ ----- Numbers -----
+\ digit ( c -- n )  c's value as a digit, 0..35, or 99 for any other byte.
+: digit
+  dup digit? if, [char] 0 - exit, then,
+  dup alpha-lower? if, [lit] 87 - exit, then,
+  dup alpha-upper? if, [lit] 55 - exit, then,
+  drop [lit] 99 ;
+
+\ advance ( a u -- a+1 u-1 )  step past the first byte.
+: advance  1- swap 1+ swap ;
+
+\ >digits ( a u base -- n true | false )  a non-empty run of digits below
+\ base.  The accumulator wraps silently, as the seed's parse_decimal does.
+variable np-base
+: >digits
+  np-base !
+  dup 0= if, 2drop [lit] 0 exit, then,
+  [lit] 0 >r
+  begin, dup while,
+    over c@ digit dup np-base @ < 0= if, r> drop drop 2drop [lit] 0 exit, then,
+    r> np-base @ * + >r
+    advance
+  repeat,
+  2drop r> true ;
+
+\ number? ( a u -- n true | false )  decimal digits, - and decimal digits, or
+\ $ and hex digits (either case).  Nothing else: no 0x, no -$, no 'c'.
+: number?
+  dup if, over c@ [char] $ = if, advance [lit] 16 >digits exit, then, then,
+  dup if, over c@ [char] - = if,
+    advance [lit] 10 >digits dup if, swap [lit] 0 swap - swap then, exit,
+  then, then,
+  [lit] 10 >digits ;
+
+\ compile-literal ( n -- )  What a number does in compile state.  The seed's
+\ [lit] lays CALL lit and the cell; cc/020-cc-arena.fth's [lit] lays an
+\ inline push instead, and points this at it (`is compile-literal`), so a
+\ bare number and [lit] lay the same bytes at every point.
+defer compile-literal
+: lit-literal  lit-xt call, , ;
+' lit-literal is compile-literal
+
+\ unknown ( a u -- )  As the seed's fatal_token: the token, "?" and a
+\ newline in one write to stdout, then exit 2.
+: unknown
+  >r [char] ? over r@ + c!  nl over r@ + 1+ c!
+  [lit] 1 swap r> [lit] 2 + write drop  [lit] 2 die ;
+
+\ found-immediate? ( -- f )  the IMMEDIATE bit of the entry find just hit.
+\ find leaves that entry in the sysvar cell after HERE's (LAST_FOUND); its
+\ flags byte is at entry + 8.
+: found-immediate?  latest [lit] 16 + @ [lit] 8 + c@ [lit] 1 and ;
+
+\ interpret ( -- )  The loop.  execute stays in this word's own body: a word
+\ run from a helper that returned would find the helper's return address
+\ on top of the return stack, and an interpreted >r or r> would take it.
+: interpret
+  begin,
+    read-token  dup 0= if, bye then,
+    2dup find
+    dup if,
+      nip nip
+      found-immediate? state @ 0= or if, execute else, call, then,
+    else,
+      drop 2dup number? if,
+        nip nip state @ if, compile-literal then,
+      else,
+        unknown
+      then,
+    then,
+  again, ;
+interpret
+
+\ ===== The rest of the library =====
+\ The interpreter needs none of these words, so they come after the
+\ hand-over.
+
+\ ----- File syscalls (see the syscall wrappers above) -----
+\ open  ( path flags mode -- fd )    SYS_open=2
+: open   0 0 0 2 syscall6 ;
+
+\ read  ( fd buf count -- n )        SYS_read=0
+: read   0 0 0 0 syscall6 ;
+
+\ close ( fd -- err )                SYS_close=3
+\ Pads 5 zero args + syscall #.
+: close  0 0 0 0 0 3 syscall6 ;
+
+\ ----- Character classification -----
+\ alpha? ( c -- flag )  true if c is alphabetic
+: alpha?  dup alpha-lower? swap alpha-upper? or ;
+
+\ space? ( c -- flag )  true if c is ' '|tab|LF|CR
+: space?  dup 32 - 0= over 9 - 0= or
+          over 10 - 0= or  swap 13 - 0= or ;
+
+\ ----- Comparisons -----
+\ <= ( a b -- f )  not (a > b).
+: <=  > 0= ;
+
+\ >= ( a b -- f )  not (a < b).
+: >=  < 0= ;
+
+\ ----- Stack shuffles -----
+\ rot ( a b c -- b c a )  rotate third-from-top to top.
+: rot   >r swap r> swap ;
+
+\ ----- Memory update helpers -----
+\ +! ( n addr -- )  add n to the cell at addr.
+: +!  swap over @ + swap ! ;
+
+\ -! ( n addr -- )  subtract n from the cell at addr.
+: -!  swap over @ swap - swap ! ;
+
+\ ----- Control flow -----
+\ until, ( back-target -- )  Pop a flag; jump back to begin, while it is 0.
+\ A post-test loop: begin, BODY until, runs BODY at least once.
+: until,
+  0branch-xt call, , ;         \ `CALL 0branch` + back-target cell
+immediate
+
+\ ----- HERE -----
+\ allot ( n -- )  Bump HERE by n bytes (no initialization).
+\ Used after `create` to grow an array, or stand-alone for scratch buffers.
+: allot  here-addr @ + here-addr ! ;
+
+\ skip-vm-pages ( -- )  Jump HERE to the first page above the seed's fixed VM
+\ pages: data stack (below 0x411000), I/O scratch byte (0x412000), token
+\ buffer (0x412800) and the sysvar page, which starts at STATE's cell.  So
+\ HERE becomes STATE + 4096 = 0x414000.  030-cc-io.fth and 130-asm.fth call
+\ it before creating their megabyte buffers, which then cannot overlap VM
+\ state.  HERE must still be below the data stack (0x410000) when it runs.
+: skip-vm-pages  state 4096 + here-addr ! ;
+
 \ token ( "tok" -- a u )  read the next token; leave its address in the TIB
 \ and its length.  The seed keeps the length in a register Forth cannot
 \ see, so we blank the TIB's 256 bytes first and then count the token's
 \ bytes up to the first blank (a token is at most 255 bytes).
 : token
-  tib [lit] 256 + tib                            ( end p )
+  tib 256 + tib                                  ( end p )
   begin, 2dup > while, bl over c! 1+ repeat,     \ fill the TIB with blanks
   2drop  ' drop                                  \ read the token into it
-  tib [lit] 0                                    ( a 0 )
+  tib 0                                          ( a 0 )
   begin, 2dup + c@ bl <> while, 1+ repeat, ;     ( a u )
 
 \ bytes, ( a u -- )  copy u bytes from a to HERE, advancing HERE.
@@ -457,13 +572,59 @@ immediate
 \ loop, after r> drop has taken the parked count off the return stack.
 : bytes-eq
   begin,
-    dup [lit] 0 >
+    dup 0 >
   while,
     >r                                           ( a1 a2  R: u )
     over c@ over c@ <> if,                       ( a1 a2 )
-      r> drop 2drop [lit] 0 exit,                \ mismatch: answer 0
+      r> drop 2drop 0 exit,                      \ mismatch: answer 0
     then,
     1+ swap 1+ swap                              ( a1+1 a2+1 )
     r> 1-                                        ( a1+1 a2+1 u-1 )
   repeat,
   drop 2drop true ;                              \ all u bytes matched
+
+\ ===== Bytes in hex: c{ ... } =====
+\ c{ hh ... }  lay bytes spelt in hex, as objdump and the Intel manual spell
+\ them: `c{ 48 89 f8 }` lays what `72 c, 137 c, 248 c,` lays, now when
+\ interpreting and as compiled code inside a definition.  A token between
+\ the braces is an even number of hex digits, so `4889f8` is the same
+\ bytes; \ and ( ) comments may sit between them, so a long string can
+\ take one instruction per line.  Any other token, or the end of input
+\ before }, is fatal as an unknown word is (the token and "?", exit 2).
+\ cc/030-cc-io.fth's x{ is the same reader with cc-emit-byte as the sink.
+
+\ hex-digit ( c -- n )  c's value as a hex digit, or 256 if it is not one.
+: hex-digit  digit dup 15 > if, drop 256 then, ;
+
+\ hex-byte ( a -- n )  the byte spelt by the two digits at a; above 255 if
+\ either is not a hex digit.
+: hex-byte  dup c@ hex-digit 16 *  swap 1+ c@ hex-digit + ;
+
+\ hex-check ( a u -- a u )  fatal unless a u is an even run of hex digits.
+: hex-check
+  dup 1 and if, unknown then,
+  2dup begin, dup while,
+    over hex-byte 255 > if, 2drop unknown then,
+    advance advance
+  repeat, 2drop ;
+
+\ hex-lay ( sink n -- sink )  give byte n to sink: interpreting, now;
+\ compiling, as `n sink` would compile (a literal, then CALL sink).
+: hex-lay  state @ if, compile-literal dup call, else, over execute then, ;
+
+\ hex-bytes ( sink a u -- sink )  hex-lay each byte the digits spell.
+: hex-bytes
+  begin, dup while,
+    >r dup >r hex-byte hex-lay r> 2 + r> 2 -
+  repeat, 2drop ;
+
+\ hex{ ( sink "hh ... }" -- )  read hex tokens up to }, laying each byte.
+: hex{
+  begin,
+    read-token  dup 0= if, unknown then,
+    over c@ [char] } = over 1 = and if, 2drop drop exit, then,
+    hex-check hex-bytes
+  again, ;
+
+' c, constant c,-xt
+: c{  c,-xt hex{ ; immediate

@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. Runtime-aware C entry. */
+/* Original implementation; see LICENSE. Runtime-aware C entry. */
 #include <stdlib.h>
 char *__progname = "";
 

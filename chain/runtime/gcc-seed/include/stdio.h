@@ -1,13 +1,13 @@
 #ifndef SEED_GCC_STDIO_H
 #define SEED_GCC_STDIO_H
-/* Original seed-forth interface; see LICENSE. Linux AMD64, single-threaded.
-   Buffered streams (see ../STDIO-BUFFERING.md): stdout is line buffered on
+/* Original interface; see LICENSE. Linux AMD64, single-threaded.
+   Buffered streams (see ../README.md): stdout is line buffered on
    a terminal and fully buffered otherwise, stderr is unbuffered, files are
    fully buffered; exit() and return from main flush, _exit() does not.
    FILE is complete so that programs can declare FILE objects, but its
    members are private and have no host-libc layout compatibility.
    Formatting supports integer, pointer, narrow string/character, ASCII wide
-   string/character, %n and exact floating conversions (../PRINTF-FLOAT.md);
+   string/character, %n and exact floating conversions (../README.md);
    positional conversions fail. */
 #include <stddef.h>
 #include <stdarg.h>
@@ -102,7 +102,7 @@ int remove(const char *path);
 /* The kernel's atomic rename; an existing target file is replaced. */
 int rename(const char *old, const char *new);
 void perror(const char *prefix);
-/* POSIX additions; see ../PROCESS-POSIX.md and ../STRINGS-POSIX.md. */
+/* POSIX additions; see ../README.md and ../README.md. */
 #define FILENAME_MAX 4096
 #define P_tmpdir "/tmp"
 /* MODE is "r" or "w", optionally followed by "e" (close-on-exec). */
@@ -112,7 +112,7 @@ int pclose(FILE *stream);
 /* Read through DELIMITER into a malloc'd *LINE (grown as needed) and
    NUL-terminate it; returns the byte count, or -1 at end of file/error.
    Declared only on request (as POSIX 2008 or GNU): older programs define
-   their own getline with other types. See ../STRINGS-POSIX.md. */
+   their own getline with other types. See ../README.md. */
 #if defined _GNU_SOURCE || (defined _POSIX_C_SOURCE && _POSIX_C_SOURCE >= 200809L) \
     || (defined _XOPEN_SOURCE && _XOPEN_SOURCE >= 700)
 ssize_t getdelim(char **line, size_t *capacity, int delimiter, FILE *stream);

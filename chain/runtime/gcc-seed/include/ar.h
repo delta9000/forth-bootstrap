@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_AR_H
 #define SEED_GCC_AR_H
-/* Original seed-forth interface; see LICENSE and ../FILE-CALLS.md.
+/* Original interface; see LICENSE and ../README.md.
    The common ar archive member header: 60 bytes of space-padded text. */
 #define ARMAG "!<arch>\n"
 #define SARMAG 8

@@ -1,6 +1,6 @@
-/* Original seed-forth implementation; distributed under ../../../LICENSE.
+/* Original implementation; distributed under ../../../LICENSE.
    Process termination: exit handlers, exit, _Exit and abort. See
-   PROCESS-POSIX.md. This object references only the syscall bridge. */
+   README.md. This object references only the syscall bridge. */
 #include <stdlib.h>
 #include <seed-syscall.h>
 

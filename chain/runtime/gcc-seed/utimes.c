@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and FILE-CALLS.md. */
+/* Original implementation; see LICENSE and README.md. */
 #include <sys/time.h>
 #include <errno.h>
 #include <seed-syscall.h>

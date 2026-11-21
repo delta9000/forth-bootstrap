@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. Fixed ASCII C/POSIX. */
+/* Original implementation; see LICENSE. Fixed ASCII C/POSIX. */
 #include <stdlib.h>
 #include <wchar.h>
 #include <wctype.h>

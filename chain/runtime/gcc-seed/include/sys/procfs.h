@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_SYS_PROCFS_H
 #define SEED_GCC_SYS_PROCFS_H
-/* Original seed-forth declarations; see ../PROCFS.md.
+/* Original declarations; see ../README.md.
    Linux AMD64 ELF core-note data records only: no functions, and no
    /proc interface. Layouts match the Linux x86-64 kernel note format. */
 #include <sys/time.h>

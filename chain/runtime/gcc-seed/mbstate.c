@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and WIDE.md.
+/* Original implementation; see LICENSE and README.md.
    Restartable and length conversions for the stateless ASCII C locale. */
 #include <stdlib.h>
 #include <wchar.h>

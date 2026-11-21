@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and SIGNALS.md.
+/* Original implementation; see LICENSE and README.md.
    Sending signals to the caller or a process group, alarm and pause. */
 #include <signal.h>
 #include <unistd.h>

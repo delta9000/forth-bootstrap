@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. Short options only. */
+/* Original implementation; see LICENSE. Short options only. */
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>

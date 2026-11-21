@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and TERMIOS.md.
+/* Original implementation; see LICENSE and README.md.
    The terminal's name from /proc/self/fd, checked against the device. */
 #include <unistd.h>
 #include <sys/stat.h>

@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_SYS_IOCTL_H
 #define SEED_GCC_SYS_IOCTL_H
-/* Original seed-forth interface; see LICENSE and ../../TERMIOS.md.
+/* Original interface; see LICENSE and ../../README.md.
    Linux AMD64 terminal and descriptor ioctl request numbers. ioctl passes
    one optional pointer-sized argument to the kernel unchanged. */
 int ioctl(int descriptor, unsigned long request, ...);

@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and SIGNALS.md.
+/* Original implementation; see LICENSE and README.md.
    Signal-set operations on the 1..64 kernel range. */
 #include <signal.h>
 #include <errno.h>

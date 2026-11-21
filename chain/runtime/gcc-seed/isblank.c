@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and STRINGS-POSIX.md. */
+/* Original implementation; see LICENSE and README.md. */
 #include <ctype.h>
 
 int isblank(int value)

@@ -16,4 +16,4 @@ values, bitfields, records passed by value, the linker and archives.
 the seed alone (`seed-cc-start.fth`).  Start at `020-cc-arena.fth` and
 follow the numbers.  Checks: the `test-0N0-*.fth` files run in
 `./test.sh`; `tests/cc/seed-cc-rebuild-check.sh` and
-`tests/cc/stage-a-check.sh` are `./check-all.sh` steps 04 and 06.
+`tests/cc/stage-a-check.sh` are `./check-all.sh` steps 04 and 07.

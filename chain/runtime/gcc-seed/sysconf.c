@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and SYSINFO.md.
+/* Original implementation; see LICENSE and README.md.
    sysconf, pathconf and fpathconf with the answers Linux glibc gives. */
 #include <unistd.h>
 #include <sys/resource.h>

@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_UTIME_H
 #define SEED_GCC_UTIME_H
-/* Original seed-forth declarations; see LICENSE and ../FILE-METADATA.md.
+/* Original declarations; see LICENSE and ../README.md.
    Linux AMD64 utime syscall record: two signed 64-bit second counts. */
 #include <sys/types.h>
 struct utimbuf {

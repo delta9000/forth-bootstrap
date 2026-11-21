@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and ENVIRONMENT.md. */
+/* Original implementation; see LICENSE and README.md. */
 #include <locale.h>
 #include <limits.h>
 

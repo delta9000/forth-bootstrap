@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and PASSWD.md. */
+/* Original implementation; see LICENSE and README.md. */
 #include <grp.h>
 #include <errno.h>
 #include <seed-syscall.h>

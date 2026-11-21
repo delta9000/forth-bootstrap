@@ -1,6 +1,6 @@
 #ifndef SEED_GCC_STDINT_H
 #define SEED_GCC_STDINT_H
-/* C99 integer types for Linux AMD64 LP64; see ../STDINT.md. Every 64-bit
+/* C99 integer types for Linux AMD64 LP64; see ../README.md. Every 64-bit
    type is long or unsigned long, never long long. The least/fast choices
    match the target ABI used by GCC and glibc, so they interoperate. */
 typedef signed char int8_t;

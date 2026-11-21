@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE and STRINGS-POSIX.md. */
+/* Original implementation; see LICENSE and README.md. */
 #include <string.h>
 
 size_t strnlen(const char *string, size_t limit)

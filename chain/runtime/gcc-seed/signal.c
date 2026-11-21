@@ -1,4 +1,4 @@
-/* Original seed-forth implementation; see LICENSE. Linux AMD64 syscall ABI. */
+/* Original implementation; see LICENSE. Linux AMD64 syscall ABI. */
 #include <signal.h>
 #include <errno.h>
 #include <seed-syscall.h>
