@@ -18,8 +18,7 @@ defer cc-native-decl-fwd
 \ A function's frame is sized after its body and patched into the prologue.
 variable cc-native-return-type
 variable cc-native-return-desc
-variable cc-native-frame-limit
-[lit] 131072 cc-native-frame-limit !
+[lit] 131072 constant cc-native-frame-limit        \ slots in one function's frame
 
 variable cc-main-vaddr                            \ vaddr where main starts
 variable cc-call-main-patch                       \ file-offset of rel32 to patch
@@ -30,7 +29,7 @@ variable cc-fn-local-count                        \ # locals in current function
 \ n; the one that would pass cc-native-frame-limit dies with code 162.
 : cc-fn-add-slots
   dup cc-fn-local-count @ +
-  cc-native-frame-limit @
+  cc-native-frame-limit
   [lit] 162 cc-check-cap
   cc-fn-local-count +! ;
 

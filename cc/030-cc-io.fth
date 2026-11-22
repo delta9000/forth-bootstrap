@@ -20,27 +20,15 @@
 \ ===========================================================================
 
 \ cc-in-buf holds stdin exactly as read; nothing but the preprocessor reads it.
-1048576 constant cc-in-default-cap
-create cc-in-default-buf cc-in-default-cap allot
-variable cc-in-buffer
-variable cc-in-limit
-cc-in-default-buf cc-in-buffer !
-cc-in-default-cap cc-in-limit !
-: cc-in-buf ( -- address ) cc-in-buffer @ ;
-: cc-in-cap ( -- bytes ) cc-in-limit @ ;
+1048576 constant cc-in-cap
+create cc-in-buf cc-in-cap allot
 variable cc-in-len
 
 \ cc-src-buf holds the preprocessed source the lexer reads: #include'd files
 \ spliced in, directives blanked. Its capacity is twice the raw one.  The
 \ reader's cursor is in the lexer's state block (020-cc-arena.fth).
-2097152 constant cc-src-default-cap
-create cc-src-default-buf cc-src-default-cap allot
-variable cc-src-buffer
-variable cc-src-limit
-cc-src-default-buf cc-src-buffer !
-cc-src-default-cap cc-src-limit !
-: cc-src-buf ( -- address ) cc-src-buffer @ ;
-: cc-src-cap ( -- bytes ) cc-src-limit @ ;
+2097152 constant cc-src-cap
+create cc-src-buf cc-src-cap allot
 variable cc-src-len
 
 \ cc-src-init ( -- )  Empty the source buffer and rewind the reader.
@@ -96,14 +84,8 @@ variable cc-ra-n
 \ ===========================================================================
 
 \ 1 MiB output cap — fits any reasonable ELF the C-subset compiler emits.
-1048576 constant cc-out-default-cap
-create cc-out-default-buf cc-out-default-cap allot
-variable cc-out-buffer
-variable cc-out-limit
-cc-out-default-buf cc-out-buffer !
-cc-out-default-cap cc-out-limit !
-: cc-out-buf ( -- address ) cc-out-buffer @ ;
-: cc-out-cap ( -- bytes ) cc-out-limit @ ;
+1048576 constant cc-out-cap
+create cc-out-buf cc-out-cap allot
 variable cc-out-pos
 
 \ cc-out-init ( -- )

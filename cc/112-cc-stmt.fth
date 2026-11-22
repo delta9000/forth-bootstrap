@@ -627,30 +627,12 @@ variable cc-switch-type           \ promoted controlling type
 \   cc-label-vaddr     [id] : 0 if undefined, else absolute vaddr of the label
 \   cc-label-fixup     [id] : head-pointer of forward-jmp fixup list (0 = none)
 
-[lit] 64 constant cc-label-default-cap
-variable cc-label-limit
-cc-label-default-cap cc-label-limit !
-: cc-label-cap ( -- entries ) cc-label-limit @ ;
-create cc-label-default-name-addr cc-label-default-cap [lit] 8 * allot
-variable cc-label-name-addr-buffer
-cc-label-default-name-addr cc-label-name-addr-buffer !
-: cc-label-name-addr ( -- address ) cc-label-name-addr-buffer @ ;
-create cc-label-default-name-len cc-label-default-cap [lit] 8 * allot
-variable cc-label-name-len-buffer
-cc-label-default-name-len cc-label-name-len-buffer !
-: cc-label-name-len ( -- address ) cc-label-name-len-buffer @ ;
-create cc-label-default-vaddr cc-label-default-cap [lit] 8 * allot
-variable cc-label-vaddr-buffer
-cc-label-default-vaddr cc-label-vaddr-buffer !
-: cc-label-vaddr ( -- address ) cc-label-vaddr-buffer @ ;
-create cc-label-default-fixup cc-label-default-cap [lit] 8 * allot
-variable cc-label-fixup-buffer
-cc-label-default-fixup cc-label-fixup-buffer !
-: cc-label-fixup ( -- address ) cc-label-fixup-buffer @ ;
-create cc-label-default-switch-depth cc-label-default-cap [lit] 8 * allot
-variable cc-label-switch-depth-buffer
-cc-label-default-switch-depth cc-label-switch-depth-buffer !
-: cc-label-switch-depth ( -- address ) cc-label-switch-depth-buffer @ ;
+[lit] 64 constant cc-label-cap
+create cc-label-name-addr cc-label-cap [lit] 8 * allot
+create cc-label-name-len cc-label-cap [lit] 8 * allot
+create cc-label-vaddr cc-label-cap [lit] 8 * allot
+create cc-label-fixup cc-label-cap [lit] 8 * allot
+create cc-label-switch-depth cc-label-cap [lit] 8 * allot
 variable cc-label-count
 
 \ Each table is indexed with cell[] (030).

@@ -166,18 +166,9 @@ variable cc-bss-pos
 
 \ Capacity for deferred global-vaddr fixups (each use of a global's name
 \ is one).
-[lit] 16384 constant cc-gfixup-default-cap
-variable cc-gfixup-limit
-cc-gfixup-default-cap cc-gfixup-limit !
-: cc-gfixup-cap ( -- entries ) cc-gfixup-limit @ ;
-create cc-gfixup-default-out-pos cc-gfixup-default-cap [lit] 8 * allot
-variable cc-gfixup-out-pos-buffer
-cc-gfixup-default-out-pos cc-gfixup-out-pos-buffer !
-: cc-gfixup-out-pos ( -- address ) cc-gfixup-out-pos-buffer @ ;
-create cc-gfixup-default-slot cc-gfixup-default-cap [lit] 8 * allot
-variable cc-gfixup-slot-buffer
-cc-gfixup-default-slot cc-gfixup-slot-buffer !
-: cc-gfixup-slot ( -- address ) cc-gfixup-slot-buffer @ ;
+[lit] 16384 constant cc-gfixup-cap
+create cc-gfixup-out-pos cc-gfixup-cap [lit] 8 * allot
+create cc-gfixup-slot cc-gfixup-cap [lit] 8 * allot
 variable cc-gfixup-count
 
 variable cc-globals-base-vaddr                   \ set by cc-finalize-globals

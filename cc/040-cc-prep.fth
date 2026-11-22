@@ -195,34 +195,13 @@ variable cc-pp-flags-base
 \                         expanded again, so no expansion loops.
 
 
-[lit] 4096 constant cc-macro-default-cap
-variable cc-macro-limit
-cc-macro-default-cap cc-macro-limit !
-: cc-macro-cap ( -- entries ) cc-macro-limit @ ;
-create cc-macro-default-name-addr cc-macro-default-cap [lit] 8 * allot
-variable cc-macro-name-addr-buffer
-cc-macro-default-name-addr cc-macro-name-addr-buffer !
-: cc-macro-name-addr ( -- address ) cc-macro-name-addr-buffer @ ;
-create cc-macro-default-name-len cc-macro-default-cap [lit] 8 * allot
-variable cc-macro-name-len-buffer
-cc-macro-default-name-len cc-macro-name-len-buffer !
-: cc-macro-name-len ( -- address ) cc-macro-name-len-buffer @ ;
-create cc-macro-default-body-addr cc-macro-default-cap [lit] 8 * allot
-variable cc-macro-body-addr-buffer
-cc-macro-default-body-addr cc-macro-body-addr-buffer !
-: cc-macro-body-addr ( -- address ) cc-macro-body-addr-buffer @ ;
-create cc-macro-default-body-len cc-macro-default-cap [lit] 8 * allot
-variable cc-macro-body-len-buffer
-cc-macro-default-body-len cc-macro-body-len-buffer !
-: cc-macro-body-len ( -- address ) cc-macro-body-len-buffer @ ;
-create cc-macro-default-params cc-macro-default-cap [lit] 8 * allot
-variable cc-macro-params-buffer
-cc-macro-default-params cc-macro-params-buffer !
-: cc-macro-params ( -- address ) cc-macro-params-buffer @ ;
-create cc-macro-default-busy cc-macro-default-cap [lit] 8 * allot
-variable cc-macro-busy-buffer
-cc-macro-default-busy cc-macro-busy-buffer !
-: cc-macro-busy ( -- address ) cc-macro-busy-buffer @ ;
+[lit] 4096 constant cc-macro-cap
+create cc-macro-name-addr cc-macro-cap [lit] 8 * allot
+create cc-macro-name-len cc-macro-cap [lit] 8 * allot
+create cc-macro-body-addr cc-macro-cap [lit] 8 * allot
+create cc-macro-body-len cc-macro-cap [lit] 8 * allot
+create cc-macro-params cc-macro-cap [lit] 8 * allot
+create cc-macro-busy cc-macro-cap [lit] 8 * allot
 variable cc-macro-count
 
 [lit] 262144 constant cc-macro-pool-cap           \ 256 KiB
@@ -544,36 +523,15 @@ variable cc-prep-ident-len
   repeat, ;
 
 \ ===========================================================================
-\ Include buffer pool (4 slots × 256 KiB).
+\ Include pool: 1 MiB, in which the files being included lie one after
+\ another; a file's bytes are released when its #include ends.
 \ ===========================================================================
 
-[lit] 262144 constant cc-prep-inc-slot-cap
-[lit] 4      constant cc-prep-inc-slot-count
-
-create cc-prep-inc-pool  cc-prep-inc-slot-cap cc-prep-inc-slot-count * allot
+[lit] 1048576 constant cc-prep-inc-cap
+create cc-prep-inc-buf  cc-prep-inc-cap allot
 variable cc-prep-inc-depth
-variable cc-prep-inc-top                         \ direct-mode bytes in use
+variable cc-prep-inc-top                          \ bytes of the pool in use
 [lit] 32 constant cc-prep-direct-depth
-
-variable cc-prep-inc-buffer
-variable cc-prep-inc-limit
-: cc-prep-inc-buf ( -- address ) cc-prep-inc-buffer @ ;
-: cc-prep-inc-cap ( -- bytes ) cc-prep-inc-limit @ ;
-
-\ Workspace selection for the macro arrays above and the packed include
-\ pool.  Neither selector migrates live data or resets a count.
-: cc-prep-default-workspace ( -- )
-  cc-macro-default-cap cc-macro-limit !
-  cc-macro-default-name-addr cc-macro-name-addr-buffer !
-  cc-macro-default-name-len cc-macro-name-len-buffer !
-  cc-macro-default-body-addr cc-macro-body-addr-buffer !
-  cc-macro-default-body-len cc-macro-body-len-buffer !
-  cc-macro-default-params cc-macro-params-buffer !
-  cc-macro-default-busy cc-macro-busy-buffer !
-  cc-prep-inc-pool cc-prep-inc-buffer !
-  cc-prep-inc-slot-cap cc-prep-inc-slot-count * cc-prep-inc-limit !
-;
-cc-prep-default-workspace
 
 \ ===========================================================================
 \ Path building.  Concat prefix + name + NUL into cc-prep-path-buf.
