@@ -46,19 +46,15 @@ variable cc-fn-local-count                        \ # locals in current function
   [lit] 162 cc-check-cap
   cc-fn-local-count +! ;
 
-\ cc-pending-struct-desc is set by cc-parse-param-list-loop (114) when a
-\ parameter's base is `struct TAG`, and read when that loop records the
-\ parameter's symbol-table entry (so the struct descriptor pointer ends up
-\ in the symbol's struct-desc cell).  For non-struct types it stays at 0.
-variable cc-pending-struct-desc
-
 \ ===========================================================================
 \ Token-expectation helpers
 \ ===========================================================================
 
 \ Each error path dies through cc-die with its own code, so a failure names
-\ its site.  This file's codes are 140..169; 112, 114 and 116 have
-\ 170..179, 180..189 and 190..219 (Appendix G).
+\ its site.  Codes 140..169 are this file's and those of the declarations
+\ in 114-cc-func.fth, which began here; 112, 114 and 116 have 170..179,
+\ 180..189 and 190..219, and 206 and 207 came from 116 with the words that
+\ end a program (Appendix G).
 
 \ cc-expect-kw-id ( kw-id -- )  Consume one token; abort if not the given kw.
 : cc-expect-kw-id

@@ -478,6 +478,12 @@ variable cc-fn-prior-sym-id                       \ prior sk-func id for fwd-fix
 \ Parameter-list parsing + spill
 \ ===========================================================================
 
+\ cc-pending-struct-desc is set by cc-parse-param-list-loop when a
+\ parameter's base is `struct TAG`, and read when that loop records the
+\ parameter's symbol-table entry (so the struct descriptor pointer ends up
+\ in the symbol's struct-desc cell).  For non-struct types it stays at 0.
+variable cc-pending-struct-desc
+
 \ cc-parse-param-list-loop ( -- )  Parse one or more parameters separated by
 \ ','.  T may be int / char / void / long / short / struct TAG / enum TAG /
 \ typedef-name, with '*' modifiers.  Consumes the closing ')'.

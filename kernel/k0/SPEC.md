@@ -39,7 +39,7 @@ Programs that run under K0, all static ELF64, all entered with the
 | program | load range | notes |
 |---|---|---|
 | `seed-forth` | 0x400000, memsz 16 MiB | one RWX segment |
-| `amd64-runner`, `hex0-disk` (Forth compiler output) | 0x400000 | one RWX segment; `malloc` is one 256 MiB anonymous `mmap` (`cc/090-cc-emit.fth:691-726`) |
+| `amd64-runner`, `hex0-disk` (Forth compiler output) | 0x400000 | one RWX segment; `malloc` is one 256 MiB anonymous `mmap` (`cc/116-cc-prog.fth:818-853`) |
 | the first tcc, as `/usr/bin/tcc-mes` | 0x400000 | one RWX segment; Mes libc: heap by `brk` |
 | `hex0-seed` (stage0-posix, 229 bytes) | 0x600000 | one segment, flags X only, filesz = memsz |
 | K1 (`build-out/k1-direct/k1`) | 0x200000 to below 0x400000 | two segments (R X, then RW with bss), entry 0x201000 (`kernel/k1/tests/direct-build-check.sh:59-60`) |
@@ -210,7 +210,7 @@ program runs to its exit (`kernel/tools/k1-direct-start.fth:128-141`,
 - Memory the parent obtained with `mmap` stays intact at the same
   addresses for the child's whole lifetime, and whatever the child or its
   successor program maps is disjoint from it. The runner's entire `malloc`
-  heap is one such mapping (`cc/090-cc-emit.fth:691-726`).
+  heap is one such mapping (`cc/116-cc-prog.fth:818-853`).
 - Changes the child made to the file system persist.
 - The pid is a positive number, different for each fork.
 - `wait4(pid, status, options, rusage)` after that returns the pid of the
@@ -309,7 +309,7 @@ Storage behaviour that is part of the contract:
 
 | nr | call | semantics | callers |
 |---|---|---|---|
-| 9 | `mmap(addr, length, prot, flags, fd, offset)` | Anonymous memory only. Returns the address of `length` bytes (rounded up to 4096) of page-aligned memory that reads as zero. Every argument except `length` is ignored. Never fails. Never freed except when a forked child exits (3.3). | `cc/020-cc-arena.fth:318,427`; `cc/140-cc-link.fth:61`; compiled C `malloc` (`cc/090-cc-emit.fth:691-726`, one 256 MiB request per program) |
+| 9 | `mmap(addr, length, prot, flags, fd, offset)` | Anonymous memory only. Returns the address of `length` bytes (rounded up to 4096) of page-aligned memory that reads as zero. Every argument except `length` is ignored. Never fails. Never freed except when a forked child exits (3.3). | `cc/020-cc-arena.fth:318,427`; `cc/140-cc-link.fth:61`; compiled C `malloc` (`cc/116-cc-prog.fth:818-853`, one 256 MiB request per program) |
 | 12 | `brk(addr)` | `addr` at or below the current break, including 0: returns the current break, unchanged. Above it: the memory from the old break to `addr` is zeroed, the break becomes `addr`, and `addr` is returned. Never fails. Memory below the break belongs to the program image for `fork` (3.3). | the first tcc (Mes libc `malloc`: one `brk(0)`, then one growing call per allocation, up to about 20 MiB; `kernel/k1/I386.md`) |
 
 There is no `munmap` (11): -38, and `kernel/k1/boot/k0-syscalls.fth:34`
