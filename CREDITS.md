@@ -10,10 +10,10 @@ own license.
 | What | Where | From | License |
 |---|---|---|---|
 | hex0-seed (229 bytes; assembles builder-hex0's stage 1 and the reference seed on the host), `kaem-minimal.hex0` (assembled in the boot as kaem-optional-seed) | `vendor/stage0-posix/bootstrap-seeds`, `vendor/stage0-posix/x86` | [stage0-posix](https://github.com/oriansj/stage0-posix) / [bootstrap-seeds](https://github.com/oriansj/bootstrap-seeds) | GPL-3.0-or-later |
-| mescc-tools-extra (`catm`, `match`, `mkdir`, `cp`, `rm`, `chmod`, `sha256sum`, `untar`, `ungz`) and M2libc, compiled by the seed (`tinycc/build-tools-i386.sh`) | `vendor/stage0-posix/mescc-tools-extra`, `vendor/stage0-posix/M2libc` | stage0-posix | GPL-3.0-or-later |
+| mescc-tools-extra (`catm`, `match`, `mkdir`, `cp`, `rm`, `chmod`, `sha256sum`, `untar`, `ungz`) and M2libc, compiled by the seed (`tinycc/build-tools.sh`) | `vendor/stage0-posix/mescc-tools-extra`, `vendor/stage0-posix/M2libc` | stage0-posix | GPL-3.0-or-later |
 | kaem, compiled by the seed, and its test scripts | `vendor/mescc-tools/Kaem` | [mescc-tools](https://github.com/oriansj/mescc-tools) | GPL-3.0-or-later |
 | One gate fixture taken from M2-Planet | `tests/cc/gates/G4.c` | [M2-Planet](https://github.com/oriansj/M2-Planet) | GPL-3.0-or-later |
-| The other gate fixtures and the run-time corpus | `tests/cc/gates/`, `tests/cc/i386/` | written for seed-forth and for this repository | MIT |
+| The other gate fixtures and the run-time corpus | `tests/cc/gates/`, `tests/cc/` | written for seed-forth and for this repository | MIT |
 
 ## Read as pinned archives (tinycc/SOURCES, tinycc/builder-hex0.SOURCES; not in the repository)
 
@@ -24,14 +24,14 @@ own license.
 | live-bootstrap a49273cb, whose simple-patch, checksum-transcriber, simple-patches and kaem text the route uses | each file's SPDX header (simple-patch GPL-3.0-or-later, checksum-transcriber MIT) |
 | builder-hex0 a2781242, the kernel of the boot | Apache-2.0 or Boost-1.0 at your option (its COPYRIGHT file); the two stage files carry `SPDX-License-Identifier: MIT` |
 
-`build-out/tinycc/tcc-first-i386` is TinyCC and Mes libc compiled into one
+`build-out/tinycc/tcc-first` is TinyCC and Mes libc compiled into one
 program, so it is under GPL-3.0-or-later as a whole.  The repository's
-own files that go into it, `tinycc/direct-input-i386.c`,
+own files that go into it, `tinycc/direct-input.c`,
 `tinycc/mes-libc.c` (a list of Mes's file names) and
-`tinycc/mes-libc-native-i386.c` (written for this route: Mes's function
+`tinycc/mes-libc-native.c` (written for this route: Mes's function
 names and signatures, our bodies; no Mes code is copied), are MIT.
 
-`tinycc/m2libc-native-i386.c` and `tinycc/m2libc-kaem-i386.c` (MIT,
+`tinycc/m2libc-native.c` and `tinycc/m2libc-kaem.c` (MIT,
 written for this route) stand in for M2libc's GPL-3.0-or-later
 `x86/linux/unistd.c`, `fcntl.c`, `sys/stat.c` and `libc-full.M1`.  They
 restate their constants, function names and signatures and the

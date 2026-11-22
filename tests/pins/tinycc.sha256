@@ -1,9 +1,9 @@
 # tests/pins/tinycc.sha256 -- sha256 of what the route builds that
 # live-bootstrap does not publish.  Paths are relative to build-out/.
-#   tinycc/tcc-first-i386
-#                      build-out/tinycc/tcc-first-i386, the first tcc:
+#   tinycc/tcc-first
+#                      build-out/tinycc/tcc-first, the first tcc:
 #                      janneke's tcc-0.9.26 with Mes libc, compiled by the
-#                      seed (tinycc/build-first-tcc-i386.sh, 975,624
+#                      seed (tinycc/build-first-tcc.sh, 975,624
 #                      bytes); /usr/bin/tcc-mes in the boot.  The same in
 #                      two checkouts at different paths.
 #   tinycc/junction/usr/bin/tcc-boot0
@@ -13,27 +13,27 @@
 #                      MesCC's tcc-mes makes ea464b2f...; from boot1 on the
 #                      two routes have the same bytes.  It equals what a
 #                      gcc -m32 build of the first tcc makes
-#                      (tests/tinycc/i386-standin-check.sh).
-#   tinycc/bin-i386/*  build-out/tinycc/bin-i386/, the source preparation
+#                      (tests/tinycc/standin-check.sh).
+#   tinycc/bin/*       build-out/tinycc/bin/, the source preparation
 #                      tools the seed builds against M2libc
-#                      (tinycc/build-tools-i386.sh)
-#   tinycc/bin-boot-i386/*
-#                      build-out/tinycc/bin-boot-i386/, ungz and untar from
+#                      (tinycc/build-tools.sh)
+#   tinycc/bin-boot/*
+#                      build-out/tinycc/bin-boot/, ungz and untar from
 #                      stage0-posix's sources as published; the route
 #                      unpacks live-bootstrap's archive with them once
-#   tinycc/kaem-i386   build-out/tinycc/kaem-i386, vendor/mescc-tools/Kaem
+#   tinycc/kaem        build-out/tinycc/kaem, vendor/mescc-tools/Kaem
 #                      compiled like those tools, with the process calls
-#                      of tinycc/m2libc-kaem-i386.c (99,008 bytes).
+#                      of tinycc/m2libc-kaem.c (99,008 bytes).
 #   tinycc/first/...
 #                      what tcc-mes makes in the one boot before the later
 #                      stages overwrite it (the boot keeps copies under
 #                      /first): the mes libc (all but libc.a equal what
 #                      live-bootstrap publishes after tcc-boot2) and
 #                      hex0-export, which it builds against that libc
-#                      (tests/tinycc/i386-one-boot-check.sh).
+#                      (tests/tinycc/one-boot-check.sh).
 # When a change is meant to alter one, update its line in the same commit
 # and say why.
-92d1143823045f9324c2d4b34c64dfc11bc994c958b92bfbd80a99de371e4d2d  tinycc/tcc-first-i386
+92d1143823045f9324c2d4b34c64dfc11bc994c958b92bfbd80a99de371e4d2d  tinycc/tcc-first
 c1696e57f25b77315a05d84b4e1a75002112cbd656156522c97be7ecd182c495  tinycc/junction/usr/bin/tcc-boot0
 76d280e0733f2c84aad180968167d789a825ac56526bddba4f100d6d74851027  tinycc/first/usr/lib/mes/crt1.o
 09d4f9821a2566f7e56381a19259c41bd97f3c5ed83f490705acbfd1139a7736  tinycc/first/usr/lib/mes/crti.o
@@ -42,17 +42,17 @@ c1696e57f25b77315a05d84b4e1a75002112cbd656156522c97be7ecd182c495  tinycc/junctio
 12c07ae103e7e3b390150a79e5c600d88de14e9bb73a066f6342582729ef5a3f  tinycc/first/usr/lib/mes/libgetopt.a
 136f97c356445ef95c35ae1b6fb2f7a0546e3cf47b45cb4ee79d0a8f29cd04b4  tinycc/first/usr/lib/mes/tcc/libtcc1.a
 498dea62744eed530314e87c4864d0b84d7d676f0bfba6b9f52ceb3fe9bb851a  tinycc/first/usr/bin/hex0-export
-a7ceff1e1eab52d5eb4fe5618bfdd6e95e4dff0c50b30af6c4c8ceb067fede9f  tinycc/bin-i386/catm
-3ebb67d5e3a8128afca1ff8567b3b683e9d8ba905aa23d125787694f86832c7c  tinycc/bin-i386/checksum-transcriber
-fba7585f86a374e6f00c805ea18c25b8c41b14423a3476f4cef7cdb719a6eaed  tinycc/bin-i386/chmod
-64afafc58a3c66886c24fa73462d158084ba5acbf4c8db178750bff42f439cee  tinycc/bin-i386/cp
-90c6c7e1810a64647f215ff217bd69c063272456547ef0f4f7e006d8628f714d  tinycc/bin-i386/match
-069b4ae3986f838b0f4d4979505e4c3f783c95022025c385c227b71f98e75094  tinycc/bin-i386/mkdir
-afd5abe1964175f3771a1fe5f32ed7022db820813842e89c222d4e2c4ff14f69  tinycc/bin-i386/rm
-5ce00dedfea8a3d2f0a65048839a4c5dde1e757ad21525baca77c43828db2d97  tinycc/bin-i386/sha256sum
-08209e4703e23239da6a3a29f553dd486a7f035e156d4dfd05a524fac5e66d1a  tinycc/bin-i386/simple-patch
-41645a9a31b1d3ca76a4f2a5f31e079b38f6cf06df3329b2499e35eaddf4cdc5  tinycc/bin-i386/ungz
-3482feab3c18e57edf0fe054ecfff329733556a85ea4126bd9b0d27a6e589bbf  tinycc/bin-i386/untar
-d87baff1bb5b541036c6b95a8833f20eb4a5cc14109f8b048f490e5ac3a3993f  tinycc/kaem-i386
-0d73f9f7b560eff35ada46d38b4f4e20996e09aa9a8079863bee8ce74b72d42a  tinycc/bin-boot-i386/ungz
-8adace2143659da7c7ca149f0e2a096e96947e6fc33b404497957bca626fe602  tinycc/bin-boot-i386/untar
+a7ceff1e1eab52d5eb4fe5618bfdd6e95e4dff0c50b30af6c4c8ceb067fede9f  tinycc/bin/catm
+3ebb67d5e3a8128afca1ff8567b3b683e9d8ba905aa23d125787694f86832c7c  tinycc/bin/checksum-transcriber
+fba7585f86a374e6f00c805ea18c25b8c41b14423a3476f4cef7cdb719a6eaed  tinycc/bin/chmod
+64afafc58a3c66886c24fa73462d158084ba5acbf4c8db178750bff42f439cee  tinycc/bin/cp
+90c6c7e1810a64647f215ff217bd69c063272456547ef0f4f7e006d8628f714d  tinycc/bin/match
+069b4ae3986f838b0f4d4979505e4c3f783c95022025c385c227b71f98e75094  tinycc/bin/mkdir
+afd5abe1964175f3771a1fe5f32ed7022db820813842e89c222d4e2c4ff14f69  tinycc/bin/rm
+5ce00dedfea8a3d2f0a65048839a4c5dde1e757ad21525baca77c43828db2d97  tinycc/bin/sha256sum
+08209e4703e23239da6a3a29f553dd486a7f035e156d4dfd05a524fac5e66d1a  tinycc/bin/simple-patch
+41645a9a31b1d3ca76a4f2a5f31e079b38f6cf06df3329b2499e35eaddf4cdc5  tinycc/bin/ungz
+3482feab3c18e57edf0fe054ecfff329733556a85ea4126bd9b0d27a6e589bbf  tinycc/bin/untar
+d87baff1bb5b541036c6b95a8833f20eb4a5cc14109f8b048f490e5ac3a3993f  tinycc/kaem
+0d73f9f7b560eff35ada46d38b4f4e20996e09aa9a8079863bee8ce74b72d42a  tinycc/bin-boot/ungz
+8adace2143659da7c7ca149f0e2a096e96947e6fc33b404497957bca626fe602  tinycc/bin-boot/untar

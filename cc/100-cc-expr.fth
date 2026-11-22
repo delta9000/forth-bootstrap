@@ -1068,7 +1068,7 @@ variable cc-expr-op-row
 \               constant folding has such divisions, in code the route
 \               never runs.  The program is compiled, and exits with
 \               status 125 if it ever gets there
-\               (tinycc/mes-libc-native-i386.c's convention for missing
+\               (tinycc/mes-libc-native.c's convention for missing
 \               floating point).
 : cc-native-binop-emit                           ( -- )
   cc-expr-common @ ty-size [lit] 8 = if,

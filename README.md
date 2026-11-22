@@ -6,7 +6,7 @@ that other people built by a different path.
 
 builder-hex0, live-bootstrap's kernel, boots a disk that holds no program,
 only sources.  Its built-in hex0 assembler assembles a 1,191-byte Forth
-(`seed/i386/000-seed.hex0`) and stage0-posix's kaem-optional-seed.  A C
+(`seed/000-seed.hex0`) and stage0-posix's kaem-optional-seed.  A C
 compiler written in that Forth compiles kaem, eleven small tools, and
 TinyCC 0.9.26 (janneke's bootstrappable fork, the source live-bootstrap's
 own `tcc-0.9.26` step builds) together with GNU Mes's C library.  That tcc
@@ -19,10 +19,10 @@ through M2-Planet and GNU Mes; this route uses neither.
 
 ```
 builder-hex0 (live-bootstrap's kernel; its stage 1 is the one binary)
- ├─ hex0  seed/i386/000-seed.hex0  ->  /seed-forth-i386   (1,191 bytes)
+ ├─ hex0  seed/000-seed.hex0       ->  /seed-forth          (1,191 bytes)
  ├─ hex0  kaem-minimal.hex0        ->  /kaem-optional-seed
- └─ seed-forth-i386
-     └─ Forth library (forth/i386/010-lib.fth, 020-cc-arena.fth)
+ └─ seed-forth
+     └─ Forth library (forth/010-lib.fth, 020-cc-arena.fth)
          └─ C compiler in Forth (cc/030 to 119)
              ├─ kaem, sha256sum, ungz, untar, simple-patch, ... against M2libc
              └─ tcc 0.9.26 + Mes libc = /usr/bin/tcc-mes        (tinycc/)
@@ -51,9 +51,9 @@ Why it is built this way:
   is code nobody has to review again for it.
 - Every byte of machine code written here by hand carries its instruction
   as a comment and is checked against GNU `as` on those comments: the seed
-  (`tests/seed/i386/asm-check.py`), the Forth system's own code
-  (`tests/forth/i386/asm-check.py`) and the compiler's encoders
-  (`tests/cc/i386/asm-check.py`).
+  (`tests/seed/asm-check.py`), the Forth system's own code
+  (`tests/forth/asm-check.py`) and the compiler's encoders
+  (`tests/cc/asm-check.py`).
 
 Most of this code was written with AI models under my direction;
 HISTORY.md records how.  I am reviewing it chapter by chapter through the
@@ -78,12 +78,11 @@ Each directory has a README that says where to start.
 
 | Directory | What is in it |
 |---|---|
-| `seed/i386/` | `000-seed.hex0`, the Forth, written directly as annotated hex0 (the only source of it); `SPEC.md`; `build.sh`, which assembles it on the host |
-| `forth/i386/` | `010-lib.fth`, the Forth library on the seed's 21 machine-code words; `020-cc-arena.fth`, the faster primitives and the compiler's arena; `layers.fth`, the compiler's load list; `CONTRACT.md` |
-| `forth/` | `test-010-lib.fth`, the library's test |
+| `seed/` | `000-seed.hex0`, the Forth, written directly as annotated hex0 (the only source of it); `SPEC.md`; `build.sh`, which assembles it on the host |
+| `forth/` | `010-lib.fth`, the Forth library on the seed's 21 machine-code words; `020-cc-arena.fth`, the faster primitives and the compiler's arena; `layers.fth`, the compiler's load list; `CONTRACT.md`; `test-010-lib.fth`, the library's test |
 | `cc/` | the C compiler in Forth, loaded in numeric order (`030-cc-io.fth` to `119-cc-runtime.fth`), and the tests of its first layers |
 | `tinycc/` | what the seed is asked to build and how: the two build scripts, the jobs and drivers, the C shims, the boot's disk writer, the replay of live-bootstrap's step (`tinycc/README.md`) |
-| `tests/` | `seed/i386/`, `forth/i386/`, `cc/` (gates, run-time corpus, encoder check), `tinycc/` (the junction on the host, the boots), `pins/`, `reference.py` (the seed's and the host primitives' expected values, computed again in Python), and `builder-hex0/`, a measurement of the kernel's behaviour that two boot checks borrow their disk writer from |
+| `tests/` | `seed/`, `forth/`, `cc/` (gates, run-time corpus, encoder check), `tinycc/` (the junction on the host, the boots), `pins/`, `reference.py` (the seed's and the host primitives' expected values, computed again in Python), and `builder-hex0/`, a measurement of the kernel's behaviour that two boot checks borrow their disk writer from |
 | `tools/` | `fetch-archives.py` |
 | `vendor/` | stage0-posix and mescc-tools, as submodules |
 
@@ -115,29 +114,29 @@ builds makes the pinned `tcc-boot0` every time, and steps 10 and 15 check
 that.  The ones to start with:
 
 ```sh
-seed/i386/build.sh                       # seed-forth-i386, 1,191 bytes
-tinycc/build-first-tcc-i386.sh           # the seed builds the tools and the first tcc on the host
+seed/build.sh                       # seed-forth, 1,191 bytes
+tinycc/build-first-tcc.sh           # the seed builds the tools and the first tcc on the host
 tests/tinycc/junction-check.sh           # live-bootstrap's step from that tcc, in a sandbox
-tests/tinycc/i386-one-boot-check.sh      # the route: one boot of builder-hex0 from sources
+tests/tinycc/one-boot-check.sh      # the route: one boot of builder-hex0 from sources
 ```
 
 The last prints, after a boot of 24 s:
 
 ```
-i386-one-boot-check: OK, 33 files; live-bootstrap's published tcc-0.9.26 reached on builder-hex0
+one-boot-check: OK, 33 files; live-bootstrap's published tcc-0.9.26 reached on builder-hex0
   in one boot, from sources: no program on the disk
 ```
 
 ## Reading order
 
-- `seed/i386/000-seed.hex0`: the seed's 21 machine-code words, one
-  instruction per annotated line; `seed/i386/SPEC.md` specifies it.
-- `forth/i386/010-lib.fth`, then `forth/i386/020-cc-arena.fth`.
-- `cc/` in load order (`forth/i386/layers.fth`): I/O buffers,
+- `seed/000-seed.hex0`: the seed's 21 machine-code words, one
+  instruction per annotated line; `seed/SPEC.md` specifies it.
+- `forth/010-lib.fth`, then `forth/020-cc-arena.fth`.
+- `cc/` in load order (`forth/layers.fth`): I/O buffers,
   preprocessor, lexer, types, symbols, ELF header, code emission,
   expressions, declarations, statements, the typed declaration parser,
   functions and the program, initializers, the system-call primitive.
-- `tinycc/README.md`, then `tinycc/i386-one-boot-disk.py` for the order
+- `tinycc/README.md`, then `tinycc/one-boot-disk.py` for the order
   everything runs in.
 
 ## Experiments

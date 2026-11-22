@@ -6,16 +6,16 @@
 # The compiler was built one feature at a time behind these gates
 # (HISTORY.md, "Gates as the unit of work").  Each fixture is compiled by
 # one run of the seed,
-#     seed-forth-i386 forth/i386/010-lib.fth tests/cc/i386/job.fth OUT FIXTURE
+#     seed-forth forth/010-lib.fth tests/cc/job.fth OUT FIXTURE
 # into a static i386 program, which runs on the host's kernel through its
 # IA32 support and must exit with the status listed here.  The two
 # fixtures marked libc include <stdio.h> and call putchar and exit, so
 # they are compiled as the tools are, against M2libc
-# (tinycc/i386-seed/tool.fth in place of job.fth).
+# (tinycc/jobs/tool.fth in place of job.fth).
 #
 # A die gate is a program the compiler must refuse: the seed exits with
 # the listed code, the last line it writes to stderr is cc-die's
-# "cc: line N: error C" (forth/i386/020-cc-arena.fth), and no OUT is
+# "cc: line N: error C" (forth/020-cc-arena.fth), and no OUT is
 # written.  A .c fixture is compiled as it is.  A .sh fixture is a
 # generator for an input too large or too repetitive to check in: run
 # with sh, it prints the C source on stdout and may write helper files (a
@@ -26,12 +26,12 @@
 # end if any gate or the coverage check failed.
 #
 # Needs a kernel that runs i386 programs (the seed is one:
-# ./seed-forth-i386, or the program SEED_I386 names).
+# ./seed-forth, or the program SEED_FORTH names).
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 
-[ -n "${SEED_I386:-}" ] || seed/i386/build.sh > /dev/null
-SEED=${SEED_I386:-./seed-forth-i386}
+[ -n "${SEED_FORTH:-}" ] || seed/build.sh > /dev/null
+SEED=${SEED_FORTH:-./seed-forth}
 
 # "<fixture> <expected exit> [libc]"
 gates=(
@@ -186,7 +186,7 @@ OUT=$WORK/out
 compile() {
     rm -f "$OUT"
     crc=0
-    "$SEED" forth/i386/010-lib.fth "$1" "$OUT" "$2" > "$WORK/stdout" 2> "$WORK/err" || crc=$?
+    "$SEED" forth/010-lib.fth "$1" "$OUT" "$2" > "$WORK/stdout" 2> "$WORK/err" || crc=$?
 }
 
 PASSED=0
@@ -196,8 +196,8 @@ fail() { echo "FAIL: $*"; FAILED=$((FAILED + 1)); }
 
 for g in "${gates[@]}"; do
     read -r file want libc <<< "$g"
-    job=tests/cc/i386/job.fth
-    [ "${libc:-}" = libc ] && job=tinycc/i386-seed/tool.fth
+    job=tests/cc/job.fth
+    [ "${libc:-}" = libc ] && job=tinycc/jobs/tool.fth
     compile "$job" "$D/$file"
     # The Forth outer interpreter reports an unknown word on stdout and
     # goes on, so anything on stdout is a failure too.
@@ -225,7 +225,7 @@ for g in "${die_gates[@]}"; do
             src=$WORK/die-src.c
             ;;
     esac
-    compile tests/cc/i386/job.fth "$src"
+    compile tests/cc/job.fth "$src"
     got_err=$(tail -n 1 "$WORK/err")
     if [ "$crc" != "$want" ]; then
         fail "$file: expected compiler exit $want, got $crc ($got_err)"

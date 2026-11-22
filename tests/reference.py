@@ -5,12 +5,12 @@ seed's and the host primitives' tests.
     python3 -I tests/reference.py seed KIND FILE
     python3 -I tests/reference.py high-halves FILE
 
-The tests of the seed (tests/seed/i386/test.sh) and of the host's
-primitives (tests/forth/i386/high-halves.fth) compare what the seed
+The tests of the seed (tests/seed/test.sh) and of the host's
+primitives (tests/forth/high-halves.fth) compare what the seed
 computes with values written in those files.  This program computes the
 same values a second way: Python's integers, reduced modulo 2^64, under
-the words' meanings as seed/i386/SPEC.md gives them (sections 7.1, 9.2
-and 9.3) and as the comments of forth/i386/010-lib.fth give the
+the words' meanings as seed/SPEC.md gives them (sections 7.1, 9.2
+and 9.3) and as the comments of forth/010-lib.fth give the
 library's.  It shares no code with the seed and was not written from the
 expected values.  It is not a Forth: it knows the words below, straight
 line definitions, and memory a case wrote itself.  Anything else (token,
@@ -160,7 +160,7 @@ SEED_WORDS = {
 SEED_DECLINED = ["key", "token", "find", "syscall6"]
 
 # The library's words that high-halves.fth uses, by their comments in
-# forth/i386/010-lib.fth.  < is the sign of the difference.
+# forth/010-lib.fth.  < is the sign of the difference.
 LIBRARY_WORDS = {
     "-": binary(lambda a, b: a - b),
     "1+": unary(lambda n: n + 1),

@@ -5,7 +5,7 @@
 # A compiler failure ends in cc-die (cc/020-cc-arena.fth), which prints
 # "cc: line N: error C" and exits with C, or in the library's `die` with a
 # message of its own.  This script finds every code C that the compiler's
-# files (the ones forth/i386/layers.fth includes) can die with, and puts
+# files (the ones forth/layers.fth includes) can die with, and puts
 # each in exactly one of three lists:
 #
 #   tested       a die gate in tests/cc/gates/run-gates.sh expects it (read
@@ -45,13 +45,13 @@ verbose=0
 [ "${1:-}" = -v ] && verbose=1
 
 die_words="cc-die cc-check-cap cc-workspace-map cc-read-all die"
-files=$(sed -n 's/^include //p' forth/i386/layers.fth)
+files=$(sed -n 's/^include //p' forth/layers.fth)
 
 # "<file>|<line text, trimmed>": the calls of a die word whose code is not a
 # literal right before it.
 forwarding=(
-  "forth/i386/020-cc-arena.fth|die ;"                           # cc-die: the exit itself
-  "forth/i386/020-cc-arena.fth|>r > if, r> cc-die then,"        # cc-check-cap
+  "forth/020-cc-arena.fth|die ;"                           # cc-die: the exit itself
+  "forth/020-cc-arena.fth|>r > if, r> cc-die then,"        # cc-check-cap
   "cc/030-cc-io.fth|cc-ra-n @ 1+ cc-ra-cap @ cc-ra-code @ cc-check-cap   \\ full: die"
   "cc/030-cc-io.fth|>r dup [lit] 0 <= if, r@ cc-die then,"      # cc-workspace-round
   "cc/030-cc-io.fth|dup [lit] 9223372036854771712 > if, r@ cc-die then,"

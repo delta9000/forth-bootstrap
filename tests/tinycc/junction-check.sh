@@ -7,7 +7,7 @@
 #     tests/tinycc/junction-check.sh --probe    exit 0 when this can run here
 #
 # What it proves.  A first compiler built by seed Forth alone
-# (tinycc/build-first-tcc-i386.sh; no MesCC, Mes, M2-Planet or host
+# (tinycc/build-first-tcc.sh; no MesCC, Mes, M2-Planet or host
 # compiler involved) takes the place of live-bootstrap's MesCC-built
 # tcc-mes, and live-bootstrap's own steps/tcc-0.9.26/pass1.kaem, run from
 # there with its commands, flags, -g, working directories and absolute
@@ -20,11 +20,11 @@
 #
 # What it does not prove.  Every program runs on the host's Linux kernel
 # through its 32-bit (IA32) support, not on builder-hex0, and the host's
-# bash stands in for kaem; tests/tinycc/i386-one-boot-check.sh is the run
+# bash stands in for kaem; tests/tinycc/one-boot-check.sh is the run
 # on builder-hex0.  The other programs the kaem text calls (stage0's catm,
 # chmod, cp, match, mkdir, rm, sha256sum, ungz, untar; live-bootstrap's
 # checksum-transcriber and simple-patch) are built from their C by the
-# seed against M2libc (tinycc/build-tools-i386.sh), and the kaem text's
+# seed against M2libc (tinycc/build-tools.sh), and the kaem text's
 # PATH holds nothing from the host.  tcc-mes and tcc-boot0 are MesCC's own
 # output in live-bootstrap and are not expected to match; they are checked
 # against this route's pins in tests/pins/tinycc.sha256 instead.
@@ -33,7 +33,7 @@
 # as live-bootstrap's / is before steps/mes-0.28; tinycc/lb-replay.sh runs
 # in it and says exactly which kaem lines it runs.  The root is filled by
 # the seed-built tools: live-bootstrap's tree is the one
-# build-tools-i386.sh unpacked (build-out/tinycc/lb/), bind-mounted; the
+# build-tools.sh unpacked (build-out/tinycc/lb/), bind-mounted; the
 # two distfiles are bind-mounted read only.  Needs bwrap, a kernel that
 # runs i386 ELF executables, bash, grep, awk, sed and cat in the host's
 # /usr/bin (for lb-replay.sh's own text handling), the vendor/stage0-posix
@@ -42,10 +42,10 @@
 # build-out/tinycc-inputs/...).  Under half a minute.
 #
 # With JUNCTION_STRACE=FILE in the environment the chroot runs under
-# strace -f -o FILE (tests/tinycc/i386-syscall-check.sh reads the trace).
+# strace -f -o FILE (tests/tinycc/syscall-check.sh reads the trace).
 # With JUNCTION_FIRST_ONLY=1 the replay stops once the first compiler has
 # done its own work, and nothing is compared
-# (tests/tinycc/i386-standin-check.sh looks at the files).
+# (tests/tinycc/standin-check.sh looks at the files).
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
@@ -84,24 +84,24 @@ why=$(probe) || { echo "junction-check: cannot run: $why" >&2; exit 1; }
 
 fail() { echo "junction-check: FAIL: $*" >&2; exit 1; }
 
-# The first compiler, and the tools (build-first-tcc-i386.sh builds them too)
-BIN=$OUT/bin-i386
+# The first compiler, and the tools (build-first-tcc.sh builds them too)
+BIN=$OUT/bin
 if [ $# -ge 1 ]; then
     FIRST=$1
     own=0
-    tinycc/build-tools-i386.sh
+    tinycc/build-tools.sh
 else
-    tinycc/build-first-tcc-i386.sh
-    FIRST=$OUT/tcc-first-i386
+    tinycc/build-first-tcc.sh
+    FIRST=$OUT/tcc-first
     own=1
 fi
 [ -x "$FIRST" ] || fail "$FIRST is not an executable"
 
 # The root: what seed.kaem makes; live-bootstrap's tree and the distfiles
-# are mounted.  build-tools-i386.sh checked the archives against
+# are mounted.  build-tools.sh checked the archives against
 # tinycc/SOURCES and unpacked live-bootstrap's into $OUT/lb.  The steps
 # directory is mounted read-write and pass1.kaem builds in it, so
-# build-tools-i386.sh unpacked a fresh copy.
+# build-tools.sh unpacked a fresh copy.
 rm -rf "$R"
 "$BIN/mkdir" -p "$R"/usr/bin "$R"/usr/lib/mes "$R"/usr/include/mes "$R"/tmp \
     "$R"/dev "$R"/external/distfiles

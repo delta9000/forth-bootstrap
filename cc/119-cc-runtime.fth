@@ -4,7 +4,7 @@
 \ __native_syscall (n, a1, a2, a3, a4, a5, a6): Linux i386 call n through
 \ int 0x80, returning eax as the kernel gives it (-errno on failure),
 \ sign-extended into edx.  A C library defines read, exit and the rest on
-\ it (tinycc/mes-libc-native-i386.c, tinycc/m2libc-native-i386.c).
+\ it (tinycc/mes-libc-native.c, tinycc/m2libc-native.c).
 \
 \ It is a leaf function with no frame.  Every argument occupies an 8-byte
 \ caller-owned stack slot, and after the push below the first is at

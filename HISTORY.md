@@ -176,7 +176,7 @@ The swarms were fine. The handoffs were practical. The gates plus the bootstrap 
 ## Path mapping from seed-forth
 
 This table describes the layout at tag `experiments-2026-11-21`; `main`
-now holds only `seed/i386/`, `forth/`, `cc/`, `tinycc/`, `tests/`,
+now holds only `seed/`, `forth/`, `cc/`, `tinycc/`, `tests/`,
 `tools/` and `vendor/` (see "One route on main" at the end).
 
 forth-bootstrap started as a copy of the files route D reads in seed-forth

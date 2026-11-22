@@ -12,7 +12,7 @@
 # only: /host/usr (the host's /usr: bash, and grep, awk, sed and cat for
 # this script's own text handling), /forth-bootstrap/tinycc (tinycc/),
 # /forth-bootstrap/tcc-first (the first tcc) and /forth-bootstrap/bin
-# (build-out/tinycc/bin-i386, the tools tinycc/build-tools-i386.sh builds
+# (build-out/tinycc/bin, the tools tinycc/build-tools.sh builds
 # from the seed).
 #
 # What runs is live-bootstrap's own kaem text, cut from their files at
@@ -35,7 +35,7 @@
 #               junction-check.sh outside the chroot.
 # With --first-only the tcc-0.9.26 text stops at "# Install", when the
 # first tcc has made its libc and tcc-boot0 and nothing has replaced them
-# (tests/tinycc/i386-standin-check.sh compares those files).
+# (tests/tinycc/standin-check.sh compares those files).
 set -euo pipefail
 
 FIRST=/forth-bootstrap/tcc-first

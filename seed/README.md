@@ -1,12 +1,12 @@
 # The seed
 
-`i386/000-seed.hex0` is a 1,191-byte Forth for i386, written as commented
+`000-seed.hex0` is a 1,191-byte Forth for i386, written as commented
 hex0.  builder-hex0's built-in `hex0` assembles it in the boot;
-`seed/i386/build.sh` assembles it on the host into `./seed-forth-i386`
+`seed/build.sh` assembles it on the host into `./seed-forth`
 with stage0-posix's `hex0-seed`.  Everything else the route runs before
 the first tcc is Forth text that this program reads from files.
 
-`i386/SPEC.md` is its specification: the 21 words, 64-bit cells on a
+`SPEC.md` is its specification: the 21 words, 64-bit cells on a
 32-bit machine, how it reads its input by file name, its memory map and
 its system calls (`brk`, `open`, `read`, `write`, `exit`).
 
@@ -18,12 +18,12 @@ most of this repository was (HISTORY.md).  There is no assembler source it
 was converted from and no program that generated it.
 
 Because nobody should have to trust hand-written hex, it is checked by
-independent assemblers: `tests/seed/i386/asm-check.py` takes the
+independent assemblers: `tests/seed/asm-check.py` takes the
 instruction written in each line's comment, assembles the comments with
 GNU as and again with llvm-mc, and requires both to produce exactly the
 bytes in the file.  What the code does, as opposed to what it encodes, is
-tested by `tests/seed/i386/test.sh` (76 cases, and again under strace) and
-by `tests/seed/i386/boot-check.sh` on builder-hex0.
+tested by `tests/seed/test.sh` (76 cases, and again under strace) and
+by `tests/seed/boot-check.sh` on builder-hex0.
 
 ## How to read the file
 
@@ -40,9 +40,9 @@ its own.
 
 From the repository root:
 
-    seed/i386/build.sh
-    python3 tests/seed/i386/asm-check.py
-    tests/seed/i386/test.sh
+    seed/build.sh
+    python3 tests/seed/asm-check.py
+    tests/seed/test.sh
 
 An earlier seed for x86-64 (930 bytes, `seed/000-seed.hex0`) is at tag
 `experiments-2026-11-21`.

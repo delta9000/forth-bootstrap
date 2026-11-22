@@ -2,11 +2,11 @@
  * FILE to OUT as "src SIZE PATH\n" and its bytes, the record format of
  * builder-hex0's own input stream, then "end\n".  The boot runs it with OUT
  * /dev/hda, which builder-hex0 writes to the drive's first sectors when
- * its stream ends; tests/tinycc/i386-one-boot-check.sh reads the records
+ * its stream ends; tests/tinycc/one-boot-check.sh reads the records
  * back (tinycc/hex0-records.py) and hashes the files on the host.
  *
  * Compiled in the boot by the first tcc against the mes libc that tcc
- * made (tinycc/i386-one-boot-disk.py).  Only open, read, write, lseek
+ * made (tinycc/one-boot-disk.py).  Only open, read, write, lseek
  * and close. */
 #include <fcntl.h>
 #include <stdlib.h>

@@ -216,7 +216,7 @@ variable cc-nf-lens
   >r dup [lit] 0 <= if, r@ cc-die then,
   dup [lit] 9223372036854771712 > if, r@ cc-die then,
   4095 + 4096 / 4096 * r> drop ;
-\ The memory comes from the break (brk-alloc, forth/i386/010-lib.fth, which
+\ The memory comes from the break (brk-alloc, forth/010-lib.fth, which
 \ answers 0 when it cannot give it): builder-hex0 has no mmap.
 : cc-workspace-map ( bytes code -- address )
   >r r@ cc-workspace-round brk-alloc

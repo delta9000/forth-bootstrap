@@ -1,8 +1,8 @@
 # cc/
 
 A C compiler written in Forth.  The seed loads it after
-`forth/i386/010-lib.fth`, in the order `forth/i386/layers.fth` lists:
-`forth/i386/020-cc-arena.fth`, then the files here in numeric order.
+`forth/010-lib.fth`, in the order `forth/layers.fth` lists:
+`forth/020-cc-arena.fth`, then the files here in numeric order.
 
 | file | what |
 |---|---|
@@ -23,7 +23,7 @@ A C compiler written in Forth.  The seed loads it after
 
 The compiler reads the C files a job names, preprocesses them, and writes
 one static i386 ELF directly: no object files, assembler or linker.  The
-drivers are in `tinycc/` (`tool-compile.fth`, `tcc-compile-i386.fth`).
+drivers are in `tinycc/` (`tool-compile.fth`, `tcc-compile.fth`).
 
 What it compiles is the C that tcc 0.9.26, Mes libc, M2libc, kaem and
 stage0's tools are written in.  What it does not have, it refuses with an
@@ -75,8 +75,8 @@ The `test-0N0-*.fth` files here run in `./test.sh`.
 `tests/cc/gates/run-gates.sh` compiles and runs the gate fixtures, and
 expects each `die-N-*` fixture to be refused with code N on a given line;
 `tests/cc/gates/check-coverage.sh` counts which error codes those cover.
-`tests/cc/i386/run-corpus.sh` compares run-time behaviour with gcc `-m32`,
-and `tests/cc/i386/asm-check.py` compares every encoder's bytes with GNU
+`tests/cc/run-corpus.sh` compares run-time behaviour with gcc `-m32`,
+and `tests/cc/asm-check.py` compares every encoder's bytes with GNU
 as on its comment.
 
 Earlier modes of this compiler (an x86-64 back end, an object-file target

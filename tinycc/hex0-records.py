@@ -6,7 +6,7 @@
 Reads "src SIZE PATH\\n" records (and the SIZE bytes after each) from
 sector SECTOR of DISK until the first line that is not one, and prints
 `sha256  PATH` for every record with SIZE > 0, then that line as
-`# end: LINE`.  tests/tinycc/i386-one-boot-check.sh uses it on what the
+`# end: LINE`.  tests/tinycc/one-boot-check.sh uses it on what the
 boot exported (sector 0).
 """
 import hashlib, sys

@@ -38,7 +38,7 @@
 \ each hold a whole pair, low half at the lower address.
 \
 \ Every byte line carries its instruction as a comment;
-\ tests/cc/i386/asm-check.py assembles the comments with GNU as and
+\ tests/cc/asm-check.py assembles the comments with GNU as and
 \ compares.
 \
 \ Depends on 020 (cc-die, cc-check-cap, cc-alloc), 030 (cc-emit-byte,

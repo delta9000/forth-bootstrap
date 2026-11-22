@@ -1,13 +1,13 @@
 \ tinycc/tool-compile.fth -- the driver that compiles one program against
 \ M2libc: a source-preparation tool, kaem, or a test.
 \
-\ Loaded by the seed's job (tinycc/i386-seed/tool.fth, or
-\ tests/cc/i386/job.fth for a test) after the compiler
-\ (forth/i386/layers.fth) and after the job has defined tool-output, a
+\ Loaded by the seed's job (tinycc/jobs/tool.fth, or
+\ tests/cc/job.fth for a test) after the compiler
+\ (forth/layers.fth) and after the job has defined tool-output, a
 \ word that pushes the output file's name with its NUL, has given the
 \ unit's name to cc-prep-source-name, so that quoted includes resolve
 \ beside it, and has listed the C files to read with cc-input-file.  Like
-\ tinycc/tcc-compile-i386.fth, but with M2libc's include paths, and the
+\ tinycc/tcc-compile.fth, but with M2libc's include paths, and the
 \ output is written executable (0755), so that no chmod is needed before
 \ chmod itself is built.
 [lit] 8388608 cc-arena-map
