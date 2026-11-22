@@ -444,8 +444,11 @@ variable cc-nmove-bytes
   repeat, 2drop 2drop r> drop ;
 
 \ A target may add member syntax while retaining the shared declarator.
+\ A member with no name is an anonymous struct or union, whose fields are
+\ promoted; any other type with no name ("int ;") is error 152.
 : cc-nmember-default ( desc -- )
   nc-func @ if, [lit] 238 cc-die then,
+  nc-nlen @ 0= nc-ty @ ty-struct [lit] 0 ty-make <> and if, [lit] 152 cc-die then,
   dup cc-nadd-field
   nc-nlen @ 0= if, nc-desc @ swap cc-npromote-fields else, drop then, ;
 defer cc-nmember-fwd
