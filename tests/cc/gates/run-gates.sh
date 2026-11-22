@@ -161,6 +161,7 @@ die_gates=(
   "die-207-no-main.c|207|cc: line 5: error 207"
   "die-211-fn-defined-twice.c|211|cc: line 3: error 211"
   "die-212-struct-argument.c|212|cc: line 5: error 212"
+  "die-213-member-array-of-arrays.c|213|cc: line 2: error 213"
   "die-219-static-init-not-constant.c|219|cc: line 3: error 219"
   "die-220-string-for-int-array.c|220|cc: line 3: error 220"
   "die-221-initializer-eof.c|221|cc: line 4: error 221"

@@ -1,4 +1,4 @@
-\ 118-cc-native-init.fth — bounded C initializers for the native bootstrap.
+\ 118-cc-native-init.fth — initializers.
 \ Scalar stores, brace lists, nested arrays/aggregates and character strings
 \ are lowered by the Forth compiler. Static expressions use the expression
 \ parser's constant-category guard; they run once before main. This avoids

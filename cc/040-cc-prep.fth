@@ -1,10 +1,8 @@
 \ 040-cc-prep.fth — the C preprocessor.
 \
 \ One pass over the raw source, before the lexer sees anything:
-\   1. Legacy #include "FILE" searches as given, then under tests/cc/;
-\      angle includes are dropped in favour of built-in header shims.
-\      Direct mode resolves quoted names relative to their includer, then
-\      explicit include directories; angle names use those directories.
+\   1. #include "FILE" is looked for relative to its includer, then in the
+\      include directories the driver named; <FILE> in those directories.
 \   2. #define NAME BODY and #define NAME(PARAMS) BODY record a macro, and
 \      #undef NAME forgets it.  Outside directives every identifier is
 \      looked up: a macro's name is replaced by its body (for a function-
@@ -231,8 +229,6 @@ variable cc-macro-count
 create cc-macro-pool  cc-macro-pool-cap allot
 variable cc-macro-pool-pos
 
-\ Direct GCC maps six equally sized parallel arrays; the text pool is unchanged.
-\ Fixed opt-in policy; changing one array never changes legacy macro limits.
 [lit] 4608 constant cc-macro-direct-cap
 \ The selectors that switch these arrays follow the include pool below.
 
@@ -678,10 +674,9 @@ variable cc-prep-load-name-a
 variable cc-prep-load-name-u
 
 \ cc-prep-load-file ( path-a path-u -- buf-a buf-u )
-\ Legacy mode tries the literal name then tests/cc/<name>, using a slot
-\ per depth.  Direct mode uses the includer and explicit directories,
-\ packing live files into the selected pool.  Dies with 31 at the depth
-\ limit, 30 if no path opens, and 32 when the slot or pool is full.
+\ Looks beside the includer and in the include directories, and packs the
+\ live files into one pool.  Dies with 31 at the depth limit, 30 if no
+\ path opens, and 32 when the pool is full.
 : cc-prep-open-include
   \ Absolute names are already complete in either include form.
   cc-prep-load-name-u @ if,
@@ -1286,7 +1281,7 @@ variable cc-prep-isd-save-pos
 \ cc-pp-eval ( a u -- n )  The value of the constant expression a u, which
 \ has no macros left in it.  100-cc-expr.fth fills it in: #if uses the
 \ same grammar as array sizes and case labels, with intmax_t/uintmax_t
-\ signedness and conversions in the LP64 profile.
+\ signedness and conversions.
 defer cc-pp-eval
 
 \ cc-pp-if-value ( -- f )  Expand the rest of the #if / #elif line into a

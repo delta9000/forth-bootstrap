@@ -37,9 +37,8 @@ cc-in-default-cap cc-in-limit !
 variable cc-in-len
 
 \ cc-src-buf holds the preprocessed source the lexer reads: #include'd files
-\ spliced in, directives blanked. The default is twice the raw capacity;
-\ direct GCC selects separately measured limits. The reader's cursor is in the lexer's
-\ state block (020-cc-arena.fth).
+\ spliced in, directives blanked. Its capacity is twice the raw one.  The
+\ reader's cursor is in the lexer's state block (020-cc-arena.fth).
 2097152 constant cc-src-default-cap
 create cc-src-default-buf cc-src-default-cap allot
 variable cc-src-buffer

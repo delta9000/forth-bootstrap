@@ -3,10 +3,8 @@
 \ Qualifiers, storage classes and the other pieces of a type, type names
 \ and casts, the `return` statement, and the words that end a program.
 \ The rest of the parser follows in load order: statements in
-\ 112-cc-stmt.fth, then one of two sets of declarations, functions and
-\ driver.  The C subset needed to compile M2-Planet has its own in
-\ 114-cc-func.fth and 116-cc-prog.fth; native mode loads neither and has
-\ 115-cc-native.fth and 117-cc-native-program.fth.
+\ 112-cc-stmt.fth, declarations in 115-cc-native.fth, functions and the
+\ program in 117-cc-native-program.fth.
 \
 \ Depends on 010-lib.fth, 030-cc-io.fth, 050-cc-lex.fth, 060-cc-types.fth, 070-cc-sym.fth,
 \ 080-cc-elf.fth, 090-cc-emit.fth, 100-cc-expr.fth.
@@ -17,7 +15,7 @@
 
 defer cc-parse-type-name
 defer cc-native-decl-fwd
-\ Native declarations use dynamically sized frames, patched after the body.
+\ A function's frame is sized after its body and patched into the prologue.
 variable cc-native-return-type
 variable cc-native-return-desc
 variable cc-native-frame-limit
@@ -41,10 +39,7 @@ variable cc-fn-local-count                        \ # locals in current function
 \ ===========================================================================
 
 \ Each error path dies through cc-die with its own code, so a failure names
-\ its site.  Codes 140..169 are this file's and those of the declarations
-\ in 114-cc-func.fth, which began here; 112, 114 and 116 have 170..179,
-\ 180..189 and 190..219, and 206 and 207 came from 116 with the words that
-\ end a program (Appendix G).
+\ its site.
 
 \ cc-expect-kw-id ( kw-id -- )  Consume one token; abort if not the given kw.
 : cc-expect-kw-id
@@ -147,9 +142,7 @@ create cc-main-name-bytes  s, main
 \ called or used as a value but never defined still has pending call or
 \ address fixups — each would run a rel32 of 0 (falling through to the next
 \ instruction) or load address 0.  Die 206 instead.  Then die 207 if there
-\ is no main for the entry stub to call.  116-cc-prog.fth registers memset
-\ with no body, so a program it compiles that uses memset dies here too:
-\ this compiler has no memset to link.
+\ is no main for the entry stub to call.
 : cc-check-fns-defined
   [lit] 0                                         ( id )
   begin, dup cc-sym-count @ < while,
@@ -179,7 +172,7 @@ create cc-main-name-bytes  s, main
   and ;
 
 \ cc-qualifier-bit ( -- bit )  The current qualifier's bit in a qualifier
-\ set: const 1, volatile 2, restrict 4.  The LP64 targets record sets, not
+\ set: const 1, volatile 2, restrict 4.  The compiler records sets, not
 \ a yes/no flag, so `const` and `volatile` rows stay distinct types.
 : cc-qualifier-bit
   tok-kw-id @ kw-const = if, [lit] 1 exit, then,
@@ -393,7 +386,7 @@ variable cc-loop-switch-depth
     cc-last-expr-type @ cc-last-struct-desc @
     cc-native-return-type @ cc-native-return-desc @ cc-return-shape
     cc-last-expr-type @ cc-native-return-type @ cc-emit-convert-value
-    cc-value-return                           \ result -> rax (SYS-V)
+    cc-value-return                           \ result -> rax
     cc-switch-depth @ cc-emit-switch-unwind
     cc-emit-epilogue
     [char] ; cc-expect-punct-c

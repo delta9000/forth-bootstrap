@@ -430,7 +430,7 @@ variable cc-for-step-end
 
 variable cc-switch-cases-head     \ linked list of { K (8), vaddr (8), next (8) }
 variable cc-switch-default-vaddr  \ 0 if no default seen
-variable cc-switch-type           \ LP64: promoted controlling type
+variable cc-switch-type           \ promoted controlling type
 
 \ cc-add-switch-case ( K body-vaddr -- )  Allocate a 24-byte node and prepend
 \ it to cc-switch-cases-head.  The list is built in reverse source order;
@@ -619,8 +619,7 @@ variable cc-switch-type           \ LP64: promoted controlling type
 \ Label table (per-function) + goto / label definition
 \ ===========================================================================
 \ Labels are function-local.  We use parallel arrays similar to cc-sym, sized
-\ with a 64-label default and a measured direct-GCC workspace. The count resets on
-\ function entry.
+\ for 64 labels.  The count resets on function entry.
 \
 \ Each label tracks:
 \   cc-label-name-addr [id] : pointer into cc-src-buf where name begins
@@ -799,8 +798,7 @@ variable cc-label-count
 \ statement, each returning with exit, once its parser has run.  Silently
 \ skip any leading storage-class / type-qualifier keywords (static,
 \ extern, const, volatile, ...).  A lone ';' is the empty statement.  A
-\ declaration is native mode's here (cc-native-decl-fwd); the M2-Planet
-\ subset's are taken first by cc-parse-decl-or-stmt (114-cc-func.fth).
+\ declaration goes to cc-native-decl-fwd (115-cc-native.fth).
 : cc-parse-stmt
   cc-skip-storage-quals
   cc-next-token-keep

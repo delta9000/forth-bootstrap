@@ -349,7 +349,6 @@ variable cc-ff-result-record
   cc-emit-mov-rdi-rax
   ty-int [lit] 0 ty-make [lit] 0 cc-mark-typed-value ;
 
-\ Optional ABI hooks preserve the native default until an explicit opt-in.
 : cc-native-call-result ( id -- ty desc )
   dup cc-sym-kind-of sk-func = if, dup cc-sym-type-of
   else, ty-int [lit] 0 ty-make then,
@@ -403,7 +402,7 @@ variable cc-ff-result-record
 \ lvalue.  When val == 0 the function is still a forward prototype; emit a
 \ 10-byte movabs placeholder and thread the imm64 patch-offset onto its
 \ cc-sym-addr-fixups list so cc-parse-function can patch it once the real
-\ vaddr is known.  Without this, M2-Planet code like
+\ vaddr is known.  Without this, code like
 \ `common_recursion(expression)` (where `expression` is forward-declared)
 \ loads 0 into rdi and crashes at the indirect call.
 : cc-parse-func-ref
@@ -1636,7 +1635,7 @@ variable cc-cx-comparison
   then,
   cc-cx-comparison @ if, [lit] 0 cc-cx-unsigned ! then, ;
 
-\ cc-cx-operand ( -- v )  Under LP64 a number's suffix is checked by
+\ cc-cx-operand ( -- v )  A number's suffix is checked by
 \ the same parser that types runtime literals (060), so #if 1LLL is 240.
 : cc-cx-operand
   [lit] 0 cc-cx-unsigned !

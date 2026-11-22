@@ -18,7 +18,7 @@
 
 [lit] 0 constant ty-void
 [lit] 1 constant ty-char
-[lit] 2 constant ty-int                       \ legacy 64-bit; LP64 32-bit
+[lit] 2 constant ty-int
 [lit] 3 constant ty-struct
 [lit] 4 constant ty-func
 [lit] 5 constant ty-short
@@ -31,8 +31,7 @@
 [lit] 12 constant ty-ulong
 [lit] 13 constant ty-ldouble
 [lit] 14 constant ty-array
-\ LP64 long long kinds share long's representation but not its identity:
-\ only the LP64 data model spells them, and they rank above long.
+\ The long long kinds rank above long.
 [lit] 15 constant ty-llong
 [lit] 16 constant ty-ullong
 \ C99 _Bool: one byte holding 0 or 1, an unsigned type of lowest rank.
@@ -191,13 +190,13 @@ variable cc-literal-long
 \
 \   offset  0: total-size (bytes)
 \   offset  8: field-count
-\   offset 16: aggregate alignment (LP64)
-\   offset 24: is-union flag (LP64)
-\   offset 32: target cell (SysV: bitfield cursor, 129-cc-bitfield.fth)
+\   offset 16: aggregate alignment
+\   offset 24: is-union flag
+\   offset 32: unused
 \   offset 40: field-table address (0 until the first field)
 \   offset 48: field-table capacity, in records
 \
-\ Field i's record is at table + i*record-bytes.  LP64 records are 6 cells:
+\ Field i's record is at table + i*record-bytes.  A record is 6 cells:
 \     +  0: name-addr
 \     +  8: name-len
 \     + 16: field type (array element type when array-len is nonzero)
@@ -205,19 +204,15 @@ variable cc-literal-long
 \     + 32: aggregate/pointee descriptor, or 0
 \     + 40: array length (0 for a scalar)
 \
-\ Legacy records keep only the first five cells (40 bytes) and legacy
-\ code reads only the first two header cells.  The table starts with room
+\ The table starts with room
 \ for 8 records and doubles when an append needs more, so small structs
 \ stay small.  The live table holds fewer than twice the records in use,
 \ but each outgrown table stays behind in the bump arena: together they
 \ hold 8 + 16 + ... + C records for a final capacity C, under four times
 \ the member count.  513 members leave tables of 8, 16, ... 512 and the
 \ capped 1023, 2,039 records (about 4x).  The cap
-\ is policy, not storage: LP64 allows 1023 members, C99's translation
-\ limit for one struct or union (5.2.4.1).  That is over four times the
-\ largest in GCC 4.0.4 (JNINativeInterface, 232 members) and seven times
-\ bfd's (elf_backend_data, 143).  The legacy M2-Planet subset
-\ keeps its documented 16-field limit and small arena.
+\ is policy, not storage: 1023 members is C99's translation limit for one
+\ struct or union (5.2.4.1).
 
 [lit] 1023 constant cc-sd-field-cap
 [lit] 56 constant cc-sd-header-bytes
@@ -286,7 +281,6 @@ variable cc-sd-grow-desc
   cc-sd-record-bytes * swap cc-sd-table + ;
 
 \ Field-record accessors / mutators.  Each takes rec-addr on TOS.
-\ Alignment, union and array-length accessors are for LP64 descriptors only.
 : cc-sf-name-addr       @ ;                            \ ( rec -- a )
 : cc-sf-name-len        [lit]  8 + @ ;                 \ ( rec -- u )
 : cc-sf-type            [lit] 16 + @ ;                 \ ( rec -- ty )
@@ -301,7 +295,8 @@ variable cc-sd-grow-desc
 : cc-sf-set-desc        [lit] 32 + ! ;                 \ ( desc rec -- )
 : cc-sf-set-array-len   [lit] 40 + ! ;                 \ ( n rec -- )
 
-\ Targets may extend field shape without changing legacy/native records.
+\ A member that is an array of arrays is refused (213): a record has no
+\ cell for the inner length.
 : cc-sf-array-inner ( rec -- n ) drop [lit] 0 ;
 : cc-sf-set-array-inner ( n rec -- )
   drop if, [lit] 213 cc-die then, ;

@@ -1,7 +1,8 @@
-\ 115-cc-native.fth — opt-in LP64 bootstrap declaration parser.
-\ The legacy M2-compatible parser remains the default. Native mode uses
-\ LP64 object layout and a private, all-stack call ABI within its image.
-\ That ABI is private: it binds only code compiled together into one image.
+\ 115-cc-native.fth — the declaration parser: specifiers, declarators,
+\ structs and unions, enums, typedefs and locals.
+\ Objects are laid out by ty-size and ty-align (060).  Calls use an
+\ all-stack ABI that is private: it binds only code compiled together into
+\ one image.
 
 : cc-npick ( x_n ... x_0 n -- x_n ... x_0 x_n )
   dup 0= if, drop dup exit, then,
@@ -96,7 +97,7 @@ variable cc-ntag-u
 ' cc-native-type-start is cc-type-start?
 
 
-\ A target may provide C90's omitted int base without changing native mode.
+\ A declaration with no type specifier does not default to int.
 : cc-native-implicit-base [lit] 0 ;
 
 
@@ -164,7 +165,7 @@ create cc-nspec-counts cc-nspec-slots [lit] 8 * allot
 \ The base comes from the counted keywords. In native mode an invalid set
 \ still selects one base: the first of void, _Bool, float, double, char,
 \ short and long that occurs, otherwise int. Long double is double with a long.
-\ Two longs name long long only under LP64; the legacy model has one long.
+\ Two longs name long long.
 : cc-nspec-base ( -- base )
   kw-void cc-nspec-count if, ty-void exit, then,
   cc-nspec-bool cc-nspec-count if, ty-bool exit, then,
