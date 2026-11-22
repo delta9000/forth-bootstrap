@@ -45,62 +45,10 @@ cc-pp-sink [lit]  8 +  constant cc-pp-out-pos      \ bytes written so far
 cc-pp-sink [lit] 16 +  constant cc-pp-out-cap      \ buffer size
 cc-pp-sink [lit] 24 +  constant cc-pp-out-code     \ die code when it fills
 
-\ Direct mode keeps unavailable-token metadata outside the C byte stream.
-\ The selected sink's shadow bytes are derived from its existing buffer.
+\ The flags that mark tokens unavailable for expansion are kept outside
+\ the C text, one shadow byte per text byte; cc-pp-out-flags is the shadow
+\ of the current sink's buffer, or 0 if that buffer has none.
 variable cc-pp-out-flags
-defer cc-pp-select-flags-fwd
-
-\ cc-prep-emit-byte ( b -- )  Append b to the sink; die with the sink's
-\ code if it is full.  Counts lines as it goes, so a failure during the
-\ pass reports the line of the output it had reached.
-: cc-prep-emit-byte
-  cc-pp-out-pos @ 1+ cc-pp-out-cap @ cc-pp-out-code @ cc-check-cap
-  cc-pp-out-flags @ if, [lit] 0 cc-pp-out-flags @ cc-pp-out-pos @ + c! then,
-  dup cc-pp-out @ cc-pp-out-pos @ + c!
-  [lit] 1 cc-pp-out-pos +!
-  nl = if, [lit] 1 cc-src-line +! then, ;
-
-defer cc-pp-copy-byte-fwd
-
-\ cc-pp-emit-bytes ( a u -- )  Append u bytes from a.
-: cc-pp-emit-bytes
-  begin, dup while,
-    over cc-pp-copy-byte-fwd
-    1- swap 1+ swap
-  repeat,
-  2drop ;
-
-\ cc-pp-copy4 ( src dst -- )  Copy one 4-cell block (a sink).
-: cc-pp-copy4
-  [lit] 32
-  begin, dup while,
-    [lit] 8 -                                    ( src dst off )
-    >r  over r@ + @  over r@ + !  r>
-  repeat,
-  drop 2drop ;
-
-\ Parked sinks, innermost last.  Every sink parked here but the first
-\ two (the source buffer and the macro pool, §2) belongs to a temp
-\ buffer, and each temp buffer takes cc-pp-temp-cap bytes of the scratch
-\ area below, so the scratch runs out (code 43) before this stack could:
-\ it has room for as many temp buffers as the scratch holds, plus two.
-[lit] 34 constant cc-pp-sinks-cap
-create cc-pp-sinks  cc-pp-sinks-cap [lit] 32 * allot
-variable cc-pp-sink-depth
-
-\ cc-pp-sink-push ( addr pos cap code -- )  Park the current sink and make
-\ a new one.
-: cc-pp-sink-push
-  cc-pp-sink  cc-pp-sink-depth @ [lit] 32 * cc-pp-sinks +  cc-pp-copy4
-  [lit] 1 cc-pp-sink-depth +!
-  cc-pp-out-code ! cc-pp-out-cap ! cc-pp-out-pos ! cc-pp-out !
-  cc-pp-select-flags-fwd ;
-
-\ cc-pp-sink-pop ( -- )  Resume writing to the most recently parked sink.
-: cc-pp-sink-pop
-  [lit] 1 cc-pp-sink-depth -!
-  cc-pp-sink-depth @ [lit] 32 * cc-pp-sinks +  cc-pp-sink  cc-pp-copy4
-  cc-pp-select-flags-fwd ;
 
 \ ===========================================================================
 \ Scratch space for temporary text
@@ -131,15 +79,73 @@ variable cc-pp-flags-base
   then, drop [lit] 0 ;
 : cc-pp-unavailable? ( address -- flag )
   cc-pp-flag-address dup if, c@ then, ;
+\ cc-pp-select-flags ( -- )  Point cc-pp-out-flags at the shadow of the
+\ sink that has just become current.
 : cc-pp-select-flags
   cc-pp-out @ cc-pp-flag-address cc-pp-out-flags ! ;
-' cc-pp-select-flags is cc-pp-select-flags-fwd
+
+\ ===========================================================================
+\ Writing to the sink
+\ ===========================================================================
+
+\ cc-prep-emit-byte ( b -- )  Append b to the sink; die with the sink's
+\ code if it is full.  Counts lines as it goes, so a failure during the
+\ pass reports the line of the output it had reached.
+: cc-prep-emit-byte
+  cc-pp-out-pos @ 1+ cc-pp-out-cap @ cc-pp-out-code @ cc-check-cap
+  cc-pp-out-flags @ if, [lit] 0 cc-pp-out-flags @ cc-pp-out-pos @ + c! then,
+  dup cc-pp-out @ cc-pp-out-pos @ + c!
+  [lit] 1 cc-pp-out-pos +!
+  nl = if, [lit] 1 cc-src-line +! then, ;
+
+\ cc-pp-copy-marked-byte ( address -- )  Append the byte at address, and
+\ carry its unavailable flag over to the sink's shadow byte.
 : cc-pp-copy-marked-byte ( address -- )
   dup cc-pp-unavailable? >r c@ cc-prep-emit-byte
   r> cc-pp-out-flags @ 0= 0= and if,
     true cc-pp-out-flags @ cc-pp-out-pos @ + 1- c!
   then, ;
-' cc-pp-copy-marked-byte is cc-pp-copy-byte-fwd
+
+\ cc-pp-emit-bytes ( a u -- )  Append u bytes from a.
+: cc-pp-emit-bytes
+  begin, dup while,
+    over cc-pp-copy-marked-byte
+    1- swap 1+ swap
+  repeat,
+  2drop ;
+
+\ cc-pp-copy4 ( src dst -- )  Copy one 4-cell block (a sink).
+: cc-pp-copy4
+  [lit] 32
+  begin, dup while,
+    [lit] 8 -                                    ( src dst off )
+    >r  over r@ + @  over r@ + !  r>
+  repeat,
+  drop 2drop ;
+
+\ Parked sinks, innermost last.  Every sink parked here but the first
+\ two (the source buffer and the macro pool, §2) belongs to a temp
+\ buffer, and each temp buffer takes cc-pp-temp-cap bytes of the scratch
+\ area above, so the scratch runs out (code 43) before this stack could:
+\ it has room for as many temp buffers as the scratch holds, plus two.
+[lit] 34 constant cc-pp-sinks-cap
+create cc-pp-sinks  cc-pp-sinks-cap [lit] 32 * allot
+variable cc-pp-sink-depth
+
+\ cc-pp-sink-push ( addr pos cap code -- )  Park the current sink and make
+\ a new one.
+: cc-pp-sink-push
+  cc-pp-sink  cc-pp-sink-depth @ [lit] 32 * cc-pp-sinks +  cc-pp-copy4
+  [lit] 1 cc-pp-sink-depth +!
+  cc-pp-out-code ! cc-pp-out-cap ! cc-pp-out-pos ! cc-pp-out !
+  cc-pp-select-flags ;
+
+\ cc-pp-sink-pop ( -- )  Resume writing to the most recently parked sink.
+: cc-pp-sink-pop
+  [lit] 1 cc-pp-sink-depth -!
+  cc-pp-sink-depth @ [lit] 32 * cc-pp-sinks +  cc-pp-sink  cc-pp-copy4
+  cc-pp-select-flags ;
+
 : cc-pp-flags-init
   [lit] 0 cc-pp-out-flags !
   cc-src-cap cc-src-direct-cap > if, [lit] 43 cc-die then,
@@ -187,7 +193,7 @@ variable cc-pp-flags-base
 \                         entry can never match again
 \   body-addr / body-len  the replacement text.  In a function-like macro's
 \                         body ordinary parameter k is encoded as 1, k.
-\                         Direct mode also uses 2, k for #k and 3 for ##.
+\                         #k is encoded as 2, k and ## as 3.
 \   params                -1 for an object-like macro; else how many
 \                         parameters the function-like macro has
 \   busy                  -1 while the macro's own replacement is being
@@ -566,8 +572,8 @@ variable cc-prep-path-out
   cc-prep-append                                   \ append name
   [lit] 0 cc-prep-path-buf cc-prep-path-out @ + c! ;  \ NUL
 
-\ Direct mode keeps include directories explicit and relative to the process
-\ working directory.  Quote includes first search the including file's
+\ Include directories are explicit and relative to the process's working
+\ directory.  Quote includes first search the including file's
 \ directory; angle includes search only the configured directories.
 [lit] 32 constant cc-prep-include-max
 create cc-prep-include-dirs  cc-prep-include-max cc-prep-path-cap * allot
@@ -1345,7 +1351,7 @@ create cc-prep-save-pos   cc-prep-save-count [lit] 8 * allot
 
 \ cc-prep-handle-include
 \ Pre: pos points just past "include".  Skip blanks, read "..." or <...>,
-\ then recurse on quoted names, and on angle names in direct mode.
+\ then recurse into the file named, quoted or in angle brackets.
 \ At exit pos is at end-of-line (or EOR); newline is NOT consumed.
 variable cc-prep-inc-end
 variable cc-prep-inc-expanded
