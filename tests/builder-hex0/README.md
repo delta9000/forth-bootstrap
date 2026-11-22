@@ -1,18 +1,38 @@
 # builder-hex0 measured: kernel behaviours an i386 Forth and C compiler rely on (2026-11-21)
 
-This note checks section 1 of `i386-option.md`, which was found by reading
-the source only. Here builder-hex0 was booted under QEMU/KVM, and probe
-programs measured each behaviour.
+The seed, the library and the C shims are written defensively against
+this kernel: no read of descriptor 0, no `mmap`, a guard in front of
+`execve`, files written once and in order.  This note is the evidence for
+those choices.  A first list of the kernel's hazards came from reading
+its source only; here builder-hex0 was booted under QEMU/KVM, and probe
+programs measured each behaviour.  `seed/SPEC.md` (section 10) and
+`forth/CONTRACT.md` cite the sections below as `P§n`.
 
-- **Kernel:** builder-hex0 at a2781242, as `tinycc/hex0-handoff-check.sh`
-  boot 2 runs it. Stage 1 is assembled by the host `hex0-seed`, and
-  stage 2 is compiled from `builder-hex0-x86-stage2.hex0` by stage 1.
+- **Kernel:** builder-hex0 at a2781242, booted as
+  `tests/tinycc/one-boot-check.sh` boots it. Stage 1 is assembled by the
+  host `hex0-seed`, and stage 2 is compiled from
+  `builder-hex0-x86-stage2.hex0` by stage 1.
 - **Citations:** `B2:<line>` refers to that stage-2 file.
-- **Repository:** `~/code/forth-bootstrap-roots`, branch
-  `roots/cleanroom-k0`, used read-only. Nothing in it was changed.
 - **Probes:** one i386 static ELF, `probe`, with a mode per test. It is
   built by host `gcc -m32 -static -nostdlib` with its own `int 0x80` stubs:
-  no libc, no tcc, no K0.
+  no libc and no tcc.
+
+**What the checks use, and what is kept as evidence.**  `./check-all.sh`
+runs none of the five measurement boots.  Two of its steps borrow tools
+from this directory:
+
+- step 14, `tests/seed/boot-check.sh`: `boot.sh`, and through it
+  `mkdisk.py` and `tsserial.py`;
+- step 13, `tests/tinycc/kaem-boot-check.sh`: `mkdisk.py`, and `build.sh`
+  with `src/start.S`, `src/probe.c` and `src/probe.ld`, because it puts
+  `probe` on its disks as a program whose exit status is known (`exit0`,
+  `exit300`).
+
+Everything else is the record of the measurement and is run by hand
+only: the lists `boot-{a,b,c,d,e}.list`, `hmp.py`, `src/tscfreq.c` and
+the serial logs in `logs/`.  "Rebuilding the probe disk" below is how to
+run a measurement boot again; the logs are those of 2026-11-21 and no
+check compares a new run with them.
 
 Everything in the table was measured unless it is marked **not measured**.
 The raw serial logs are in `logs/`, and the main log is
@@ -27,7 +47,7 @@ reproduced in the appendix.
 | `src/probe.ld` | one RWX `PT_LOAD` at 0x08048000 holding the headers. execve copies every program header and takes brk from the last one, so a default gcc link, which ends with `PT_GNU_STACK` (vaddr 0), would get brk = 0x20000 |
 | `src/tscfreq.c` | host TSC rate (3792.8 MHz on this Ryzen 7 9700X; `constant_tsc nonstop_tsc`) |
 | `build.sh` | builds `probe` |
-| `mkdisk.py` | the disk: stage 1, stage-2 text, zeros to sector 175, then `src`/command records (the `tinycc/hex0-disk.c` layout, with one addition: `r TEXT`, raw bytes for fd 0), padded to 64 MiB |
+| `mkdisk.py` | the disk: stage 1, stage-2 text, zeros to sector 175, then `src`/command records (the layout `tinycc/one-boot-disk.py` writes, with one addition: `r TEXT`, raw bytes for fd 0), padded to 64 MiB |
 | `boot.sh` | builds the disk from a list and boots it with the boot-2 QEMU line; the serial output goes through `tsserial.py` (host timestamps) |
 | `hmp.py` | sends commands to a QEMU monitor socket (used for the runaway brk) |
 | `boot-{a,b,c,d,e}.list` | the five boots |
