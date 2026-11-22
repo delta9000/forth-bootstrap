@@ -95,12 +95,6 @@ variable code-start
   1-, ret,
   code-start @ native!
 
-\ key-drain ( buf cap -- n )  Move the bytes a buffered key has read but
-\ not handed out to buf; answer how many.  The library's key keeps no
-\ buffer (file-key), so there are none.  cc-read-all (030) names this word
-\ in its branch for descriptor 0, which nothing reads on this host.
-: key-drain  2drop 0 ;
-
 \ ----- A light optimizing compile -----
 \ The seed compiles every word as a CALL, and 010-lib.fth's branches are
 \ CALLs to branch or 0branch, which take their own return address off the

@@ -12,7 +12,7 @@
      lib/linux/x86-mes-gcc/crt1.c (_start)               inline asm
      lib/mes/abtod.c, lib/mes/dtoab.c                    double arithmetic
    Every system call goes through __native_syscall, the one primitive
-   cc/i386/119-runtime.fth emits; it returns what Linux returns, -errno on
+   cc/119-cc-runtime.fth emits; it returns what Linux returns, -errno on
    failure, and the _sys_call wrappers set errno as Mes's do.  The call
    numbers are Mes's own, from include/linux/x86/syscall.h; only exit and
    write are spelt here. */

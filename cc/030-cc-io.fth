@@ -68,10 +68,6 @@ variable cc-ra-n
 : cc-read-all
   cc-ra-code ! cc-ra-cap ! cc-ra-buf ! cc-ra-fd !
   0 cc-ra-n !
-  cc-ra-fd @ 0= if,                    \ stdin: first what key-fill holds (020)
-    cc-ra-buf @ cc-ra-cap @ key-drain cc-ra-n !
-    cc-ra-n @ 1+ cc-ra-cap @ cc-ra-code @ cc-check-cap
-  then,
   begin,
     cc-ra-fd @  cc-ra-buf @ cc-ra-n @ +  cc-ra-cap @ cc-ra-n @ -  read
     dup 0 >
@@ -80,12 +76,6 @@ variable cc-ra-n
     cc-ra-n @ 1+ cc-ra-cap @ cc-ra-code @ cc-check-cap   \ full: die
   repeat,
   drop cc-ra-n @ ;
-
-\ cc-load-stdin ( -- )  Read all of fd 0 into cc-in-buf; die 20 if it fills.
-\ Rewinds the reader first, so an error here reports line 1.
-: cc-load-stdin
-  cc-src-init
-  0 cc-in-buf cc-in-cap 20 cc-read-all  cc-in-len ! ;
 
 \ cc-eof? ( -- f )  -1 if pos has reached len; 0 otherwise.
 : cc-eof?  cc-src-pos @ cc-src-len @ >= ;
@@ -165,18 +155,6 @@ variable cc-out-pos
   256 / dup r@ 2 + cc-out-patch-byte      ( v>>16   ; R: offset )
   256 /     r> 3 + cc-out-patch-byte ;    ( v>>24>>8 popped )
 
-\ cc-out-patch-8le ( v offset -- )  Overwrite 8 bytes at offset (LE).
-: cc-out-patch-8le
-  >r                                                  ( v       ; R: offset )
-  dup r@                       cc-out-patch-byte      ( v       ; R: offset )
-  256 / dup r@ 1+ cc-out-patch-byte
-  256 / dup r@ 2 + cc-out-patch-byte
-  256 / dup r@ 3 + cc-out-patch-byte
-  256 / dup r@ 4 + cc-out-patch-byte
-  256 / dup r@ 5 + cc-out-patch-byte
-  256 / dup r@ 6 + cc-out-patch-byte
-  256 /     r> 7 + cc-out-patch-byte ;
-
 \ ===========================================================================
 \ D. Helpers shared by the preprocessor, lexer and symbol table
 \ ===========================================================================
@@ -239,10 +217,47 @@ variable cc-nf-lens
   >r dup [lit] 0 <= if, r@ cc-die then,
   dup [lit] 9223372036854771712 > if, r@ cc-die then,
   4095 + 4096 / 4096 * r> drop ;
-: cc-workspace-syscall ( page-bytes -- address )
-  0 swap 3 34 true 0 9 syscall6 ;
-defer cc-workspace-syscall-fwd
-' cc-workspace-syscall is cc-workspace-syscall-fwd
+\ The memory comes from the break (brk-alloc, forth/i386/010-lib.fth, which
+\ answers 0 when it cannot give it): builder-hex0 has no mmap.
 : cc-workspace-map ( bytes code -- address )
-  >r r@ cc-workspace-round cc-workspace-syscall-fwd
+  >r r@ cc-workspace-round brk-alloc
   dup [lit] 0 <= if, r@ cc-die then, r> drop ;
+
+\ ===========================================================================
+\ E. The C source files
+\ ===========================================================================
+\ The C source comes from files named beforehand: builder-hex0's
+\ descriptor 0 is the boot disk's command stream and never ends.
+\
+\ cc-input-file ( zaddr -- )  Add a NUL-terminated path to the list of C
+\ source files, at most 8; a ninth dies with 20, the code for input that
+\ does not fit.
+create cc-input-files  [lit] 64 allot             \ 8 cells
+variable cc-input-count
+: cc-input-file
+  cc-input-count @ 1+ [lit] 8 [lit] 20 cc-check-cap
+  cc-input-count @ cc-input-files cell[] !
+  [lit] 1 cc-input-count +! ;
+
+\ cc-load-file ( zaddr -- )  Append the file's bytes to cc-in-buf, directly
+\ after those already there.  Dies 20 if it cannot be opened or the buffer
+\ fills.
+: cc-load-file
+  [lit] 0 [lit] 0 open                            ( fd )  \ O_RDONLY
+  dup 0< if, [lit] 20 cc-die then,
+  dup  cc-in-buf cc-in-len @ +  cc-in-cap cc-in-len @ -  [lit] 20 cc-read-all
+  cc-in-len +!
+  close drop ;
+
+\ cc-load-files ( -- )  Read the listed files into cc-in-buf, in order,
+\ with nothing between them.  Rewinds the reader first, so an error here
+\ reports line 1.
+: cc-load-files
+  cc-src-init
+  [lit] 0 cc-in-len !
+  [lit] 0
+  begin, dup cc-input-count @ < while,
+    dup cc-input-files cell[] @ cc-load-file
+    1+
+  repeat,
+  drop ;

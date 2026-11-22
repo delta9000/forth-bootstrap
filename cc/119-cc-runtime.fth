@@ -1,6 +1,6 @@
-\ 119-runtime.fth — the one kernel primitive of an i386 program.
+\ 119-cc-runtime.fth — the one kernel primitive of a compiled program.
 \
-\ Loaded in place of 119-cc-native-runtime.fth.  It emits
+\ It emits
 \ __native_syscall (n, a1, a2, a3, a4, a5, a6): Linux i386 call n through
 \ int 0x80, returning eax as the kernel gives it (-errno on failure),
 \ sign-extended into edx.  A C library defines read, exit and the rest on
@@ -13,10 +13,6 @@
 \ builder-hex0 needs: some of its calls return with ebx or esi changed.
 \ Nothing lives below esp either, where the kernel's own frame may land.
 
-\ cc-native-syscall-any ( -- addr )  The x86-64 runtime emits the primitive
-\ only when a driver sets this; here there is nothing else to emit.  The
-\ variable stays so that one driver (tinycc/tool-compile.fth) serves both.
-variable cc-native-syscall-any
 create cc-native-name-syscall s, __native_syscall
 
 : cc-native-runtime

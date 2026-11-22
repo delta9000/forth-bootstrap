@@ -178,14 +178,6 @@ variable cc-last-expr-array-inner                  \ row width for a two-dimensi
 
 \ Typed value operations share the historical encoders until a target binds them.
 : cc-value-literal [lit] 0 ;
-defer cc-value-test-fwd
-' cc-emit-test-rdi is cc-value-test-fwd
-defer cc-value-not-fwd
-' cc-emit-not-zero-flag is cc-value-not-fwd
-defer cc-value-negate-fwd
-' cc-emit-neg-rdi is cc-value-negate-fwd
-defer cc-value-complement-fwd
-' cc-emit-not-rdi is cc-value-complement-fwd
 : cc-value-ternary-split [lit] 0 ;
 \ A record conditional consumes saved left metadata and the true-arm fixup,
 \ patches the join and publishes its value. Scalars leave both in place.
@@ -454,8 +446,6 @@ variable cc-ff-result-record
 
 \ cc-parse-local-ref ( id -- )  A local: struct, struct pointer, array or
 \ scalar, told apart by its type.
-defer cc-native-local-load-fwd
-' cc-emit-load-local-typed is cc-native-local-load-fwd
 
 : cc-parse-local-ref
   dup cc-sym-qualified cell[] @ >r
@@ -478,7 +468,7 @@ defer cc-native-local-load-fwd
   then,
   drop
   dup cc-sym-val-of dup cc-mark-local-lvalue
-  over cc-sym-type-of cc-native-local-load-fwd
+  over cc-sym-type-of cc-native-local-load
   dup cc-sym-type-of cc-last-expr-type !
   cc-expr-symbol-desc cc-last-struct-desc !
   r> cc-last-expr-array-inner ! r> cc-last-expr-qualified ! ;
@@ -841,17 +831,17 @@ variable cc-change-delta
   [char] - cc-tok-punct? if,
     cc-parse-unary cc-emit-materialize
     cc-last-expr-type @ cc-unary-type
-    cc-value-negate-fwd dup cc-emit-convert-rdi
+    cc-value-negate dup cc-emit-convert-rdi
     cc-last-struct-desc @ cc-mark-typed-value exit,
   then,
   [char] ! cc-tok-punct? if,
     cc-parse-unary cc-emit-materialize
-    cc-value-not-fwd cc-mark-int-value exit,
+    cc-value-not cc-mark-int-value exit,
   then,
   [char] ~ cc-tok-punct? if,
     cc-parse-unary cc-emit-materialize
     cc-last-expr-type @ cc-unary-type
-    cc-value-complement-fwd dup cc-emit-convert-rdi
+    cc-value-complement dup cc-emit-convert-rdi
     [lit] 0 cc-mark-typed-value exit,
   then,
   [char] + cc-tok-punct? if,
@@ -1074,7 +1064,27 @@ variable cc-expr-op-row
     else, cc-expr-right-desc @ then,
   else, [lit] 0 then, ;
 
-: cc-native-binop-emit-default                           ( -- )
+\ cc-native-binop-emit ( -- )  Emit the operation of cc-expr-op-row on the
+\ common type in cc-expr-common; every / and %, and /= and %=, comes
+\ through here.  The encoders divide the low halves of their register
+\ pairs, which is the whole value for every type of 4 bytes or less.  For
+\ an 8-byte common type that would be a wrong answer, and there is no
+\ 64-bit division to give the right one:
+\   long long   the compile stops with error 131.
+\   a double    is kept as its bit pattern and has no arithmetic.  tcc's
+\               constant folding has such divisions, in code the route
+\               never runs.  The program is compiled, and exits with
+\               status 125 if it ever gets there
+\               (tinycc/mes-libc-native-i386.c's convention for missing
+\               floating point).
+: cc-native-binop-emit                           ( -- )
+  cc-expr-common @ ty-size [lit] 8 = if,
+    cc-expr-op-row @ bo-op + @
+    dup [char] / = swap [char] % = or if,
+      cc-expr-common @ ty-long-long? if, [lit] 131 cc-die then,
+      cc-emit-exit-125 exit,
+    then,
+  then,
   cc-expr-common @ ty-unsigned? if,
     cc-expr-op-row @ bo-op + @
     dup [char] / = if, drop cc-emit-udiv-quotient exit, then,
@@ -1087,9 +1097,6 @@ variable cc-expr-op-row
     drop
   then,
   cc-expr-op-row @ bo-emitter + @ execute ;
-
-defer cc-native-binop-emit
-' cc-native-binop-emit-default is cc-native-binop-emit
 
 : cc-native-binop-apply                          ( left-ty left-desc left-inner left-null row -- )
   cc-expr-op-row !
@@ -1330,11 +1337,11 @@ defer cc-native-binop-emit
     tok-kind @ tk-punct = tok-num @ pt-and-and = and
   while,
     cc-emit-materialize
-    cc-value-test-fwd
+    cc-value-test
     cc-emit-jz-rel32-placeholder >r               \ R: fixup-false-LHS
     cc-parse-bit-or
     cc-emit-materialize
-    cc-value-test-fwd
+    cc-value-test
     cc-emit-jz-rel32-placeholder >r               \ R: f-LHS f-RHS
     [lit] 1 cc-emit-mov-rdi-imm32
     cc-emit-jmp-rel32-placeholder >r              \ R: f-LHS f-RHS f-end
@@ -1356,11 +1363,11 @@ defer cc-native-binop-emit
     tok-kind @ tk-punct = tok-num @ pt-or-or = and
   while,
     cc-emit-materialize
-    cc-value-test-fwd
+    cc-value-test
     cc-emit-jnz-rel32-placeholder >r              \ R: fixup-true-LHS
     cc-parse-log-and
     cc-emit-materialize
-    cc-value-test-fwd
+    cc-value-test
     cc-emit-jnz-rel32-placeholder >r              \ R: t-LHS t-RHS
     [lit] 0 cc-emit-mov-rdi-imm32
     cc-emit-jmp-rel32-placeholder >r              \ R: t-LHS t-RHS f-end
@@ -1398,7 +1405,7 @@ defer cc-native-binop-emit
   tok-kind @ tk-punct = tok-num @ [char] ? = and if,
     \ '?' — consume and emit branch.
     cc-emit-materialize
-    cc-value-test-fwd
+    cc-value-test
     cc-emit-jz-rel32-placeholder >r               \ R: f-else
     cc-parse-comma-fwd                            \ then-arm
     cc-emit-materialize

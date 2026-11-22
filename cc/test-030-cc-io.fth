@@ -10,7 +10,7 @@
 \ Source-buffer reader
 \ =========================================================================
 \ Manually fill cc-src-buf with "Ab\nC" (bytes 65, 98, 10, 67) and reset
-\ pos/len/line, bypassing cc-load-stdin since we have no stdin in this test.
+\ pos/len/line, bypassing cc-load-files since this test reads no file.
 [lit] 65 cc-src-buf c!
 [lit] 98 cc-src-buf [lit] 1 + c!
 [lit] 10 cc-src-buf [lit] 2 + c!

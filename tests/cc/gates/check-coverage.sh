@@ -52,7 +52,6 @@ files=$(sed -n 's/^include //p' forth/i386/layers.fth)
 forwarding=(
   "forth/i386/020-cc-arena.fth|die ;"                           # cc-die: the exit itself
   "forth/i386/020-cc-arena.fth|>r > if, r> cc-die then,"        # cc-check-cap
-  "cc/030-cc-io.fth|cc-ra-n @ 1+ cc-ra-cap @ cc-ra-code @ cc-check-cap"   # cc-read-all, stdin
   "cc/030-cc-io.fth|cc-ra-n @ 1+ cc-ra-cap @ cc-ra-code @ cc-check-cap   \\ full: die"
   "cc/030-cc-io.fth|>r dup [lit] 0 <= if, r@ cc-die then,"      # cc-workspace-round
   "cc/030-cc-io.fth|dup [lit] 9223372036854771712 > if, r@ cc-die then,"
@@ -80,7 +79,6 @@ todo=(
   213 240                                       # 060-cc-types.fth
   210                                           # 115-cc-native.fth
   222 226                                       # 118-cc-native-init.fth
-  130                                           # i386/090-emit.fth
 )
 
 # ---------------------------------------------------------------------------

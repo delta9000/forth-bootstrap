@@ -7,7 +7,7 @@ llvm-mc installed, LLVM's assembler must write the same bytes too.
   python3 tests/forth/i386/asm-check.py         (from the repository root)
 
 This is the Forth system's own code, which the processor runs while the
-compiler compiles; tests/cc/i386/asm-check.py checks cc/i386/, the code of
+compiler compiles; tests/cc/i386/asm-check.py checks cc/, the code of
 the compiled program.
 
 A byte line has one of two forms, and holds one instruction:

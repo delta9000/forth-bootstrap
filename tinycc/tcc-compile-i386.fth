@@ -10,11 +10,9 @@
 \ preprocessing and emits one complete static i386 ELF: no assembler,
 \ linker or host C compiler takes part.
 \
-\ Native mode, under the ILP32 types of
-\ cc/i386/065-ilp32-types.fth (cc-target-lp64 selects the typed model,
-\ not its sizes): a private all-stack call ABI, float and double as
-\ 8-byte bit patterns only, and the one system call primitive of
-\ cc/i386/119-runtime.fth.
+\ The compiled program has ILP32 types (cc/060-cc-types.fth), a private
+\ all-stack call ABI, float and double as 8-byte bit patterns only, and
+\ the one system call primitive of cc/119-cc-runtime.fth.
 [lit] 8388608 cc-arena-map
 variable tcc-fd
 variable tcc-pointer
@@ -32,7 +30,7 @@ variable tcc-count
   repeat,
   tcc-fd @ close if, [lit] 124 die then, ;
 : tcc-main
-  cc-load-stdin cc-preprocess cc-out-init cc-globals-init
+  cc-load-files cc-preprocess cc-out-init cc-globals-init
   cc-emit-elf-header cc-native-program cc-finalize-globals cc-finalize-elf
   tcc-write-output bye ;
 tcc-main

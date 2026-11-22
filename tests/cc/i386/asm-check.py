@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Check the i386 encoders against an assembler: every byte line of
-cc/i386/090-emit.fth, 100-divide.fth, 117-entry.fth and 119-runtime.fth
+cc/090-cc-emit.fth, 117-cc-native-program.fth and 119-cc-runtime.fth
 carries its instruction as a comment, and GNU as must assemble that
 comment to those bytes.
 
@@ -18,7 +18,7 @@ Requires GNU as and objcopy (binutils).
 import pathlib, re, subprocess, sys, tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
-FILES = ["090-emit.fth", "100-divide.fth", "117-entry.fth", "119-runtime.fth"]
+FILES = ["090-cc-emit.fth", "117-cc-native-program.fth", "119-cc-runtime.fth"]
 
 
 def items(code):
@@ -93,7 +93,7 @@ def main():
     bad = count = 0
     with tempfile.TemporaryDirectory() as tmp:
         for name in FILES:
-            path = ROOT / "cc" / "i386" / name
+            path = ROOT / "cc" / name
             for n, want, comment in instructions(path):
                 for k, text in enumerate(variants(comment)):
                     count += 1
@@ -102,10 +102,10 @@ def main():
                     if len(got) != len(expect) or any(e is not None and e != g for e, g in zip(expect, got)):
                         bad += 1
                         show = " ".join("??" if e is None else f"{e:02x}" for e in expect)
-                        print(f"cc/i386/{name}:{n}: {text}: the file has {show}, as gives {got.hex(' ')}")
+                        print(f"cc/{name}:{n}: {text}: the file has {show}, as gives {got.hex(' ')}")
     if bad:
         sys.exit(f"asm-check: FAIL: {bad} of {count} instructions differ")
-    print(f"asm-check: OK, {count} instructions in cc/i386 equal GNU as on their comments")
+    print(f"asm-check: OK, {count} instructions in cc/ equal GNU as on their comments")
 
 
 main()

@@ -1,272 +1,45 @@
-\ 090-cc-emit.fth — code-emission helpers for the C-subset compiler.
-\ Builds tiny instruction-encoders on top of cc-emit-byte / cc-emit-4le from
-\ 030-cc-io.fth.  All output goes to cc-out-buf; nothing here touches the seed's
-\ HERE pointer.
+\ 090-cc-emit.fth — code emission: branches and fixups, the globals' two
+\ areas, and the i386 instruction encoders.
 \
-\ Register convention for the compiled code:
-\   rdi  — scratch / current expression result
-\   rcx  — temp for binary-op right operand
-\   rax  — used by idiv (low quotient/remainder); also by SYS-V return
-\   rbp  — frame base; locals at [rbp - 8*(slot+1)]
+\ All output goes to cc-out-buf through cc-emit-byte and cc-emit-4le
+\ (030-cc-io.fth); nothing here touches the seed's HERE pointer.
 \
-\ Depends on 020-cc-arena.fth (cc-die, cc-check-cap, cc-alloc) and
-\ 030-cc-io.fth (cc-emit-byte, cc-emit-4le, cell[]).  cc-decode-escape comes
-\ from 050-cc-lex.fth.
-
-\ ===========================================================================
-\ Immediate-load instructions (REX.W + C7 /0 + imm32)
-\ ===========================================================================
-
-\ cc-emit-mov-rdi-imm32 ( v -- )   48 C7 C7 <imm32>
-: cc-emit-mov-rdi-imm32
-  x{ 48 c7 c7 } cc-emit-4le ;                     \ mov rdi, imm32
-
-\ ===========================================================================
-\ Stack ops
-\ ===========================================================================
-
-
-\ push rdi: 0x57
-: cc-emit-push-rdi x{ 57 } ; \ push rdi
-
-\ pop rdi:  0x5F
-: cc-emit-pop-rdi x{ 5f } ; \ pop rdi
-
-\ pop rdx:  0x5A
-: cc-emit-pop-rdx x{ 5a } ; \ pop rdx
-
-\ pop rcx:  0x59
-: cc-emit-pop-rcx x{ 59 } ; \ pop rcx
-
-\ push rbx (0x53) / pop rbx (0x5B).  Used by switch to preserve the outer
-\ value of rbx across the switch (which uses rbx to hold the scrutinee).
-: cc-emit-push-rbx  x{ 53 } ;                     \ push rbx
-: cc-emit-pop-rbx   x{ 5b } ;                     \ pop rbx
-
-\ ===========================================================================
-\ Local-variable access
-\ ===========================================================================
-\ Locals live at [rbp - 8*(slot+1)].  Slots 0..15 have displacements
-\ -8..-128, which fit a signed disp8 (ModR/M mod=01); deeper slots need the
-\ disp32 form (mod=10).  cc-emit-local-ea picks the right one per slot.
-\ Note: the frame itself is fixed at 256 bytes = 32 slots (cc-frame-slots in
-\ 110-cc-decl.fth, which dies rather than hand out a 33rd) — the encoding
-\ handles any slot; the frame does not.
+\ The encoders are named for the registers of the 64-bit machine the
+\ layers above (100 onwards) are written in terms of.  This is what each
+\ name means in the code they emit:
 \
-\ cc-disp8-from-slot ( slot -- byte )
-\   = (256 - 8*(slot+1)) AND 255 = the unsigned-byte representation of the
-\   signed displacement -8*(slot+1).  Only valid for slots 0..15.
-
-: cc-disp8-from-slot
-  1+ [lit] 8 *                                   \ 8 * (slot+1)
-  [lit] 0 swap -                                  \ negate
-  $ff and ;                                       \ low byte
-
-\ cc-emit-local-ea ( slot modrm8 -- )
-\   Emit the ModR/M byte + displacement for [rbp + disp] access to a local
-\   slot.  modrm8 is the mod=01 (disp8) form of the ModR/M byte.  Slots
-\   0..15 emit it unchanged plus a disp8; deeper slots switch to mod=10
-\   (modrm8 + 0x40) plus the 32-bit two's-complement displacement.
-: cc-emit-local-ea
-  over [lit] 16 < >r over [lit] 0 [lit] 16 - >= r> and if,
-    cc-emit-byte
-    cc-disp8-from-slot cc-emit-byte
-  else,
-    $40 + cc-emit-byte                            \ mod=01 -> mod=10
-    1+ [lit] 8 *                                  \ 8 * (slot+1)
-    [lit] 0 swap - cc-emit-4le                    \ negate; low 4 bytes = disp32
-  then, ;
-
-\ mov rdi, [rbp + disp]:  48 8B 7D <disp8>  (or 48 8B BD <disp32>)
-: cc-emit-load-local                              ( slot -- )
-  x{ 48 8b } $7d cc-emit-local-ea ;               \ mov rdi, qword [rbp+disp]
-
-\ lea rdi, [rbp + disp]:  48 8D 7D <disp8>  (or 48 8D BD <disp32>)
-\ ModR/M(mod=01, reg=rdi=7, rm=rbp=5) = 0x7D.  Loads the *address* of the local
-\ slot into rdi (used to implement `&local`).
-: cc-emit-lea-rdi-local                           ( slot -- )
-  x{ 48 8d } $7d cc-emit-local-ea ;               \ lea rdi, [rbp+disp]
-
-\ mov rdi, [rdi]:  48 8B 3F
-\ ModR/M(mod=00, reg=rdi=7, rm=rdi=7) = 0x3F.  Loads the qword at the address
-\ currently in rdi into rdi (dereference).
-: cc-emit-load-via-rdi
-  x{ 48 8b 3f } ;                                 \ mov rdi, qword [rdi]
-
-\ movzx rdi, BYTE PTR [rdi]:  48 0F B6 3F
-\ Zero-extends a single byte from [rdi] into rdi.  Used by `s[i]` rvalue use
-\ where s is `char*` (or any other byte-element access path).
-: cc-emit-load-byte-via-rdi
-  x{ 48 0f b6 3f } ;                              \ movzx rdi, byte [rdi]
-
-\ movzx edi, dil:  40 0F B6 FF
-\ Keeps only rdi's low byte (writing edi clears the upper half of rdi).
-\ REX=0x40 selects dil rather than bh.  Used by a (char) cast.
-: cc-emit-zx-byte-rdi
-  x{ 40 0f b6 ff } ;                              \ movzx edi, dil
-
-\ mov [rcx], rdi:  48 89 39
-\ ModR/M(mod=00, reg=rdi=7, rm=rcx=1) = 0x39.  Stores rdi to the qword address
-\ in rcx (assignment via dereference).
-: cc-emit-store-via-rcx
-  x{ 48 89 39 } ;                                 \ mov qword [rcx], rdi
-
-\ mov BYTE PTR [rcx], dil:  40 88 39
-\ Stores the low byte of rdi to [rcx].  REX=0x40 is needed to select dil
-\ instead of bh.  Used by `s[i] = c;` where s is char*.
-: cc-emit-store-byte-via-rcx
-  x{ 40 88 39 } ;                                 \ mov byte [rcx], dil
-
-\ shl rdi, imm8:  48 C1 E7 <imm8>
-\ ModR/M(mod=11, reg=/4 = SHL, rm=rdi=7) = 11_100_111 = 0xE7.  Multiplies rdi
-\ by 2^imm8 (used to scale array index by sizeof(T) when T is 8 bytes).
-: cc-emit-shl-rdi-imm8                            ( imm8 -- )
-  x{ 48 c1 e7 } cc-emit-byte ;                    \ shl rdi, imm8
-
-\ Convenience: rdi <<= 3 (multiply by 8 = sizeof(int)/sizeof(ptr)).
-: cc-emit-shl-rdi-3   [lit] 3 cc-emit-shl-rdi-imm8 ;
-
-\ add rdi, imm32:  48 81 C7 <imm32>
-\ ModR/M(mod=11, reg=/0 = ADD, rm=rdi=7) = 11_000_111 = 0xC7.  Used to bias
-\ a struct base/pointer in rdi by a field offset.  imm32 is sign-extended.
-: cc-emit-add-rdi-imm32                           ( imm32 -- )
-  x{ 48 81 c7 } cc-emit-4le ;                     \ add rdi, imm32
-
-\ call rax:  FF D0   (no REX needed; rax = reg 0).
-\ ModR/M(mod=11, reg=/2 = CALL r/m64, rm=rax=0) = 11_010_000 = 0xD0.
-: cc-emit-call-rax
-  x{ ff d0 } ;                                    \ call rax
-
-\ ===========================================================================
-\ Register-to-register moves
-\ ===========================================================================
-\ ADD/SUB/IMUL r/m64, r64 has reg-field=src, rm-field=dst.  We use rdi as the
-\ destination accumulator and rcx for the right-operand temp.
-
-\ mov rcx, rdi:  48 89 F9     (89 /r, mod=11 reg=rdi=7 rm=rcx=1 -> 11_111_001 = F9)
-: cc-emit-mov-rcx-rdi
-  x{ 48 89 f9 } ;                                 \ mov rcx, rdi
-
-\ mov rax, rdi:  48 89 F8     (mod=11 reg=rdi=7 rm=rax=0 -> 11_111_000 = F8)
-: cc-emit-mov-rax-rdi
-  x{ 48 89 f8 } ;                                 \ mov rax, rdi
-
-\ mov rdi, rax:  48 89 C7     (mod=11 reg=rax=0 rm=rdi=7 -> 11_000_111 = C7)
-\ Used after a function call to transfer the SYS-V return value into our
-\ scratch rdi so the rest of the expression machinery sees it.
-: cc-emit-mov-rdi-rax
-  x{ 48 89 c7 } ;                                 \ mov rdi, rax
-
-\ mov rbx, rdi:  48 89 FB   (89 /r, mod=11 reg=rdi=7 rm=rbx=3 -> 11_111_011 = FB)
-\ Used at switch entry to stash the scrutinee in a callee-saved register so
-\ it survives across case-body codegen (including any function calls).
-: cc-emit-mov-rbx-rdi
-  x{ 48 89 fb } ;                                 \ mov rbx, rdi
-
-\ cmp rbx, imm32:  48 81 FB <imm32>   (81 /7, mod=11 /7=111 rm=rbx=3 -> FB)
-\ Used by switch dispatch to compare the saved scrutinee against each case
-\ constant.  Sets ZF iff rbx == imm32.  imm32 is sign-extended to 64 bits.
-: cc-emit-cmp-rbx-imm32                           ( v -- )
-  x{ 48 81 fb } cc-emit-4le ;                     \ cmp rbx, imm32
-
-\ xor rax, rax:  48 31 C0     (zero rax in 3 bytes; for implicit return).
-: cc-emit-xor-rax-rax
-  x{ 48 31 c0 } ;                                 \ xor rax, rax
-
-\ ===========================================================================
-\ ALU on rdi using rcx as the right operand
-\ ===========================================================================
-\ The binary-op pattern emitted by the parser is:
-\     <eval left>          ; rdi = left
-\     push rdi
-\     <eval right>         ; rdi = right
-\     mov rcx, rdi         ; rcx = right
-\     pop rdi              ; rdi = left
-\     <op> rdi, rcx        ; rdi = left <op> right
+\   rdi  the current expression result   edx:eax  (eax the low half)
+\   rcx  the right operand               ebx:ecx  (ecx the low half)
+\   rdx  the old value of a postfix ++   edi:esi  (esi the low half)
+\   rbx  the scrutinee of a switch       edi:esi
+\   rsi  the source address of a copy    esi
+\   rax  a function's result             edx:eax, so moves to and from rdi vanish
+\   rbp  the frame base                  ebp
 \
-\ ADD r/m64, r64 (0x01 /r): rm=dst, reg=src.
-\   add rdi, rcx -> mod=11 reg=rcx=1 rm=rdi=7 -> 11_001_111 = 0xCF
-: cc-emit-add-rdi-rcx
-  x{ 48 01 cf } ;                                 \ add rdi, rcx
-
-\ SUB r/m64, r64 (0x29 /r): same encoding shape.
-\   sub rdi, rcx -> 0xCF
-: cc-emit-sub-rdi-rcx
-  x{ 48 29 cf } ;                                 \ sub rdi, rcx
-
-\ IMUL r64, r/m64 (0x0F AF /r): reg=dst, rm=src (NOTE the operand order is
-\ flipped from add/sub).
-\   imul rdi, rcx -> mod=11 reg=rdi=7 rm=rcx=1 -> 11_111_001 = 0xF9
-: cc-emit-imul-rdi-rcx
-  x{ 48 0f af f9 } ;                              \ imul rdi, rcx
-
-\ Signed division: idiv divides rdx:rax by r/m64, leaving quotient in rax,
-\ remainder in rdx.  We want rdi := rdi / rcx (or rdi % rcx).  Sequence:
-\     mov rax, rdi      ; 48 89 F8
-\     cqo               ; 48 99            (sign-extend rax into rdx)
-\     idiv rcx          ; 48 F7 F9         (F7 /7, mod=11 rm=rcx=1 -> 11_111_001=0xF9)
-\     mov rdi, rax|rdx  ; 48 89 C7 (rax) or 48 89 D7 (rdx)
-: cc-emit-idiv-quotient
-  x{ 48 89 f8 }                                   \ mov rax, rdi
-  x{ 48 99 }                                      \ cqo
-  x{ 48 f7 f9 }                                   \ idiv rcx
-  x{ 48 89 c7 } ;                                 \ mov rdi, rax
-
-: cc-emit-idiv-remainder
-  x{ 48 89 f8 }                                   \ mov rax, rdi
-  x{ 48 99 }                                      \ cqo
-  x{ 48 f7 f9 }                                   \ idiv rcx
-  x{ 48 89 d7 } ;                                 \ mov rdi, rdx
-
-\ ===========================================================================
-\ Function prologue / epilogue
-\ ===========================================================================
-\ Prologue:  push rbp ; mov rbp, rsp ; sub rsp, imm32
-\ Epilogue:  mov rsp, rbp ; pop rbp ; ret
-
-: cc-emit-prologue                                ( frame-bytes -- )
-  x{ 55 }                                         \ push rbp
-  x{ 48 89 e5 }                                   \ mov rbp, rsp
-  x{ 48 81 ec } cc-emit-4le ;                     \ sub rsp, imm32
-
-
-: cc-emit-epilogue
-  x{ 48 89 ec }                                   \ mov rsp, rbp
-  x{ 5d }                                         \ pop rbp
-  x{ c3 } ;                                       \ ret
-
-\ ===========================================================================
-\ Comparisons: set rdi to 0 or 1 based on signed comparison of left/right.
-\ ===========================================================================
-\ The binary-op pattern (same as ALU) leaves rdi=left, rcx=right.  Each helper
-\ emits 12 bytes:
-\     xor rax, rax     48 31 C0
-\     cmp rdi, rcx     48 39 CF      (sets flags from rdi - rcx = left - right)
-\     setX al          0F 9X C0      (X = 4=E, 5=NE, C=L, D=GE, E=LE, F=G)
-\     mov rdi, rax     48 89 C7
+\ A 64-bit register is a pair of 32-bit ones, and every instruction on it
+\ an instruction on each half.  The layers above rely on rdi holding every
+\ value extended to 64 bits from its C type (cc-emit-convert-rdi restores
+\ that after each operation), so the pair holds it the same way: edx is
+\ the sign or zero extension of eax for every type of 4 bytes or less, and
+\ the high half of a long long.  Loads, stores, add, subtract, multiply,
+\ shifts, the logic operations, comparisons and the test for zero
+\ therefore work on the whole pair for every type.  Division works on the
+\ low halves only; 100-cc-expr.fth refuses it for an 8-byte type.
 \
-\ cc-emit-cmp-set ( setX-opcode -- )  Common tail; caller passes the second
-\ byte of the setcc opcode (0x94, 0x95, 0x9C, 0x9D, 0x9E, 0x9F).
-: cc-emit-cmp-set
-  x{ 48 31 c0 }                                   \ xor rax, rax
-  x{ 48 39 cf }                                   \ cmp rdi, rcx
-  x{ 0f } cc-emit-byte x{ c0 }                    \ setX al  (X: the opcode byte passed in)
-  x{ 48 89 c7 } ;                                 \ mov rdi, rax
-
-: cc-emit-cmp-eq  $94 cc-emit-cmp-set ;           \ sete al
-: cc-emit-cmp-ne  $95 cc-emit-cmp-set ;           \ setne al
-: cc-emit-cmp-lt  $9c cc-emit-cmp-set ;           \ setl al
-: cc-emit-cmp-ge  $9d cc-emit-cmp-set ;           \ setge al
-: cc-emit-cmp-le  $9e cc-emit-cmp-set ;           \ setle al
-: cc-emit-cmp-gt  $9f cc-emit-cmp-set ;           \ setg al
+\ Stack slots are 8 bytes: a local, an argument and a pushed temporary
+\ each hold a whole pair, low half at the lower address.
+\
+\ Every byte line carries its instruction as a comment;
+\ tests/cc/i386/asm-check.py assembles the comments with GNU as and
+\ compares.
+\
+\ Depends on 020 (cc-die, cc-check-cap, cc-alloc), 030 (cc-emit-byte,
+\ cc-emit-4le, cell[]), 050 (cc-decode-escape) and 060 (ty-size,
+\ ty-unsigned?).
 
 \ ===========================================================================
 \ Conditional / unconditional branches with rel32 fixups.
 \ ===========================================================================
-
-\ test rdi, rdi  -> 48 85 FF  (sets ZF=1 iff rdi == 0).
-: cc-emit-test-rdi
-  x{ 48 85 ff } ;                                 \ test rdi, rdi
 
 \ cc-emit-jz-rel32-placeholder ( -- patch-offset )
 \ Emits `0F 84 00 00 00 00`; returns the file-offset of the rel32 cell
@@ -300,43 +73,9 @@
   over [lit] 4 + -                                ( patch-off rel32 )
   swap cc-out-patch-4le ;
 
-\ NOTE: cc-emit-jmp-vaddr (which emits a backward unconditional jump to an
-\ absolute vaddr — needed for `while`/`for` loops) lives in 112-cc-stmt.fth
-\ alongside the loop constructs that use it, not here with the primitive
-\ encoders.  Both cc-base-vaddr and cc-out-pos are already available when this
-\ file loads, so the split is organizational, not a load-order dependency.
-
-\ ===========================================================================
-\ movabs rdi, imm64 — used for loading string-literal addresses.
-\ ===========================================================================
-\ Encoding: 48 BF <imm64-LE>  (10 bytes total).
-
-: cc-emit-movabs-rdi-imm64                        ( v -- )
-  x{ 48 bf } cc-emit-8le ;                        \ movabs rdi, imm64
-
-\ cc-emit-mov-rdi-int ( v -- )  Load an integer literal into rdi using the
-\ shortest correct encoding.  `mov rdi, imm32` (7 bytes) sign-extends its
-\ 32-bit field, so it only represents values in signed-32 range; a wider
-\ constant (e.g. 0x80000000 or 2^32) would be sign-extended or truncated.
-\ For those, fall back to the 10-byte `movabs rdi, imm64`.  C literals are
-\ always non-negative here (a leading `-` is unary minus, applied later), so
-\ only the upper bound needs checking — which keeps every in-range constant
-\ on the exact imm32 bytes it emitted before.
-: cc-emit-mov-rdi-int                             ( v -- )
-  \ Unsigned magnitude also catches literals with bit 63 set.
-  dup [lit] 2147483648 / if,
-    cc-emit-movabs-rdi-imm64
-  else, cc-emit-mov-rdi-imm32 then, ;
-
-\ cc-emit-movabs-rdi-imm64-placeholder ( -- patch-offset )
-\ Emits `48 BF 00 00 00 00 00 00 00 00`; returns the imm64 file-offset.
-\ Used when a forward-declared function's name is taken as an rvalue
-\ (function-pointer load) before its definition is reached.  Caller threads
-\ patch-offset onto the prototype symbol's cc-sym-addr-fixups list; the
-\ list is walked and each 8-byte imm64 is patched to the function's real
-\ vaddr when cc-parse-function processes its definition.
-: cc-emit-movabs-rdi-imm64-placeholder
-  x{ 48 bf } cc-out-pos @ 0 cc-emit-8le ;         \ movabs rdi, imm64
+\ cc-emit-call-rax ( -- )  Call the function whose address is in eax.
+: cc-emit-call-rax
+  x{ ff d0 } ;                                    \ call eax
 
 \ cc-add-fixup-to-list ( fixup-offset list-var -- )  Allocate a 16-byte node
 \ and prepend it to the linked list rooted at list-var.  Defined here so
@@ -383,49 +122,6 @@
   0 cc-emit-byte ;                                \ trailing NUL terminator
 
 \ ===========================================================================
-\ Shifts, bitwise ops, inc/dec/neg/not on rdi
-\ ===========================================================================
-\ Variable-count shifts use rcx (specifically CL).  The binary-op pattern
-\ leaves rdi=left and rcx=right (already in rcx because of mov rcx,rdi+pop).
-\
-\ shl rdi, cl: 48 D3 E7   (D3 /4, mod=11 rm=rdi=7 -> 11_100_111=0xE7)
-: cc-emit-shl-rdi-cl
-  x{ 48 d3 e7 } ;                                 \ shl rdi, cl
-
-\ sar rdi, cl (arithmetic right shift, signed): 48 D3 FF  (D3 /7 -> 11_111_111=0xFF)
-: cc-emit-sar-rdi-cl
-  x{ 48 d3 ff } ;                                 \ sar rdi, cl
-
-\ and rdi, rcx: 48 21 CF  (21 /r, mod=11 reg=rcx=1 rm=rdi=7 -> 11_001_111=0xCF)
-: cc-emit-and-rdi-rcx
-  x{ 48 21 cf } ;                                 \ and rdi, rcx
-
-\ or rdi, rcx: 48 09 CF
-: cc-emit-or-rdi-rcx
-  x{ 48 09 cf } ;                                 \ or rdi, rcx
-
-\ xor rdi, rcx: 48 31 CF
-: cc-emit-xor-rdi-rcx
-  x{ 48 31 cf } ;                                 \ xor rdi, rcx
-
-\ not rdi: 48 F7 D7  (F7 /2 = NOT, mod=11 rm=rdi=7 -> 11_010_111=0xD7)
-: cc-emit-not-rdi
-  x{ 48 f7 d7 } ;                                 \ not rdi
-
-\ neg rdi: 48 F7 DF  (F7 /3 = NEG, mod=11 rm=rdi=7 -> 11_011_111=0xDF)
-: cc-emit-neg-rdi
-  x{ 48 f7 df } ;                                 \ neg rdi
-
-
-\ cc-emit-not-zero-flag.  Canonicalize rdi to 0/1 = (rdi == 0).
-\ Pattern: xor rax,rax; test rdi,rdi; sete al; mov rdi,rax.  Used by unary '!'.
-: cc-emit-not-zero-flag
-  x{ 48 31 c0 }                                   \ xor rax, rax
-  x{ 48 85 ff }                                   \ test rdi, rdi
-  x{ 0f 94 c0 }                                   \ sete al
-  x{ 48 89 c7 } ;                                 \ mov rdi, rax
-
-\ ===========================================================================
 \ File-scope global variables.
 \ ===========================================================================
 \ Globals live in two areas placed after the code, in the same PT_LOAD
@@ -460,7 +156,7 @@ variable cc-bss-pos
 [lit] 1099511627776 constant cc-bss-flag           \ 2^40: "this slot is in the bss"
 
 \ Capacity for deferred global-vaddr fixups (each use of a global's name
-\ is one).  M2-Planet's source has about 1,600.
+\ is one).
 [lit] 16384 constant cc-gfixup-default-cap
 variable cc-gfixup-limit
 cc-gfixup-default-cap cc-gfixup-limit !
@@ -519,190 +215,516 @@ variable cc-bss-base-vaddr                       \ set by cc-finalize-globals
   r> drop
   [lit] 1 cc-gfixup-count +! ;
 
-\ cc-emit-global-ref ( slot -- )  Emit `movabs rdi, <vaddr placeholder>` and
-\ record a deferred fixup so the imm64 will be patched to the slot's
-\ address once globals are placed.  Used by the sk-global IDENT path in
-\ cc-parse-primary.
-: cc-emit-global-ref                                ( slot -- )
-  x{ 48 bf } cc-out-pos @ 0 cc-emit-8le           \ movabs rdi, imm64
-  swap cc-gfixup-add ;
+\ ===========================================================================
+\ Extending the low half
+\ ===========================================================================
+
+\ cc-emit-extend-rdi ( unsigned? -- )  edx := the zero or sign extension of
+\ eax.
+: cc-emit-extend-rdi
+  if,
+    x{ 31 d2 }                                    \ xor edx, edx
+  else,
+    x{ 99 }                                       \ cdq
+  then, ;
+
+\ cc-emit-extend-rcx ( unsigned? -- )  ebx := the zero or sign extension of
+\ ecx.
+: cc-emit-extend-rcx
+  if,
+    x{ 31 db }                                    \ xor ebx, ebx
+  else,
+    x{ 89 cb }                                    \ mov ebx, ecx
+    x{ c1 fb 1f }                                 \ sar ebx, 31
+  then, ;
 
 \ ===========================================================================
-\ Opt-in LP64 integer encoders.
+\ Immediate loads
 \ ===========================================================================
-\ The original words above stay byte-identical.  The typed wrappers retain
-\ their legacy encodings while cc-target-lp64 is 0.  Scalar floating types
-\ have storage sizes in 060, but these words implement integer operations.
-\ A typed store writes only the destination width; use convert-rdi first
-\ when the assignment expression must retain a correctly converted result.
 
+\ cc-emit-mov-rdi-imm32 ( v -- )  The pair := v, a signed 32-bit value.
+: cc-emit-mov-rdi-imm32
+  x{ b8 } cc-emit-4le                             \ mov eax, imm32
+  x{ 99 } ;                                       \ cdq
 
+\ cc-emit-movabs-rdi-imm64 ( v -- )  The pair := v, all 64 bits: the low
+\ four bytes of v, then v divided by 2^32.
+: cc-emit-movabs-rdi-imm64
+  x{ b8 } dup cc-emit-4le                         \ mov eax, imm32
+  x{ ba } [lit] 4294967296 / cc-emit-4le ;        \ mov edx, imm32
+
+\ cc-emit-mov-rdi-int ( v -- )  Load an integer literal by the shorter of
+\ the two.  Literals are never negative (a leading `-` is unary minus), so
+\ one unsigned division finds those that fit a signed 32-bit immediate.
+: cc-emit-mov-rdi-int
+  dup [lit] 2147483648 / if,
+    cc-emit-movabs-rdi-imm64
+  else,
+    cc-emit-mov-rdi-imm32
+  then, ;
+
+\ cc-emit-movabs-rdi-imm64-placeholder ( -- patch-offset )  The pair := an
+\ address not known yet.  An address is 4 bytes; patch-offset is where they
+\ go (cc-out-patch-address).
+: cc-emit-movabs-rdi-imm64-placeholder
+  x{ b8 } cc-out-pos @ [lit] 0 cc-emit-4le        \ mov eax, imm32
+  x{ 31 d2 } ;                                    \ xor edx, edx
+
+\ cc-out-patch-address ( vaddr offset -- )  Fill in such a placeholder.
+: cc-out-patch-address  cc-out-patch-4le ;
+
+\ ===========================================================================
+\ Stack ops
+\ ===========================================================================
+\ A push stores the high half first, so the low half lies at the lower
+\ address, as it does in memory.
+
+: cc-emit-push-rdi
+  x{ 52 }                                         \ push edx
+  x{ 50 } ;                                       \ push eax
+
+: cc-emit-pop-rdi
+  x{ 58 }                                         \ pop eax
+  x{ 5a } ;                                       \ pop edx
+
+: cc-emit-pop-rcx
+  x{ 59 }                                         \ pop ecx
+  x{ 5b } ;                                       \ pop ebx
+
+: cc-emit-pop-rdx
+  x{ 5e }                                         \ pop esi
+  x{ 5f } ;                                       \ pop edi
+
+\ A switch saves the outer scrutinee around itself.
+: cc-emit-push-rbx
+  x{ 57 }                                         \ push edi
+  x{ 56 } ;                                       \ push esi
+
+: cc-emit-pop-rbx
+  x{ 5e }                                         \ pop esi
+  x{ 5f } ;                                       \ pop edi
+
+\ ===========================================================================
+\ Local-variable access
+\ ===========================================================================
+\ Locals live at [ebp - 8*(slot+1)], the high half 4 bytes above the low.
+\
+\ cc-emit-half-ea ( slot half modrm8 -- )  Emit the ModR/M byte and the
+\ displacement for [ebp - 8*(slot+1) + half]; half is 0 or 4.  modrm8 is
+\ the mod=01 (disp8) form.  A displacement of -128..127 is emitted that
+\ way; any other switches to mod=10 (modrm8 + 0x40) and a disp32.  The
+\ range test adds 128 and divides, unsigned, by 256.
+: cc-emit-half-ea
+  >r swap 1+ [lit] 8 * -                          ( disp ; R: modrm8 )
+  dup [lit] 128 + [lit] 256 / if,
+    r> $40 + cc-emit-byte
+    cc-emit-4le
+  else,
+    r> cc-emit-byte
+    $ff and cc-emit-byte
+  then, ;
+
+: cc-emit-load-local                              ( slot -- )
+  dup
+  x{ 8b } [lit] 0 $45 cc-emit-half-ea             \ mov eax, dword [ebp+disp]
+  x{ 8b } [lit] 4 $55 cc-emit-half-ea ;           \ mov edx, dword [ebp+disp+4]
+
+\ The address of a local.  A pointer is 4 bytes, so its high half is 0.
+: cc-emit-lea-rdi-local                           ( slot -- )
+  x{ 8d } [lit] 0 $45 cc-emit-half-ea             \ lea eax, [ebp+disp]
+  x{ 31 d2 } ;                                    \ xor edx, edx
+
+\ ===========================================================================
+\ Loads and stores through an address
+\ ===========================================================================
+\ The address is the low half: eax for a load, ecx for a store.
+
+: cc-emit-load-via-rdi
+  x{ 8b 50 04 }                                   \ mov edx, dword [eax+4]
+  x{ 8b 00 } ;                                    \ mov eax, dword [eax]
+
+: cc-emit-store-via-rcx
+  x{ 89 01 }                                      \ mov dword [ecx], eax
+  x{ 89 51 04 } ;                                 \ mov dword [ecx+4], edx
+
+: cc-emit-store-byte-via-rcx
+  x{ 88 01 } ;                                    \ mov byte [ecx], al
+
+\ cc-emit-load-typed-via-rdi ( ty -- )  The pair := *(T *)eax, extended.
 : cc-emit-load-typed-via-rdi
   dup ty-size [lit] 1 = if,
-    ty-unsigned? if, cc-emit-load-byte-via-rdi else,
-      x{ 48 0f be 3f }                            \ movsx rdi, byte [rdi]
-    then, exit,
+    x{ 0f }
+    dup ty-unsigned? if, $b6 else, $be then, cc-emit-byte
+    x{ 00 }                                       \ movzx/movsx eax, byte [eax]
+    ty-unsigned? cc-emit-extend-rdi exit,
   then,
   dup ty-size [lit] 2 = if,
-    x{ 48 0f }
-    ty-unsigned? if, $b7 else, $bf then, cc-emit-byte
-    x{ 3f } exit,                                 \ movzx/movsx rdi, word [rdi]
+    x{ 0f }
+    dup ty-unsigned? if, $b7 else, $bf then, cc-emit-byte
+    x{ 00 }                                       \ movzx/movsx eax, word [eax]
+    ty-unsigned? cc-emit-extend-rdi exit,
   then,
   dup ty-size [lit] 4 = if,
-    ty-unsigned? if,
-      x{ 8b 3f }                                  \ mov edi, dword [rdi]
-    else,
-      x{ 48 63 3f }                               \ movsxd rdi, dword [rdi]
-    then, exit,
+    x{ 8b 00 }                                    \ mov eax, dword [eax]
+    ty-unsigned? cc-emit-extend-rdi exit,
   then,
   drop cc-emit-load-via-rdi ;
 
-\ cc-emit-store-typed-via-rcx ( ty -- )  *(T *)rcx := rdi.
+\ cc-emit-store-typed-via-rcx ( ty -- )  *(T *)ecx := the pair, as wide as T.
 : cc-emit-store-typed-via-rcx
   ty-size
   dup [lit] 1 = if, drop cc-emit-store-byte-via-rcx exit, then,
   dup [lit] 2 = if,
-    drop x{ 66 89 39 } exit,                      \ mov word [rcx], di
+    drop x{ 66 89 01 } exit,                      \ mov word [ecx], ax
   then,
   [lit] 4 = if,
-    x{ 89 39 }                                    \ mov dword [rcx], edi
+    x{ 89 01 }                                    \ mov dword [ecx], eax
   else, cc-emit-store-via-rcx then, ;
 
-\ cc-emit-convert-rdi ( ty -- )  Truncate/sign-extend the integer in rdi.
+\ cc-native-local-load ( slot ty -- )
+: cc-native-local-load
+  swap cc-emit-lea-rdi-local cc-emit-load-typed-via-rdi ;
+
+\ ===========================================================================
+\ Conversions
+\ ===========================================================================
+
+\ cc-emit-convert-rdi ( ty -- )  Truncate the pair to T and extend it again.
+\ An 8-byte type needs nothing.
 : cc-emit-convert-rdi
   dup ty-size [lit] 1 = if,
-    ty-unsigned? if, cc-emit-zx-byte-rdi else,
-      x{ 48 0f be ff }                            \ movsx rdi, dil
-    then, exit,
+    x{ 0f }
+    dup ty-unsigned? if, $b6 else, $be then, cc-emit-byte
+    x{ c0 }                                       \ movzx/movsx eax, al
+    ty-unsigned? cc-emit-extend-rdi exit,
   then,
   dup ty-size [lit] 2 = if,
-    x{ 48 0f }
-    ty-unsigned? if, $b7 else, $bf then, cc-emit-byte
-    x{ ff } exit,                                 \ movzx/movsx rdi, di
+    x{ 0f }
+    dup ty-unsigned? if, $b7 else, $bf then, cc-emit-byte
+    x{ c0 }                                       \ movzx/movsx eax, ax
+    ty-unsigned? cc-emit-extend-rdi exit,
   then,
   dup ty-size [lit] 4 = if,
-    ty-unsigned? if,
-      x{ 89 ff }                                  \ mov edi, edi
-    else,
-      x{ 48 63 ff }                               \ movsxd rdi, edi
-    then, exit,
+    ty-unsigned? cc-emit-extend-rdi exit,
   then,
   drop ;
 
-\ Conversions with source type preserve the integer emitter by default.
-: cc-emit-convert-value-default ( source destination -- ) nip cc-emit-convert-rdi ;
-defer cc-emit-convert-value
-' cc-emit-convert-value-default is cc-emit-convert-value
+\ Conversions that are given the source type as well.
+: cc-emit-convert-value ( source destination -- ) nip cc-emit-convert-rdi ;
 
 \ cc-emit-convert-rcx ( ty -- )  Same conversion for the right operand.
 : cc-emit-convert-rcx
   dup ty-size [lit] 1 = if,
-    x{ 48 0f }
-    ty-unsigned? if, $b6 else, $be then, cc-emit-byte
-    x{ c9 } exit,                                 \ movzx/movsx rcx, cl
+    x{ 0f }
+    dup ty-unsigned? if, $b6 else, $be then, cc-emit-byte
+    x{ c9 }                                       \ movzx/movsx ecx, cl
+    ty-unsigned? cc-emit-extend-rcx exit,
   then,
   dup ty-size [lit] 2 = if,
-    x{ 48 0f }
-    ty-unsigned? if, $b7 else, $bf then, cc-emit-byte
-    x{ c9 } exit,                                 \ movzx/movsx rcx, cx
+    x{ 0f }
+    dup ty-unsigned? if, $b7 else, $bf then, cc-emit-byte
+    x{ c9 }                                       \ movzx/movsx ecx, cx
+    ty-unsigned? cc-emit-extend-rcx exit,
   then,
   dup ty-size [lit] 4 = if,
-    ty-unsigned? if,
-      x{ 89 c9 }                                  \ mov ecx, ecx
-    else,
-      x{ 48 63 c9 }                               \ movsxd rcx, ecx
-    then, exit,
+    ty-unsigned? cc-emit-extend-rcx exit,
   then,
   drop ;
 
-: cc-emit-convert-right-default ( source destination -- ) nip cc-emit-convert-rcx ;
-defer cc-emit-convert-right
-' cc-emit-convert-right-default is cc-emit-convert-right
-
-\ cc-emit-load-local-typed ( slot ty -- )  LP64 memory width, legacy qword.
-: cc-emit-load-local-typed
-  swap cc-emit-lea-rdi-local cc-emit-load-typed-via-rdi ;
-
-\ Unsigned division clears rdx, then DIV rcx uses the full rdx:rax dividend.
-\ Both operands must already have been converted to the common C type.
-: cc-emit-udiv-quotient
-  cc-emit-mov-rax-rdi
-  x{ 31 d2 }                                      \ xor edx, edx
-  x{ 48 f7 f1 }                                   \ div rcx
-  cc-emit-mov-rdi-rax ;                            \ div rcx; mov rdi, rax
-
-: cc-emit-udiv-remainder
-  cc-emit-mov-rax-rdi
-  x{ 31 d2 }                                      \ xor edx, edx
-  x{ 48 f7 f1 }                                   \ div rcx
-  x{ 48 89 d7 } ;                                 \ mov rdi, rdx
-
-: cc-emit-cmp-ult $92 cc-emit-cmp-set ;           \ setb al
-: cc-emit-cmp-uge $93 cc-emit-cmp-set ;           \ setae al
-: cc-emit-cmp-ule $96 cc-emit-cmp-set ;           \ setbe al
-: cc-emit-cmp-ugt $97 cc-emit-cmp-set ;           \ seta al
-
-\ Logical (unsigned) right shift: shr rdi, cl = 48 D3 EF.
-: cc-emit-shr-rdi-cl
-  x{ 48 d3 ef } ;                                 \ shr rdi, cl
+: cc-emit-convert-right ( source destination -- ) nip cc-emit-convert-rcx ;
 
 \ ===========================================================================
-\ Sequences of the native call ABI and of struct copies.
+\ Register-to-register moves
 \ ===========================================================================
-\ Their callers are in 100, 112, 116 and 118.  They are named here, with
-\ the other encoders, so that a second target can supply its own by
-\ redefining them after this file (cc/i386/090-emit.fth does).
 
-\ cc-emit-scale-rdi ( bytes -- )  rdi *= bytes: an index becomes an offset.
-: cc-emit-scale-rdi
+: cc-emit-mov-rcx-rdi
+  x{ 89 c1 }                                      \ mov ecx, eax
+  x{ 89 d3 } ;                                    \ mov ebx, edx
+
+\ A function returns its value in edx:eax, where expressions keep theirs.
+: cc-value-return ;
+: cc-emit-mov-rdi-rax ;
+
+: cc-emit-xor-rax-rax
+  x{ 31 c0 }                                      \ xor eax, eax
+  x{ 31 d2 } ;                                    \ xor edx, edx
+
+: cc-emit-mov-rbx-rdi
+  x{ 89 c6 }                                      \ mov esi, eax
+  x{ 89 d7 } ;                                    \ mov edi, edx
+
+: cc-emit-mov-rdi-rdx
+  x{ 89 f0 }                                      \ mov eax, esi
+  x{ 89 fa } ;                                    \ mov edx, edi
+
+: cc-emit-mov-rsi-rdi
+  x{ 89 c6 } ;                                    \ mov esi, eax
+
+\ ===========================================================================
+\ Switch dispatch
+\ ===========================================================================
+\ The pair is free during dispatch.  cc-emit-cmp-rbx-rdi sets ZF when the
+\ scrutinee in edi:esi equals it, and destroys it.
+: cc-emit-cmp-rbx-rdi
+  x{ 31 f0 }                                      \ xor eax, esi
+  x{ 31 fa }                                      \ xor edx, edi
+  x{ 09 d0 } ;                                    \ or eax, edx
+
+: cc-emit-cmp-rbx-imm32                           ( v -- )
+  cc-emit-mov-rdi-imm32 cc-emit-cmp-rbx-rdi ;
+
+\ ===========================================================================
+\ Arithmetic and logic on the pair, with ebx:ecx as the right operand
+\ ===========================================================================
+
+: cc-emit-add-rdi-rcx
+  x{ 01 c8 }                                      \ add eax, ecx
+  x{ 11 da } ;                                    \ adc edx, ebx
+
+: cc-emit-sub-rdi-rcx
+  x{ 29 c8 }                                      \ sub eax, ecx
+  x{ 19 da } ;                                    \ sbb edx, ebx
+
+: cc-emit-and-rdi-rcx
+  x{ 21 c8 }                                      \ and eax, ecx
+  x{ 21 da } ;                                    \ and edx, ebx
+
+: cc-emit-or-rdi-rcx
+  x{ 09 c8 }                                      \ or eax, ecx
+  x{ 09 da } ;                                    \ or edx, ebx
+
+: cc-emit-xor-rdi-rcx
+  x{ 31 c8 }                                      \ xor eax, ecx
+  x{ 31 da } ;                                    \ xor edx, ebx
+
+: cc-value-complement
+  x{ f7 d0 }                                      \ not eax
+  x{ f7 d2 } ;                                    \ not edx
+
+\ Negating the low half borrows from the high one unless it was 0.
+: cc-value-negate
+  x{ f7 d8 }                                      \ neg eax
+  x{ 83 d2 00 }                                   \ adc edx, 0
+  x{ f7 da } ;                                    \ neg edx
+
+\ cc-emit-add-rdi-imm32 ( imm32 -- )  Add a signed 32-bit constant: its
+\ high half is 0 or -1.
+: cc-emit-add-rdi-imm32
+  x{ 05 } dup cc-emit-4le                         \ add eax, imm32
+  x{ 83 d2 } 0< $ff and cc-emit-byte ;            \ adc edx, 0 or -1
+
+\ The low 64 bits of a product: the product of the low halves, plus both
+\ cross products in the high half.
+: cc-emit-imul-rdi-rcx
+  x{ 0f af d1 }                                   \ imul edx, ecx
+  x{ 0f af d8 }                                   \ imul ebx, eax
+  x{ 01 d3 }                                      \ add ebx, edx
+  x{ f7 e1 }                                      \ mul ecx
+  x{ 01 da } ;                                    \ add edx, ebx
+
+\ An index times an element size is a signed 32-bit offset.
+: cc-emit-shl-rdi-3
+  x{ c1 e0 03 }                                   \ shl eax, 3
+  x{ 99 } ;                                       \ cdq
+
+: cc-emit-scale-rdi                               ( bytes -- )
   dup [lit] 1 = if, drop exit, then,
   dup [lit] 8 = if, drop cc-emit-shl-rdi-3 exit, then,
-  x{ 48 69 ff } cc-emit-4le ;                     \ imul rdi, rdi, imm32
+  x{ 69 c0 } cc-emit-4le                          \ imul eax, eax, imm32
+  x{ 99 } ;                                       \ cdq
 
-\ The native bootstrap image uses an internal all-stack call ABI.
-\ Arguments occupy eight-byte slots; arg 0 is nearest the return address.
-\ cc-native-swap-args ( off1 off2 -- )  Exchange the slots at two offsets
-\ from rsp.
-: cc-native-swap-args
+\ ===========================================================================
+\ Shifts of the pair by cl
+\ ===========================================================================
+\ The processor takes a 32-bit shift count modulo 32.  shld and shrd move
+\ bits across the halves for counts 0..31; for 32..63 the half that was
+\ shifted by (count - 32) moves over and the other is filled.
+
+: cc-emit-shl-rdi-cl
+  x{ 0f a5 c2 }                                   \ shld edx, eax, cl
+  x{ d3 e0 }                                      \ shl eax, cl
+  x{ f6 c1 20 }                                   \ test cl, 32
+  x{ 74 04 }                                      \ jz +4
+  x{ 89 c2 }                                      \ mov edx, eax
+  x{ 31 c0 } ;                                    \ xor eax, eax
+
+: cc-emit-shr-rdi-cl
+  x{ 0f ad d0 }                                   \ shrd eax, edx, cl
+  x{ d3 ea }                                      \ shr edx, cl
+  x{ f6 c1 20 }                                   \ test cl, 32
+  x{ 74 04 }                                      \ jz +4
+  x{ 89 d0 }                                      \ mov eax, edx
+  x{ 31 d2 } ;                                    \ xor edx, edx
+
+: cc-emit-sar-rdi-cl
+  x{ 0f ad d0 }                                   \ shrd eax, edx, cl
+  x{ d3 fa }                                      \ sar edx, cl
+  x{ f6 c1 20 }                                   \ test cl, 32
+  x{ 74 05 }                                      \ jz +5
+  x{ 89 d0 }                                      \ mov eax, edx
+  x{ c1 fa 1f } ;                                 \ sar edx, 31
+
+\ ===========================================================================
+\ Division of the low halves
+\ ===========================================================================
+\ idiv and div divide edx:eax by ecx, leaving the quotient in eax and the
+\ remainder in edx.  Both operands are 4 bytes wide, so the dividend's high
+\ half is the extension of eax, and the result is extended again.
+
+: cc-emit-idiv-quotient
+  x{ 99 }                                         \ cdq
+  x{ f7 f9 }                                      \ idiv ecx
+  x{ 99 } ;                                       \ cdq
+
+: cc-emit-idiv-remainder
+  x{ 99 }                                         \ cdq
+  x{ f7 f9 }                                      \ idiv ecx
+  x{ 89 d0 }                                      \ mov eax, edx
+  x{ 99 } ;                                       \ cdq
+
+: cc-emit-udiv-quotient
+  x{ 31 d2 }                                      \ xor edx, edx
+  x{ f7 f1 }                                      \ div ecx
+  x{ 31 d2 } ;                                    \ xor edx, edx
+
+: cc-emit-udiv-remainder
+  x{ 31 d2 }                                      \ xor edx, edx
+  x{ f7 f1 }                                      \ div ecx
+  x{ 89 d0 }                                      \ mov eax, edx
+  x{ 31 d2 } ;                                    \ xor edx, edx
+
+\ ===========================================================================
+\ Comparisons of the pairs: the pair := 0 or 1.
+\ ===========================================================================
+\ cc-emit-set-rdi ( setX-opcode -- )  The common tail; the
+\ caller passes the second byte of the setcc opcode.
+: cc-emit-set-rdi
+  x{ 0f } cc-emit-byte x{ c0 }                    \ setX al  (X: the opcode byte passed in)
+  x{ 0f b6 c0 }                                   \ movzx eax, al
+  x{ 31 d2 } ;                                    \ xor edx, edx
+
+\ Equal pairs differ in no bit of either half.
+: cc-emit-cmp-equal                               ( setX-opcode -- )
+  x{ 31 c8 }                                      \ xor eax, ecx
+  x{ 31 da }                                      \ xor edx, ebx
+  x{ 09 d0 }                                      \ or eax, edx
+  cc-emit-set-rdi ;
+
+\ Subtracting the low halves and then, with the borrow, the high ones
+\ leaves the sign, overflow and carry flags of the 64-bit difference
+\ left - right, which is all that "less" and "not less" read.
+: cc-emit-cmp-less                                ( setX-opcode -- )
+  x{ 39 c8 }                                      \ cmp eax, ecx
+  x{ 19 da }                                      \ sbb edx, ebx
+  cc-emit-set-rdi ;
+
+\ The zero flag is not that of the whole difference, so "greater" is
+\ "less" with the operands exchanged: right - left.
+: cc-emit-cmp-greater                             ( setX-opcode -- )
+  x{ 39 c1 }                                      \ cmp ecx, eax
+  x{ 19 d3 }                                      \ sbb ebx, edx
+  cc-emit-set-rdi ;
+
+: cc-emit-cmp-eq  $94 cc-emit-cmp-equal ;         \ sete al
+: cc-emit-cmp-ne  $95 cc-emit-cmp-equal ;         \ setne al
+: cc-emit-cmp-lt  $9c cc-emit-cmp-less ;          \ setl al
+: cc-emit-cmp-ge  $9d cc-emit-cmp-less ;          \ setge al
+: cc-emit-cmp-gt  $9c cc-emit-cmp-greater ;       \ setl al
+: cc-emit-cmp-le  $9d cc-emit-cmp-greater ;       \ setge al
+: cc-emit-cmp-ult $92 cc-emit-cmp-less ;          \ setb al
+: cc-emit-cmp-uge $93 cc-emit-cmp-less ;          \ setae al
+: cc-emit-cmp-ugt $92 cc-emit-cmp-greater ;       \ setb al
+: cc-emit-cmp-ule $93 cc-emit-cmp-greater ;       \ setae al
+
+\ ===========================================================================
+\ Tests for zero, on the whole pair
+\ ===========================================================================
+
+\ ZF := the pair is 0.  The pair is preserved.
+: cc-value-test
+  x{ 85 c0 }                                      \ test eax, eax
+  x{ 75 02 }                                      \ jnz +2
+  x{ 85 d2 } ;                                    \ test edx, edx
+
+\ The pair := (the pair == 0).  Used by unary '!'.
+: cc-value-not
+  x{ 09 d0 }                                      \ or eax, edx
+  x{ 0f 94 c0 }                                   \ sete al
+  x{ 0f b6 c0 }                                   \ movzx eax, al
+  x{ 31 d2 } ;                                    \ xor edx, edx
+
+\ ===========================================================================
+\ Function prologue / epilogue
+\ ===========================================================================
+\ A call pushes a 4-byte return address and the prologue a 4-byte ebp, half
+\ a slot each.  The layers above number the parameters as
+\ slots below zero: slot -3 is the first, at [ebp+16].  Eight more bytes
+\ under the saved ebp put it there.
+\
+\   [ebp+16]  the first argument (slot -3)
+\   [ebp+12]  the return address
+\   [ebp+8]   the caller's ebp
+\   [ebp]     8 unused bytes
+\   [ebp-8]   the first local (slot 0)
+
+: cc-emit-prologue                                ( frame-bytes -- )
+  x{ 55 }                                         \ push ebp
+  x{ 83 ec 08 }                                   \ sub esp, 8
+  x{ 89 e5 }                                      \ mov ebp, esp
+  x{ 81 ec } cc-emit-4le ;                        \ sub esp, imm32
+
+: cc-emit-epilogue
+  x{ 8d 65 08 }                                   \ lea esp, [ebp+8]
+  x{ 5d }                                         \ pop ebp
+  x{ c3 } ;                                       \ ret
+
+\ ===========================================================================
+\ Global references
+\ ===========================================================================
+
+\ cc-emit-global-ref ( slot -- )  The pair := the global's address, through
+\ a placeholder that cc-finalize-globals (110) patches.
+: cc-emit-global-ref
+  x{ b8 } cc-out-pos @ [lit] 0 cc-emit-4le        \ mov eax, imm32
+  swap cc-gfixup-add
+  x{ 31 d2 } ;                                    \ xor edx, edx
+
+\ ===========================================================================
+\ Sequences of the native call ABI and of struct copies
+\ ===========================================================================
+
+\ cc-native-swap-args ( off1 off2 -- )  Exchange the 8-byte slots at two
+\ offsets from esp, a half at a time.
+: cc-native-swap-halves                           ( off1 off2 -- )
   >r
-  dup x{ 48 8b 84 24 } cc-emit-4le                \ mov rax, qword [rsp+off1]
-  r@ x{ 48 8b 8c 24 } cc-emit-4le                 \ mov rcx, qword [rsp+off2]
-  x{ 48 89 8c 24 } cc-emit-4le                    \ mov qword [rsp+off1], rcx
-  r> x{ 48 89 84 24 } cc-emit-4le ;               \ mov qword [rsp+off2], rax
+  dup x{ 8b 84 24 } cc-emit-4le                   \ mov eax, dword [esp+off1]
+  r@ x{ 8b 8c 24 } cc-emit-4le                    \ mov ecx, dword [esp+off2]
+  x{ 89 8c 24 } cc-emit-4le                       \ mov dword [esp+off1], ecx
+  r> x{ 89 84 24 } cc-emit-4le ;                  \ mov dword [esp+off2], eax
+: cc-native-swap-args
+  2dup cc-native-swap-halves
+  [lit] 4 + swap [lit] 4 + swap cc-native-swap-halves ;
 
-\ cc-native-drop-args ( n -- )  Release n argument slots after a call.
-: cc-native-drop-args
+: cc-native-drop-args                             ( n -- )
   dup if,
-    x{ 48 81 c4 } [lit] 8 * cc-emit-4le           \ add rsp, n*8
+    x{ 81 c4 } [lit] 8 * cc-emit-4le              \ add esp, n*8
   else, drop then, ;
 
-\ cc-native-load-call-target ( n -- )  rax := the function address pushed
-\ before a call's n arguments.
-: cc-native-load-call-target
-  x{ 48 8b 84 24 } [lit] 8 * cc-emit-4le ;        \ mov rax, qword [rsp+n*8]
+\ The function address pushed before a call's n arguments, for call eax.
+: cc-native-load-call-target                      ( n -- )
+  x{ 8b 84 24 } [lit] 8 * cc-emit-4le ;           \ mov eax, dword [esp+n*8]
 
-\ mov rdi, rdx: 48 89 D7.  A postfix ++ or -- kept the old value in rdx.
-: cc-emit-mov-rdi-rdx
-  x{ 48 89 d7 } ;                                 \ mov rdi, rdx
+\ cc-emit-exit-125 ( -- )  exit (125): where a compiled program ends up if
+\ it reaches a division the compiler has no code for (100-cc-expr.fth).
+: cc-emit-exit-125
+  x{ b8 } [lit] 1 cc-emit-4le                     \ mov eax, 1  (exit)
+  x{ bb } [lit] 125 cc-emit-4le                   \ mov ebx, 125
+  x{ cd 80 } ;                                    \ int 0x80
 
-\ mov rsi, rdi: 48 89 FE.  rdi holds the source address of a copy.
-: cc-emit-mov-rsi-rdi
-  x{ 48 89 fe } ;                                 \ mov rsi, rdi
-
-\ cc-emit-rep-count ( n -- )  rcx := n, the byte count of the rep movsb or
-\ rep stosb that follows; rdi holds its destination.  cc-emit-rep-count-rcx
-\ is the same instruction in its REX.W spelling, which struct assignment
-\ (100) has always emitted; initializers (118) emit the short one.
+\ cc-emit-rep-count ( n -- )  ecx := n, the byte count of the rep movsb or
+\ rep stosb that follows.  Those write through edi, and the destination is
+\ in eax, so it moves over first.
 : cc-emit-rep-count
+  x{ 89 c7 }                                      \ mov edi, eax
   x{ b9 } cc-emit-4le ;                           \ mov ecx, imm32
-: cc-emit-rep-count-rcx
-  x{ 48 c7 c1 } cc-emit-4le ;                     \ mov rcx, imm32
-
-\ cmp rbx, rdi: 48 39 FB.  A switch label too wide for cmp rbx, imm32 is
-\ loaded into rdi first.
-: cc-emit-cmp-rbx-rdi
-  x{ 48 39 fb } ;                                 \ cmp rbx, rdi
-
-\ cc-out-patch-address ( vaddr offset -- )  Fill in the placeholder that
-\ cc-emit-movabs-rdi-imm64-placeholder or cc-emit-global-ref left at offset.
-: cc-out-patch-address  cc-out-patch-8le ;
+: cc-emit-rep-count-rcx  cc-emit-rep-count ;

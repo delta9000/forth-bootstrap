@@ -10,7 +10,6 @@
 \ tinycc/tcc-compile-i386.fth, but with M2libc's include paths, and the
 \ output is written executable (0755), so that no chmod is needed before
 \ chmod itself is built.
-true cc-native-syscall-any !
 [lit] 8388608 cc-arena-map
 create tool-include s, vendor/stage0-posix/M2libc
 tool-include [lit] 26 cc-prep-add-include
@@ -31,7 +30,7 @@ variable tool-count
   repeat,
   tool-fd @ close if, [lit] 124 die then, ;
 : tool-main
-  cc-load-stdin cc-preprocess cc-out-init cc-globals-init
+  cc-load-files cc-preprocess cc-out-init cc-globals-init
   cc-emit-elf-header cc-native-program cc-finalize-globals cc-finalize-elf
   tool-write-output bye ;
 tool-main

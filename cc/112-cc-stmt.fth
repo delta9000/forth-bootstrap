@@ -51,7 +51,7 @@ defer cc-parse-stmt-fwd
   cc-parse-expr
   [char] ) cc-expect-punct-c
 
-  cc-value-test-fwd
+  cc-value-test
   cc-emit-jz-rel32-placeholder                    ( fixup-jz )
 
   cc-parse-stmt-fwd                             \ then-body
@@ -202,7 +202,7 @@ variable cc-for-step-end
   cc-here-vaddr                                   ( top-vaddr )
   cc-parse-expr
   [char] ) cc-expect-punct-c
-  cc-value-test-fwd
+  cc-value-test
   cc-emit-jz-rel32-placeholder                    ( top fixup-end )
 
   \ Park top-vaddr on rstack so it survives the body parse.
@@ -284,7 +284,7 @@ variable cc-for-step-end
     [char] ; cc-expect-punct-c
   then,
 
-  cc-value-test-fwd
+  cc-value-test
   cc-emit-jz-rel32-placeholder                    ( top fixup-end )
   cc-for-end-fixup !
   cc-for-top-vaddr !
@@ -388,7 +388,7 @@ variable cc-for-step-end
   [char] ) cc-expect-punct-c
   [char] ; cc-expect-punct-c
 
-  cc-value-test-fwd
+  cc-value-test
   r> cc-emit-jnz-vaddr                            \ jnz top
 
   \ Break target = here.

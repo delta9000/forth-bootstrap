@@ -1,6 +1,4 @@
-\ 080-elf32.fth — ELF32 header + program header for i386 output.
-\
-\ Loaded in place of 080-cc-elf.fth, and defines the same words.
+\ 080-cc-elf.fth — ELF32 header + program header of the output.
 \
 \ Layout: 52-byte Elf32_Ehdr + 32-byte Elf32_Phdr (one PT_LOAD) = 84 bytes.
 \ Code begins at vaddr 0x08048054, file offset 84.  0x08048000 is where
@@ -52,7 +50,7 @@
 variable cc-bss-size
 
 \ cc-bss-end-patch ( -- a )  File offset of the imm32 in the entry stub
-\ (117-entry.fth) that holds the address just past the bss.
+\ (117-cc-native-program.fth) that holds the address just past the bss.
 variable cc-bss-end-patch
 
 \ cc-finalize-elf ( -- )  After codegen: p_filesz is the file's length,

@@ -13,7 +13,7 @@
      M2-Planet's built-in types (SCM, FUNCTION, the fixed-width integers)
          and its va_* builtins, which M2libc's stdarg.h names.
    Every system call goes through __native_syscall, the one primitive
-   cc/i386/119-runtime.fth emits.  It returns what Linux returns, as
+   cc/119-cc-runtime.fth emits.  It returns what Linux returns, as
    M2libc's assembly does: -errno on failure.
 
    builder-hex0, where these tools are also meant to run, has no unlink,

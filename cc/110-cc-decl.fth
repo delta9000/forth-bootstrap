@@ -78,12 +78,8 @@ variable cc-fn-local-count                        \ # locals in current function
 \ ===========================================================================
 \ The end of a program
 \ ===========================================================================
-\ What every program driver needs once the last function is compiled,
-\ whichever parser it ran: 116-cc-prog.fth's cc-parse-program,
-\ 117-cc-native-program.fth's cc-native-program, or the object program of
-\ 121-cc-sysv.fth.  They sit here, not beside the buffers they walk in
-\ 090-cc-emit.fth, because cc-out-patch-address is the back end's word and
-\ cc/i386/090-emit.fth defines its own after that file.
+\ What cc-native-program (117-cc-native-program.fth) and the drivers need
+\ once the last function is compiled.
 
 \ Pre-baked literal "main" for cc-is-main? — laid out as 4 raw bytes (no length
 \ prefix here, because cc-is-main? only consumes 4 bytes).
@@ -382,8 +378,6 @@ variable cc-loop-switch-depth
 \ call cc-expect-punct-c again.  Otherwise putback and parse the expression.
 \ Either way, unwind any open switch scrutinees so rbx is restored before
 \ the epilogue's ret.
-defer cc-value-return-fwd
-' cc-emit-mov-rax-rdi is cc-value-return-fwd
 \ A target may reject a result shape before any conversion is emitted.
 : cc-return-shape ( type descriptor type descriptor -- ) 2drop 2drop ;
 
@@ -399,7 +393,7 @@ defer cc-value-return-fwd
     cc-last-expr-type @ cc-last-struct-desc @
     cc-native-return-type @ cc-native-return-desc @ cc-return-shape
     cc-last-expr-type @ cc-native-return-type @ cc-emit-convert-value
-    cc-value-return-fwd                           \ result -> rax (SYS-V)
+    cc-value-return                           \ result -> rax (SYS-V)
     cc-switch-depth @ cc-emit-switch-unwind
     cc-emit-epilogue
     [char] ; cc-expect-punct-c
