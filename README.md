@@ -120,7 +120,7 @@ tests/tinycc/junction-check.sh           # live-bootstrap's step from that tcc, 
 tests/tinycc/one-boot-check.sh      # the route: one boot of builder-hex0 from sources
 ```
 
-The last prints, after a boot of 24 s:
+The last prints, after a boot of 25 s (QEMU with KVM, `-smp 1`):
 
 ```
 one-boot-check: OK, 33 files; live-bootstrap's published tcc-0.9.26 reached on builder-hex0

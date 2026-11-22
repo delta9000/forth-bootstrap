@@ -221,7 +221,7 @@ The checks around it (`./check-all.sh` steps 08 to 12):
 
 `tests/tinycc/one-boot-check.sh` (`./check-all.sh` step 15) goes
 from two hex0 sources to live-bootstrap's tcc-0.9.26 on builder-hex0 in
-one QEMU boot of 24 s with KVM.  No program
+one QEMU boot of 25 s with KVM.  No program
 is on the disk: everything that runs is assembled or compiled in the
 boot.  `forth/CONTRACT.md`, section 7, is the design.
 
