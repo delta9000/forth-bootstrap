@@ -1,5 +1,20 @@
 # The i386 host contract: Forth-laid machine code on the i386 seed
 
+> Status, 2026-11-21.  This contract was written when an x86-64 seed,
+> library and compiler stood beside the i386 files, and it describes each
+> i386 file as a stand-in for an x86-64 original.  Those originals
+> (`forth/010-lib.fth`, `cc/020-cc-arena.fth`, `seed/000-seed.hex0`, the
+> x86-64 encoders) are no longer in this branch; they are at tag
+> `experiments-2026-11-21`.  Since then `cc/i386/*`,
+> `forth/i386/030-io.fth` and `forth/i386/115-nzero.fth` have been folded
+> into `cc/` (`cc/030-cc-io.fth`, `cc/090-cc-emit.fth`,
+> `cc/115-cc-native.fth`, `cc/117-cc-native-program.fth`,
+> `cc/080-cc-elf.fth`, `cc/119-cc-runtime.fth`), the stand-in check and
+> its `.diff` pins are gone, and `./check-all.sh` runs every check by
+> default, with no `CHECK_*` variables.  The interfaces specified here
+> (sections 1 to 7) are the ones in use; the file names and line numbers
+> in the tables are those of the tag.
+
 `seed/i386/SPEC.md` specifies the i386 seed. This document specifies
 everything between that seed and the C compiler's output: the machine
 code that the Forth library and the compiler lay down *for the Forth

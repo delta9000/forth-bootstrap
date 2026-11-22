@@ -3,7 +3,7 @@
 # live-bootstrap's tcc-0.9.26 on builder-hex0, in one QEMU boot, with no
 # program on the disk.
 #
-#     tests/tinycc/i386-one-boot-check.sh        (CHECK_I386_BOOT=1 ./check-all.sh)
+#     tests/tinycc/i386-one-boot-check.sh        (./check-all.sh step 15)
 #     tests/tinycc/i386-one-boot-check.sh --probe    exit 0 when this can run here
 #
 # The disk (tinycc/i386-one-boot-disk.py) holds builder-hex0's two stages

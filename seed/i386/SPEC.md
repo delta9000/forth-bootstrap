@@ -1,5 +1,13 @@
 # SEED-SPEC (i386): the Forth seed for builder-hex0, `seed/i386/000-seed.hex0`
 
+> Status, 2026-11-21.  The seed specified here exists
+> (`seed/i386/000-seed.hex0`, 1,191 bytes) and is the only seed in this
+> branch.  The x86-64 seed and its `seed/SPEC.md`, K0, K1 and the GCC
+> route, which this document mentions, are at tag
+> `experiments-2026-11-21`; so is the differential oracle of 13.1 (the
+> cases run on both seeds).  `./check-all.sh` runs the checks of section
+> 13 as steps 01 to 03, 09, 14 and 15, by default.
+
 Specification for a seed that does not exist yet. It is written for an
 implementer who has seen no seed: it describes what the seed must do and
 every interface another file depends on, and nothing of how any existing

@@ -11,7 +11,8 @@ to GCC 10.5.0, and Linux 7.2.8 under K1.  seed-forth recorded its full run
 under K1 on 2026-10-07 (78 minutes, `JOBS=2 K1_MEM=24G`): stage D at its
 fixed point (54 files, 0 differ) and a 1,278,976-byte bzImage, sha256
 `881e96ad05da8e18...`, identical to the TinyCC route's.  This
-repository's own run (2026-10-08, `results/k1-2026-10-08/`) reproduced it:
+repository's own run (2026-10-08, `results/k1-2026-10-08/` at tag
+`experiments-2026-11-21`) reproduced it:
 the same bzImage, the same 31 gcc64 pins, the same stage D report and the
 same hashes for all 159 late-tool programs.  K1 differs from seed-forth's
 (`7621950c...`) by the `cld` its exception entry now starts with; seed-cc
@@ -174,6 +175,10 @@ The swarms were fine. The handoffs were practical. The gates plus the bootstrap 
 
 ## Path mapping from seed-forth
 
+This table describes the layout at tag `experiments-2026-11-21`; `main`
+now holds only `seed/i386/`, `forth/`, `cc/`, `tinycc/`, `tests/`,
+`tools/` and `vendor/` (see "One route on main" at the end).
+
 forth-bootstrap started as a copy of the files route D reads in seed-forth
 0dd2b88, kept at their old paths (the first commit), and was then laid out
 by part.  Every path below is relative to the repository root; `NNN` is a
@@ -211,3 +216,40 @@ still quote them byte for byte; the paths that did change are the ones
 scripts open.  seed-cc and seed-ar name their inputs (cc/, forth/, the runtime's
 directory), so those two programs differ from seed-forth's.  The objects
 they compile and the K1 they build do not.
+
+## One route on main (2026-11-21)
+
+After route D, this repository grew a second way to a first C compiler:
+TinyCC with Mes libc compiled by the Forth compiler, joined to
+live-bootstrap's `tcc-0.9.26` step.  It was built in stages, each kept
+beside the last: an x86-64 first tcc replayed on the host, a hand-off from
+K0 to builder-hex0 in two boots, an i386 back end loaded over the x86-64
+one, an i386 seed with its own library, and finally one boot of
+builder-hex0 from a disk of sources.  By then the compiler had three
+modes (the M2-Planet subset, native, and the System V object target), two
+back ends and two seeds, and every change had to hold the pins of all of
+them.
+
+On 2026-11-21 everything was verified together once more (tag
+`experiments-2026-11-21`, branch `experiments/all-routes`, commit a0e49f3)
+and `main` was reduced to the last of those routes, the i386 one boot:
+
+- the host builds moved from the x86-64 seed to the i386 seed, with the
+  same pinned bytes;
+- the compiler's gate fixtures, which had only ever run through the
+  M2-Planet subset, were run through native mode: 113 of 134 carried
+  over, and one of them found a crash (a struct member with no name);
+- K0, K1, the hand-off, the GCC chain, seed-cc, Stage A, the x86-64
+  TinyCC scripts and the x86-64 seed were deleted, one area per commit;
+- in the compiler, the M2-Planet subset's arms, the mode switches, the
+  preprocessor's source-location code and the files of the object target
+  were deleted, the hooks that only another target bound became plain
+  words, and the i386 files were folded into the layers they had been
+  loaded over.
+
+The pins of the route did not move at any commit: the first tcc is
+`92d11438...` before and after.  The paths in the table below that name
+`kernel/`, `chain/`, `cc/driver/`, `forth/130-asm.fth` and
+`MANIFEST.sha256` are the experiments tag's.  This paragraph, like the
+work it describes, was written with an AI model under the owner's
+direction.

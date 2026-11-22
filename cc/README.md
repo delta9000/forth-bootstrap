@@ -1,32 +1,56 @@
 # cc/
 
-A C compiler written in Forth, loaded into the seed after
-`forth/010-lib.fth` in numeric order (`compiler-layers.sh` prints the
-order).  Files 020 to 112 are the core every mode loads: arena and
-buffers, preprocessor, lexer, types and symbols, ELF output and code
-generation, expressions, what declarations share, and statements.  From
-there each mode has its own layers.  114, 116 and 120 are the C subset
-that compiles M2-Planet, each value in an 8-byte slot: its declarations
-and functions, its file-scope forms, libc shims and driver, and the entry
-word `cc-main`, which reads C on stdin and writes an executable.  115,
-117, 118 and 119 are native mode (LP64 storage with a private calling
-convention), which loads neither 114 nor 116.  121 to 141 add the System V
-target that GCC's sources need: relocatable objects, calls, the runtime,
-target headers, constant expressions, varargs, floating values,
-bitfields, records passed by value, the linker and archives.
-`i386/` holds a second native back end, for i386 with ILP32 types: files
-loaded between the layers above (`i386/layers.sh` prints the order), each
-redefining the machine words of the layer before it for the layers after
-it.  `090-emit.fth` keeps every value in a pair of 32-bit registers
-where `090-cc-emit.fth` has one 64-bit register; `065-ilp32-types.fth`
-makes long and pointers 4 bytes; `080-elf32.fth`, `117-entry.fth` and
-`119-runtime.fth` write the ELF32 header, the entry stub and the `int
-0x80` primitive; `100-divide.fth` refuses a `long long` division, which
-the back end does not have.  `tinycc/README.md` says what it builds and
-how it is checked.
-`driver/` holds seed-cc and seed-ar, the C driver and archiver
-(`seed-cc.c`, `seed-ar.c`) and the Forth controller that builds them from
-the seed alone (`seed-cc-start.fth`).  Start at `020-cc-arena.fth` and
-follow the numbers.  Checks: the `test-0N0-*.fth` files run in
-`./test.sh`; `tests/cc/seed-cc-rebuild-check.sh` and
-`tests/cc/stage-a-check.sh` are `./check-all.sh` steps 04 and 07.
+A C compiler written in Forth.  The seed loads it after
+`forth/i386/010-lib.fth`, in the order `forth/i386/layers.fth` lists:
+`forth/i386/020-cc-arena.fth`, then the files here in numeric order.
+
+| file | what |
+|---|---|
+| `030-cc-io.fth` | input, source and output buffers, the workspace allocator, the list of C files to read |
+| `040-cc-prep.fth` | the preprocessor |
+| `050-cc-lex.fth` | the lexer |
+| `060-cc-types.fth` | types (ILP32) and struct descriptors |
+| `070-cc-sym.fth` | the symbol table |
+| `080-cc-elf.fth` | the ELF32 header of the output |
+| `090-cc-emit.fth` | branches and fixups, the globals' two areas, the i386 instruction encoders |
+| `100-cc-expr.fth` | expressions and constant expressions |
+| `110-cc-decl.fth` | what declarations share, casts, `return`, the end of a program |
+| `112-cc-stmt.fth` | statements |
+| `115-cc-native.fth` | the declaration parser: specifiers, declarators, structs, locals |
+| `117-cc-native-program.fth` | functions, the entry stub, the program |
+| `118-cc-native-init.fth` | initializers |
+| `119-cc-runtime.fth` | `__native_syscall`, the one kernel primitive a compiled program gets |
+
+The compiler reads the C files a job names, preprocesses them, and writes
+one static i386 ELF directly: no object files, assembler or linker.  The
+drivers are in `tinycc/` (`tool-compile.fth`, `tcc-compile-i386.fth`).
+
+What it compiles is the C that tcc 0.9.26, Mes libc, M2libc, kaem and
+stage0's tools are written in.  What it does not have, it refuses with an
+error code (`cc: line N: error C`, and C is the exit status):
+floating-point arithmetic (a float or double is carried as its 8-byte bit
+pattern; error 100), 64-bit division (131), bitfields (58), a struct
+passed or returned by value (212), `__LINE__` and `__FILE__` (93).
+
+The encoders in 090 are named for the registers of a 64-bit machine
+(`cc-emit-mov-rcx-rdi`); each name stands for a pair of 32-bit registers,
+and 090's header has the table.  Values are 64 bits wide in the compiler
+and in the code it emits, so `long long` costs nothing extra.
+
+Not diagnosed.  The compiler accepts some programs that are not C: a
+subscript on a function name, a call of an `int` variable, `sizeof` of an
+unknown struct tag, a struct member list that starts with a keyword or a
+number, a stray `}` or `1;` at file scope, `typedef` of a non-type.  It
+compiles the sources of this route; it is not a checker.
+
+Checks: the `test-0N0-*.fth` files here run in `./test.sh`.
+`tests/cc/gates/run-gates.sh` compiles and runs the gate fixtures, and
+expects each `die-N-*` fixture to be refused with code N on a given line;
+`tests/cc/gates/check-coverage.sh` counts which error codes those cover.
+`tests/cc/i386/run-corpus.sh` compares run-time behaviour with gcc `-m32`,
+and `tests/cc/i386/asm-check.py` compares every encoder's bytes with GNU
+as on its comment.
+
+Earlier modes of this compiler (an x86-64 back end, an object-file target
+with the System V ABI, a linker, an M2-Planet subset) are at tag
+`experiments-2026-11-21`.
