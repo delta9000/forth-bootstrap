@@ -163,10 +163,10 @@ variable cc-scope-depth
 \   address, so the list code can push onto it (0 = no pending calls).
 : cc-sym-call-fixups cc-sym-extra cell[] ;
 \ The extra2 cell has one meaning, for sk-func only.
-\   address fixups: the head of the list of `movabs rdi, imm64` sites that
+\   address fixups: the head of the list of `mov eax, imm32` sites that
 \   load the function's address before it is defined (a forward-declared
 \   function used as a value, e.g. `common_recursion(expression)` before
-\   expression's body).  cc-parse-function patches each imm64 to the real
+\   expression's body).  cc-parse-function patches each imm32 to the real
 \   vaddr when it reaches the definition.  0 = no pending loads.
 : cc-sym-addr-fixups cc-sym-extra2 cell[] ;
 : cc-sym-object-size-of cc-sym-extra2 cell[] @ ;

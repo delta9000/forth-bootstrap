@@ -32,10 +32,11 @@ floating-point arithmetic (a float or double is carried as its 8-byte bit
 pattern; error 100), 64-bit division (131), bitfields (58), a struct
 passed or returned by value (212), `__LINE__` and `__FILE__` (93).
 
-The encoders in 090 are named for the registers of a 64-bit machine
-(`cc-emit-mov-rcx-rdi`); each name stands for a pair of 32-bit registers,
-and 090's header has the table.  Values are 64 bits wide in the compiler
-and in the code it emits, so `long long` costs nothing extra.
+Values are 64 bits wide in the compiler and in the code it emits, so
+`long long` costs nothing extra.  A value is held in a pair of 32-bit
+registers, and the encoders in 090 are named for the pairs they work on:
+`cc-emit-mov-ebx:ecx-edx:eax` is `mov ecx, eax` and `mov ebx, edx`.
+090's header has the pairs and the naming rule.
 
 ## Known accepts
 

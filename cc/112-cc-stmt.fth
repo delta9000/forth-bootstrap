@@ -38,7 +38,7 @@ defer cc-parse-stmt-fwd
 \
 \ Codegen:
 \     <eval cond>
-\     test rdi, rdi
+\     test edx:eax
 \     jz   <else-or-end>            (rel32 fixup #1)
 \     <then-body>
 \     [if else:]
@@ -51,7 +51,7 @@ defer cc-parse-stmt-fwd
   cc-parse-expr
   [char] ) cc-expect-punct-c
 
-  cc-emit-test-rdi
+  cc-emit-test-edx:eax
   cc-emit-jz-rel32-placeholder                    ( fixup-jz )
 
   cc-parse-stmt-fwd                             \ then-body
@@ -154,11 +154,11 @@ variable cc-for-step-end
   repeat,
   drop ;
 
-\ cc-walk-and-patch-imm64-to-vaddr ( head target-vaddr -- )
-\ Walk the linked list head, patching each fixup's 8-byte imm64 to the
-\ absolute target vaddr.  Used for forward `movabs rdi, imm64` sites that
+\ cc-walk-and-patch-address ( head target-vaddr -- )
+\ Walk the linked list head, patching each fixup's 4-byte imm32 to the
+\ absolute target vaddr.  Used for forward `mov eax, imm32` sites that
 \ load a function's address as an rvalue before the function is defined.
-: cc-walk-and-patch-imm64-to-vaddr                ( head target -- )
+: cc-walk-and-patch-address                       ( head target -- )
   cc-fixup-target-tmp !                           ( head )
   begin,
     dup [lit] 0 <>
@@ -179,8 +179,8 @@ variable cc-for-step-end
 \
 \ Codegen:
 \   <top:>           ; record vaddr; continue-target
-\   <eval cond>      ; rdi = cond
-\   test rdi, rdi
+\   <eval cond>      ; edx:eax = cond
+\   test edx:eax
 \   jz   <end>       ; rel32 placeholder
 \   <body>           ; break/continue inside emit forward-fixed jmps
 \   jmp  <top>       ; absolute via cc-emit-jmp-vaddr
@@ -202,7 +202,7 @@ variable cc-for-step-end
   cc-here-vaddr                                   ( top-vaddr )
   cc-parse-expr
   [char] ) cc-expect-punct-c
-  cc-emit-test-rdi
+  cc-emit-test-edx:eax
   cc-emit-jz-rel32-placeholder                    ( top fixup-end )
 
   \ Park top-vaddr on rstack so it survives the body parse.
@@ -237,8 +237,8 @@ variable cc-for-step-end
 \ Codegen:
 \   <init expr (if any)>
 \   <top:>
-\   <cond expr (if any, else mov rdi, 1)>
-\   test rdi, rdi
+\   <cond expr (if any, else mov edx:eax, 1)>
+\   test edx:eax
 \   jz   <end>
 \   <body>
 \   <step expr (if any)>
@@ -277,14 +277,14 @@ variable cc-for-step-end
   cc-next-token-keep
   tok-kind @ tk-punct = tok-num @ [char] ; = and if,
     \ ';' — empty cond; synthesize an integer value, including its metadata.
-    [lit] 1 cc-emit-mov-rdi-imm32 cc-mark-int-value
+    [lit] 1 cc-emit-mov-edx:eax-imm32 cc-mark-int-value
   else,
     cc-putback-token
     cc-parse-expr
     [char] ; cc-expect-punct-c
   then,
 
-  cc-emit-test-rdi
+  cc-emit-test-edx:eax
   cc-emit-jz-rel32-placeholder                    ( top fixup-end )
   cc-for-end-fixup !
   cc-for-top-vaddr !
@@ -358,8 +358,8 @@ variable cc-for-step-end
 \   <top:>           ; record vaddr (back-target for jnz)
 \   <body>           ; break/continue inside emit forward-fixup jmps
 \   <continue-here:> ; walk continue list, patch each to here
-\   <eval cond>      ; rdi = cond
-\   test rdi, rdi
+\   <eval cond>      ; edx:eax = cond
+\   test edx:eax
 \   jnz <top>        ; absolute backward branch
 \   <break-here:>    ; walk break list, patch each to here
 \
@@ -388,7 +388,7 @@ variable cc-for-step-end
   [char] ) cc-expect-punct-c
   [char] ; cc-expect-punct-c
 
-  cc-emit-test-rdi
+  cc-emit-test-edx:eax
   r> cc-emit-jnz-vaddr                            \ jnz top
 
   \ Break target = here.
@@ -404,9 +404,9 @@ variable cc-for-step-end
 \ ===========================================================================
 \ Codegen layout (single-pass with a deferred dispatch table):
 \
-\     <eval e>                  ; rdi = scrutinee
-\     push rbx                  ; preserve outer rbx
-\     mov  rbx, rdi             ; rbx = scrutinee for the rest of the switch
+\     <eval e>                  ; edx:eax = scrutinee
+\     push edi:esi              ; preserve the outer switch's scrutinee
+\     mov  edi:esi, edx:eax     ; edi:esi = scrutinee for the rest of the switch
 \     jmp  <dispatch>           ; rel32, patched after body parse
 \   case-K1-body:               ; vaddr recorded in case-list
 \     <stmts>
@@ -416,12 +416,12 @@ variable cc-for-step-end
 \     <stmts>
 \     jmp <end-A>               ; fall-through past last case (always emitted)
 \   dispatch:
-\     cmp rbx, K1; je case-K1-body
-\     cmp rbx, K2; je case-K2-body
+\     cmp edi:esi, K1; je case-K1-body
+\     cmp edi:esi, K2; je case-K2-body
 \     ...
 \     [jmp default-body | jmp <end-A>]
 \   end-A:                      ; break fixups + fall-through + no-default land here
-\     pop rbx                   ; restore outer rbx
+\     pop edi:esi               ; restore the outer switch's scrutinee
 \   end:
 \
 \ The break list and the cc-switch-default-vaddr / cc-switch-cases-head state
@@ -471,18 +471,18 @@ variable cc-switch-type           \ promoted controlling type
   [char] : cc-expect-punct-c
   cc-here-vaddr cc-switch-default-vaddr ! ;
 
-\ A label outside signed-32 range needs all 64 bits: load it into rdi,
+\ A label outside signed-32 range needs all 64 bits: load it into edx:eax,
 \ which is free during dispatch, and compare registers.  Every other
 \ label keeps the imm32 form.
 : cc-emit-switch-compare                          ( K -- )
   dup [lit] 2147483648 + [lit] 4294967296 / if,
-    cc-emit-movabs-rdi-imm64 cc-emit-cmp-rbx-rdi
+    cc-emit-mov-edx:eax-imm64 cc-emit-cmp-edi:esi-edx:eax
     exit,
   then,
-  cc-emit-cmp-rbx-imm32 ;
+  cc-emit-cmp-edi:esi-imm32 ;
 
 \ cc-emit-switch-dispatch ( -- )  Walk cc-switch-cases-head, emitting
-\ `cmp rbx, K; je <body-vaddr>` for each entry.  Order is reverse of source,
+\ `cmp edi:esi, K; je <body-vaddr>` for each entry.  Order is reverse of source,
 \ which is semantically irrelevant for switch/case.
 : cc-emit-switch-dispatch                         ( -- )
   cc-switch-cases-head @                          ( node )
@@ -490,7 +490,7 @@ variable cc-switch-type           \ promoted controlling type
     dup [lit] 0 <>
   while,
     dup @                                         ( node K )
-    cc-emit-switch-compare                        \ cmp rbx, K
+    cc-emit-switch-compare                        \ cmp edi:esi, K
     dup [lit] 8 + @                               ( node body-vaddr )
     cc-emit-je-vaddr                              \ je <body-vaddr>
     [lit] 16 + @                                  \ next
@@ -513,16 +513,16 @@ variable cc-switch-type           \ promoted controlling type
 
   \ '(' expr ')'
   lparen cc-expect-punct-c
-  cc-parse-expr                                   \ rdi = scrutinee
+  cc-parse-expr                                   \ edx:eax = scrutinee
   cc-last-expr-type @ cc-value-integer-use
   cc-last-expr-type @ cc-unary-type cc-switch-type !
   [char] ) cc-expect-punct-c
 
-  \ Save outer rbx, then move scrutinee into rbx.  Mark the switch open so
+  \ Save the outer edi:esi, then move the scrutinee into it.  Mark the switch open so
   \ return/continue/goto inside the body emit a balancing pop (see
   \ cc-emit-switch-unwind).
-  cc-emit-push-rbx
-  cc-emit-mov-rbx-rdi
+  cc-emit-push-edi:esi
+  cc-emit-mov-edi:esi-edx:eax
   [lit] 1 cc-switch-depth +!
 
   \ Forward jmp to the dispatch table (emitted after the body).
@@ -580,8 +580,8 @@ variable cc-switch-type           \ promoted controlling type
   \ end-A: walk break list, patching each fixup to here.
   cc-break-stack-head @ cc-walk-and-patch-fixups
 
-  \ Restore outer rbx; the switch is closed again.
-  cc-emit-pop-rbx
+  \ Restore outer edi:esi; the switch is closed again.
+  cc-emit-pop-edi:esi
   cc-switch-depth @ 1- cc-switch-depth !
 
   \ Restore outer state.
@@ -714,7 +714,7 @@ variable cc-label-count
 : cc-native-goto-adjust ( source-depth target-depth -- )
   - dup 0< if,
     [lit] 0 swap -
-    begin, dup while, cc-emit-push-rbx 1- repeat, drop
+    begin, dup while, cc-emit-push-edi:esi 1- repeat, drop
   else, cc-emit-switch-unwind then, ;
 : cc-native-goto-fixup ( label-id patch-offset -- )
   [lit] 24 cc-alloc >r r@ !

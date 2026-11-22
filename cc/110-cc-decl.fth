@@ -97,7 +97,7 @@ create cc-main-name-bytes  s, main
 \ cc-globals-base-vaddr is set to cc-base-vaddr + (cc-out-pos at the moment
 \ globals are appended).  The bss starts at the next 8-aligned vaddr (the
 \ file is padded with zeros to reach it), and cc-bss-size tells
-\ cc-finalize-elf how much memory it adds.  Then each fixup's imm64
+\ cc-finalize-elf how much memory it adds.  Then each fixup's imm32
 \ placeholder is overwritten with the slot's vaddr: cc-globals-base-vaddr
 \ + slot for a data slot, cc-bss-base-vaddr + (slot - cc-bss-flag) for a
 \ bss one.
@@ -336,12 +336,12 @@ variable cc-cast-desc                              \ struct TAG's descriptor, or
 \ ===========================================================================
 \ Switch-scrutinee unwind
 \ ===========================================================================
-\ cc-parse-switch (112-cc-stmt.fth) parks the outer rbx with
-\ `push rbx` and restores it with `pop rbx` at the switch's end label.  Any
-\ statement that jumps out of the switch body without passing the end label —
-\ return, continue, goto — must first emit compensating pops, or each
-\ traversal leaks 8 bytes of stack per open switch (and return hands the
-\ caller a clobbered callee-saved rbx).
+\ cc-parse-switch (112-cc-stmt.fth) parks the outer edi:esi with
+\ `push edi:esi` and restores it with `pop edi:esi` at the switch's end
+\ label.  Any statement that jumps out of the switch body without passing
+\ the end label — return, continue, goto — must first emit compensating
+\ pops, or each traversal leaks 8 bytes of stack per open switch (and
+\ return hands the caller its own switch's scrutinee overwritten).
 \
 \ cc-switch-depth counts the switches lexically open at the current parse
 \ point; cc-loop-switch-depth snapshots it at the innermost enclosing loop.
@@ -355,21 +355,21 @@ variable cc-cast-desc                              \ struct TAG's descriptor, or
 variable cc-switch-depth
 variable cc-loop-switch-depth
 
-\ cc-emit-switch-unwind ( n -- )  Emit n `pop rbx` instructions.
+\ cc-emit-switch-unwind ( n -- )  Emit n `pop edi:esi` instructions.
 : cc-emit-switch-unwind                           ( n -- )
   begin,
     dup [lit] 0 >
   while,
-    cc-emit-pop-rbx
+    cc-emit-pop-edi:esi
     1-
   repeat,
   drop ;
 
 \ cc-parse-return ( -- )  "return" already consumed; parse [expr] ';'.
-\ Bare `return;` (no expression) is legal C — emit rax := 0 + epilogue.
+\ Bare `return;` (no expression) is legal C — emit edx:eax := 0 + epilogue.
 \ Peek the next token: if it's ';' the peek already consumed it, so do NOT
 \ call cc-expect-punct-c again.  Otherwise putback and parse the expression.
-\ Either way, unwind any open switch scrutinees so rbx is restored before
+\ Either way, unwind any open switch scrutinees so edi:esi is restored before
 \ the epilogue's ret.
 \ A target may reject a result shape before any conversion is emitted.
 : cc-return-shape ( type descriptor type descriptor -- ) 2drop 2drop ;
@@ -377,7 +377,7 @@ variable cc-loop-switch-depth
 : cc-parse-return
   cc-next-token-keep
   tok-kind @ tk-punct = tok-num @ [char] ; = and if,
-    cc-emit-xor-rax-rax                           \ rax := 0 (no value returned)
+    cc-emit-zero-edx:eax                          \ no value returned
     cc-switch-depth @ cc-emit-switch-unwind
     cc-emit-epilogue
   else,

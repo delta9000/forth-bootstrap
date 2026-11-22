@@ -17,7 +17,7 @@
 [lit] 4 cc-src-len !
 
 \ -----------------------------------------------------------------
-\ Add "x" as a local with rbp-relative offset -8.
+\ Add "x" as a local with ebp-relative offset -8.
 \ -8 in two's complement built via `0 8 -`.
 \ -----------------------------------------------------------------
 cc-src-buf [lit] 1 sk-local

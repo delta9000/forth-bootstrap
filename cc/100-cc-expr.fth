@@ -1,6 +1,7 @@
 \ 100-cc-expr.fth — recursive-descent expression parser for the C subset.
-\ Emits code that leaves the expression's value in rdi.  Uses 090-cc-emit.fth's
-\ instruction encoders.
+\ Emits code that leaves the expression's value in edx:eax, the register
+\ pair that holds every value (090-cc-emit.fth's header has the pairs), with
+\ 090's instruction encoders.
 \
 \ Expression grammar, loosest-binding first (one cc-parse-LEVEL word each):
 \   expr    := assign                                 \ then materialize
@@ -68,12 +69,12 @@ variable cc-native-static-init                    \ restrict runtime lowering to
 \ ===========================================================================
 \ Lvalue tracking for assignment, address-of, and dereference.
 \ ===========================================================================
-\ Every parse function leaves a value in rdi and four facts about it here.
+\ Every parse function leaves a value in edx:eax and four facts about it here.
 \ The cc-mark words below write the kind and slot and clear the struct
 \ descriptor and the type, which the parser sets afterwards when it knows
 \ them; cc-emit-materialize is the only other writer of the kind.
 \
-\   cc-last-lvalue-kind  what rdi holds — one of the lv-* constants:
+\   cc-last-lvalue-kind  what edx:eax holds — one of the lv-* constants:
 \       lv-value      a value; not assignable
 \       lv-local      a local's value, already loaded; the local is
 \                     cc-last-ident-slot, so `x = ...` stores back there
@@ -121,19 +122,19 @@ variable cc-last-expr-array-inner                  \ row width for a two-dimensi
   [lit] 0 cc-last-expr-array-len !
   [lit] 0 cc-last-expr-array-inner ! ;
 
-\ cc-mark-not-lvalue ( -- )  rdi holds a plain value.
+\ cc-mark-not-lvalue ( -- )  edx:eax holds a plain value.
 : cc-mark-not-lvalue     true lv-value cc-mark ;
 
-\ cc-mark-local-lvalue ( slot -- )  rdi holds the loaded value of local slot.
+\ cc-mark-local-lvalue ( slot -- )  edx:eax holds the loaded value of local slot.
 : cc-mark-local-lvalue   lv-local cc-mark ;
 
-\ cc-mark-deref ( byte? -- )  rdi holds an address not yet loaded; byte? is
+\ cc-mark-deref ( byte? -- )  edx:eax holds an address not yet loaded; byte? is
 \ true when it addresses a single byte (`s[i]` or `*s` with s a char*).
 : cc-mark-deref
   if, lv-deref-byte else, lv-deref then,
   true swap cc-mark ;
 
-\ cc-deref-pending? ( -- f )  True if rdi holds an address not yet loaded.
+\ cc-deref-pending? ( -- f )  True if edx:eax holds an address not yet loaded.
 : cc-deref-pending?
   cc-last-lvalue-kind @ lv-deref =
   cc-last-lvalue-kind @ lv-deref-byte = or ;
@@ -209,13 +210,13 @@ variable cc-last-expr-array-inner                  \ row width for a two-dimensi
   over ty-size [lit] 1 = cc-mark-deref
   cc-last-struct-desc ! cc-last-expr-type ! ;
 
-\ cc-emit-materialize ( -- )  If rdi holds an address not yet loaded, load
-\ through it (one byte or eight) so rdi holds the value, and mark it a plain
+\ cc-emit-materialize ( -- )  If edx:eax holds an address not yet loaded, load
+\ through it (one byte or eight) so edx:eax holds the value, and mark it a plain
 \ value.  The struct descriptor and type describe the value either way, so
 \ they are kept.  A no-op for lv-value and lv-local.
 \ Record members can override scalar storage without changing ordinary lvalues.
-: cc-field-load ( ty rec -- ) drop cc-emit-load-typed-via-rdi ;
-: cc-field-store ( ty rec -- ) drop cc-emit-store-typed-via-rcx ;
+: cc-field-load ( ty rec -- ) drop cc-emit-load-typed-via-eax ;
+: cc-field-store ( ty rec -- ) drop cc-emit-store-typed-via-ecx ;
 : cc-field-value-type ( ty rec -- ty ) drop ;
 : cc-field-use ( rec -- ) drop ;
 
@@ -308,7 +309,7 @@ variable cc-ff-result-record
     cc-last-expr-type @ dup ty-base ty-struct = swap ty-ptr 0= and if,
       [lit] 212 cc-die
     then,
-    cc-emit-push-rdi 1+
+    cc-emit-push-edx:eax 1+
     cc-next-token-keep [char] , cc-tok-punct? 0=
   until,
   [char] ) cc-tok-punct? 0= if, [lit] 121 cc-die then,
@@ -320,11 +321,11 @@ variable cc-ff-result-record
     dup cc-sym-kind-of sk-local = if,
       cc-sym-val-of cc-emit-load-local
     else,
-      cc-sym-val-of cc-emit-global-ref cc-emit-load-via-rdi
+      cc-sym-val-of cc-emit-global-ref cc-emit-load-via-eax
     then,
-    cc-emit-push-rdi
+    cc-emit-push-edx:eax
     cc-native-parse-args
-    dup cc-native-load-call-target cc-emit-call-rax
+    dup cc-native-load-call-target cc-emit-call-eax
     1+ cc-native-drop-args
   else,
     cc-native-parse-args >r
@@ -341,9 +342,9 @@ variable cc-ff-result-record
 
 : cc-parse-indirect-call                         ( -- )
   cc-check-static-init
-  cc-emit-materialize cc-emit-push-rdi
+  cc-emit-materialize cc-emit-push-edx:eax
   cc-native-parse-args
-  dup cc-native-load-call-target cc-emit-call-rax
+  dup cc-native-load-call-target cc-emit-call-eax
   1+ cc-native-drop-args
   ty-int [lit] 0 ty-make [lit] 0 cc-mark-typed-value ;
 
@@ -364,11 +365,12 @@ variable cc-ff-result-record
 
 \ cc-parse-string-literal ( -- )  The current token is a string literal.
 \ We emit the bytes inline in the code stream and jump over them, then load
-\ their absolute vaddr into rdi:
+\ their absolute vaddr into edx:eax:
 \     jmp +N            E9 <rel32>          (5 bytes; rel32 patched)
 \     <decoded string bytes + NUL>
 \   skip:
-\     movabs rdi, vaddr 48 BF <imm64>       (10 bytes)
+\     mov eax, vaddr    B8 <imm32>          (5 bytes)
+\     mov edx, 0        BA <imm32>          (5 bytes)
 \ Native strings concatenate adjacent tokens after escape decoding. Each
 \ piece's temporary terminator is removed; exactly one final NUL remains.
 \ Output positions count decoded bytes, including any explicit embedded NUL.
@@ -386,21 +388,21 @@ variable cc-ff-result-record
   [lit] 0 cc-emit-byte
   cc-out-pos @ r> - cc-last-expr-array-len !
   cc-patch-rel32-to-here
-  cc-emit-movabs-rdi-imm64 ;
+  cc-emit-mov-edx:eax-imm64 ;
 
 
 \ cc-parse-func-ref ( id -- )  A function name as a value — `op = square;`.
-\ Load the function's absolute vaddr into rdi via movabs.  Result is not an
-\ lvalue.  When val == 0 the function is still a forward prototype; emit a
-\ 10-byte movabs placeholder and thread the imm64 patch-offset onto its
-\ cc-sym-addr-fixups list so cc-parse-function can patch it once the real
-\ vaddr is known.  Without this, code like
+\ Load the function's absolute vaddr into edx:eax.  Result is not an
+\ lvalue.  When val == 0 the function is still a forward prototype; emit
+\ `mov eax, imm32` with a placeholder and thread the imm32's patch-offset
+\ onto its cc-sym-addr-fixups list so cc-parse-function can patch it once
+\ the real vaddr is known.  Without this, code like
 \ `common_recursion(expression)` (where `expression` is forward-declared)
-\ loads 0 into rdi and crashes at the indirect call.
+\ loads 0 into edx:eax and crashes at the indirect call.
 : cc-parse-func-ref
   dup cc-native-function-desc >r
   dup cc-sym-val-of [lit] 0 = if,
-    cc-emit-movabs-rdi-imm64-placeholder          ( id patch-off )
+    cc-emit-mov-edx:eax-address-placeholder       ( id patch-off )
     cc-expr-unevaluated @ if,
       2drop
     else,
@@ -408,11 +410,11 @@ variable cc-ff-result-record
       cc-add-fixup-to-list
     then,
   else,
-    cc-sym-val-of cc-emit-movabs-rdi-imm64
+    cc-sym-val-of cc-emit-mov-edx:eax-imm64
   then,
   ty-func [lit] 1 ty-make r> cc-mark-typed-value ;
 
-\ cc-parse-global-ref ( id -- )  A file-scope global.  Emit movabs rdi,
+\ cc-parse-global-ref ( id -- )  A file-scope global.  Emit mov eax,
 \ <vaddr-placeholder> with a deferred fixup.  Scalar globals are
 \ deref-pending lvalues (lv-deref); array globals decay to their address
 \ (lv-value).
@@ -446,7 +448,7 @@ variable cc-ff-result-record
   over cc-sym-type-of ty-base ty-struct =
   over [lit] 0 <> or if,                        ( id n )
     over cc-sym-type-of ty-ptr 0= over [lit] 0 <> or if,
-      >r dup cc-sym-val-of cc-emit-lea-rdi-local
+      >r dup cc-sym-val-of cc-emit-lea-edx:eax-local
       dup cc-sym-type-of swap cc-expr-symbol-desc
       r@ if, swap [lit] 1 + swap then,
       cc-mark-typed-value
@@ -482,17 +484,17 @@ variable cc-ff-result-record
     drop
     [lit] 93 cc-die
   then,
-  \ Enum constants resolve to their integer value (mov rdi, imm32).
+  \ Enum constants resolve to their integer value (mov edx:eax, imm32).
   \ Handle this BEFORE the suffix peek so RED, GREEN etc. work in any
   \ expression context — they're never callable / indexable / assignable.
   dup cc-sym-kind-of sk-enum = if,
-    cc-sym-val-of cc-emit-mov-rdi-imm32
+    cc-sym-val-of cc-emit-mov-edx:eax-imm32
     cc-mark-int-value exit,
   then,
   cc-next-token-keep                              \ peek the suffix
   lparen cc-tok-punct? if,
     \ A call.  cc-parse-call consumes the '(' (already peeked), parses
-    \ the arguments, emits the call, and leaves the result in rdi.
+    \ the arguments, emits the call, and leaves the result in edx:eax.
     dup cc-native-call-qualified >r
     dup cc-native-call-result swap >r >r
     cc-parse-call
@@ -525,13 +527,13 @@ variable cc-ff-result-record
   tok-kind @ tk-num = if,
     cc-integer-literal-type cc-last-expr-type !
     tok-num @ 0= cc-last-expr-null !
-    tok-num @ cc-emit-mov-rdi-int exit,           \ widen to imm64 if out of imm32 range
+    tok-num @ cc-emit-mov-edx:eax-int exit,       \ both halves if out of imm32 range
   then,
   tok-kind @ tk-chr = if,
     \ Character literal — value is in tok-num just like a number.
     ty-int [lit] 0 ty-make cc-last-expr-type !
     tok-num @ 0= cc-last-expr-null !
-    tok-num @ cc-emit-mov-rdi-imm32 exit,
+    tok-num @ cc-emit-mov-edx:eax-imm32 exit,
   then,
   tok-kind @ tk-str   = if,
     \ A string literal is a char*: "abc"[1] is one byte.
@@ -555,12 +557,12 @@ variable cc-change-delta
 \ Validate before inspecting lvalue form: long double uses an address value.
 : cc-change-check cc-last-expr-type @ cc-value-integer-use ;
 
-\ Update RDI's value; the shared caller saves the address and old payload.
+\ Update edx:eax's value; the shared caller saves the address and old payload.
 : cc-change-value
   cc-change-type @ ty-ptr if,
     cc-change-type @ cc-change-desc @ cc-expr-pointee-size
   else, [lit] 1 then,
-  cc-change-delta @ * cc-emit-add-rdi-imm32
+  cc-change-delta @ * cc-emit-add-edx:eax-imm32
   \ The sum has the promoted type; converting it, not truncating it, lets a
   \ _Bool's b++ and b-- produce 1 and !b as C requires.
   cc-change-type @ dup cc-unary-type swap cc-emit-convert-value ;
@@ -574,24 +576,24 @@ variable cc-change-delta
   cc-last-struct-desc @ cc-change-desc !
   cc-last-field-rec @ cc-change-field !
   cc-last-lvalue-kind @ lv-local = if,
-    cc-last-ident-slot @ cc-emit-lea-rdi-local
+    cc-last-ident-slot @ cc-emit-lea-edx:eax-local
   else,
     cc-deref-pending? 0= if, [lit] 113 cc-die then,
   then,
-  cc-emit-push-rdi
+  cc-emit-push-edx:eax
   cc-change-type @ cc-change-field @ cc-field-load
-  cc-change-postfix @ if, cc-emit-push-rdi then,
+  cc-change-postfix @ if, cc-emit-push-edx:eax then,
   cc-change-value
-  cc-change-postfix @ if, cc-emit-pop-rdx then,
-  cc-emit-pop-rcx
+  cc-change-postfix @ if, cc-emit-pop-edi:esi then,
+  cc-emit-pop-ebx:ecx
   cc-change-type @ cc-change-field @ cc-field-store
-  cc-change-postfix @ if, cc-emit-mov-rdi-rdx then,  \ rdi := the old value
+  cc-change-postfix @ if, cc-emit-mov-edx:eax-edi:esi then,  \ the old value
   cc-change-type @ cc-change-field @ cc-field-value-type
   cc-change-desc @ cc-mark-typed-value
   cc-change-qualified @ cc-last-expr-qualified ! ;
 
 \ cc-parse-postfix-inc-dec ( op -- )  Postfix '++' / '--' on an lvalue.
-\ rdi keeps the old value, which is not an lvalue but keeps the operand's
+\ edx:eax keeps the old value, which is not an lvalue but keeps the operand's
 \ type, so `*s++` on a char* loads one byte.
 : cc-parse-postfix-inc-dec
   pt-plus-plus = if, [lit] 1 else, [lit] 0 [lit] 1 - then,
@@ -604,13 +606,13 @@ variable cc-change-delta
   cc-last-expr-array-len @ 0= if, cc-emit-materialize then,
   cc-last-expr-type @ cc-last-struct-desc @      ( ty desc )
   cc-last-expr-array-inner @ >r
-  cc-emit-push-rdi
+  cc-emit-push-edx:eax
   cc-parse-expr-fwd
   cc-last-expr-type @ cc-value-integer-use
   2dup cc-expr-pointee-size
   r@ if, r@ * then,
-  cc-emit-scale-rdi
-  cc-emit-pop-rcx cc-emit-add-rdi-rcx
+  cc-emit-scale-eax
+  cc-emit-pop-ebx:ecx cc-emit-add-edx:eax-ebx:ecx
   cc-next-token-keep
   [char] ] cc-tok-punct? 0= if, [lit] 99 cc-die then,
   r@ if,
@@ -627,10 +629,10 @@ variable cc-change-delta
   cc-last-struct-desc @ [lit] 0 = if,
     [lit] 100 cc-die
   then,
-  \ '->': rdi must hold the pointer's value.  A struct-pointer local is
+  \ '->': edx:eax must hold the pointer's value.  A struct-pointer local is
   \ already loaded (lv-local, materialize is a no-op); a struct-pointer
   \ global or field is still an address (lv-deref), so load it.
-  \ '.': rdi holds the struct's base address (lv-value); no load.
+  \ '.': edx:eax holds the struct's base address (lv-value); no load.
   \ Materialize keeps cc-last-struct-desc, which the lookup reads.
   pt-arrow = if,
     cc-emit-materialize
@@ -641,7 +643,7 @@ variable cc-change-delta
   then,
   tok-str-addr @ tok-str-len @ cc-last-struct-desc @
   cc-find-field                                   ( offset )
-  cc-emit-add-rdi-imm32
+  cc-emit-add-edx:eax-imm32
   cc-last-expr-qualified @ >r
   cc-ff-result-type @ cc-ff-result-desc @
   cc-ff-result-array @ if,
@@ -703,12 +705,12 @@ variable cc-change-delta
 \ at binary position (handled by cc-parse-mul) '*' means multiply.
 \
 \ The address-of operand is restricted to a simple local IDENT; it emits
-\ `lea rdi, [rbp - 8*(slot+1)]`.  More complex address expressions such as
+\ `lea edx:eax, [ebp - 8*(slot+1)]`.  More complex address expressions such as
 \ `&*p` or `&arr[i]` are not implemented.
 \
 \ For dereference, the operand is parsed as a (recursive) unary expression so
 \ `**p` works.  We materialize the operand (turning any pending deref into a
-\ loaded value) so rdi holds the *address* that the outer '*' should target,
+\ loaded value) so edx:eax holds the *address* that the outer '*' should target,
 \ then mark it lv-deref — leaving the load for the consumer.
 
 \ cc-parse-sizeof: `sizeof ( TYPE )` or `sizeof EXPR`.  Called with the
@@ -757,7 +759,7 @@ variable cc-change-delta
   r> cc-expr-unevaluated ! r> cc-gfixup-count ! r> cc-out-pos ! ;
 
 : cc-parse-sizeof
-  cc-native-sizeof cc-emit-mov-rdi-int
+  cc-native-sizeof cc-emit-mov-edx:eax-int
   ty-ulong [lit] 0 ty-make [lit] 0 cc-mark-typed-value ;
 
 \ cc-parse-prefix-inc-dec ( delta -- )  delta = 1 (for ++) else dec.
@@ -785,7 +787,7 @@ variable cc-change-delta
     cc-last-lvalue-kind @ lv-temporary = if, [lit] 116 cc-die then,
     cc-last-field-rec @ cc-field-use
     cc-last-lvalue-kind @ lv-local = if,
-      cc-last-ident-slot @ cc-emit-lea-rdi-local
+      cc-last-ident-slot @ cc-emit-lea-edx:eax-local
     else,
       cc-deref-pending? cc-last-struct-desc @ [lit] 0 <> or
       cc-last-expr-array-len @ [lit] 0 <> or
@@ -814,15 +816,15 @@ variable cc-change-delta
     r> cc-last-expr-qualified ! exit,
   then,
   \ Prefix '++' / '--'.  Bump the operand in place, leave the new value in
-  \ rdi.  cc-parse-prefix-inc-dec takes 1 for ++, anything else for --.
+  \ edx:eax.  cc-parse-prefix-inc-dec takes 1 for ++, anything else for --.
   pt-plus-plus   cc-tok-punct? if, [lit] 1 cc-parse-prefix-inc-dec exit, then,
   pt-minus-minus cc-tok-punct? if, [lit] 0 cc-parse-prefix-inc-dec exit, then,
   \ '-', '!' and '~' parse their operand, materialize it, and emit one
-  \ operation on rdi ('!' gives rdi := (rdi == 0)).
+  \ operation on edx:eax ('!' gives edx:eax := (edx:eax == 0)).
   [char] - cc-tok-punct? if,
     cc-parse-unary cc-emit-materialize
     cc-last-expr-type @ cc-unary-type
-    cc-emit-neg-rdi dup cc-emit-convert-rdi
+    cc-emit-neg-edx:eax dup cc-emit-convert-edx:eax
     cc-last-struct-desc @ cc-mark-typed-value exit,
   then,
   [char] ! cc-tok-punct? if,
@@ -832,12 +834,12 @@ variable cc-change-delta
   [char] ~ cc-tok-punct? if,
     cc-parse-unary cc-emit-materialize
     cc-last-expr-type @ cc-unary-type
-    cc-emit-not-rdi dup cc-emit-convert-rdi
+    cc-emit-not-edx:eax dup cc-emit-convert-edx:eax
     [lit] 0 cc-mark-typed-value exit,
   then,
   [char] + cc-tok-punct? if,
     cc-parse-unary cc-emit-materialize
-    cc-last-expr-type @ cc-unary-type dup cc-emit-convert-rdi
+    cc-last-expr-type @ cc-unary-type dup cc-emit-convert-edx:eax
     cc-last-struct-desc @ cc-mark-typed-value exit,
   then,
   \ Not a unary operator — putback so primary sees the same token.
@@ -905,7 +907,7 @@ variable cc-change-delta
 \   op        the operator's punct code (tok-num)
 \   compound  the code of its compound assignment (`+` has `+=`); 0 if none
 \   level     which level parses it (level-mul .. level-bit-or)
-\   emitter   xt of the 090 word that emits rdi := rdi OP rcx
+\   emitter   xt of the 090 word that emits edx:eax := edx:eax OP ebx:ecx
 \   evaluator xt of the word above that computes a OP b now
 \
 \ Each level's parser looks its operators up by op; cc-parse-assign looks
@@ -933,23 +935,23 @@ variable cc-change-delta
 : cc-binop,  rot , swap , ,  ' ,  ' , ;
 
 create cc-binops
-\ op          compound       level                  emitter                evaluator
-char *      pt-star-eq     level-mul      cc-binop, cc-emit-imul-rdi-rcx   *
-char /      pt-slash-eq    level-mul      cc-binop, cc-emit-idiv-quotient  cc-div
-char %      pt-percent-eq  level-mul      cc-binop, cc-emit-idiv-remainder cc-mod
-char +      pt-plus-eq     level-add      cc-binop, cc-emit-add-rdi-rcx    +
-char -      pt-minus-eq    level-add      cc-binop, cc-emit-sub-rdi-rcx    -
-pt-shl      pt-shl-eq      level-shift    cc-binop, cc-emit-shl-rdi-cl     cc-shl
-pt-shr      pt-shr-eq      level-shift    cc-binop, cc-emit-sar-rdi-cl     cc-sar   \ signed
-char <      [lit] 0        level-rel      cc-binop, cc-emit-cmp-lt         cc-lt
-char >      [lit] 0        level-rel      cc-binop, cc-emit-cmp-gt         cc-gt
-pt-le       [lit] 0        level-rel      cc-binop, cc-emit-cmp-le         cc-le
-pt-ge       [lit] 0        level-rel      cc-binop, cc-emit-cmp-ge         cc-ge
-pt-eq-eq    [lit] 0        level-eq       cc-binop, cc-emit-cmp-eq         cc-eq
-pt-bang-eq  [lit] 0        level-eq       cc-binop, cc-emit-cmp-ne         cc-ne
-char &      pt-amp-eq      level-bit-and  cc-binop, cc-emit-and-rdi-rcx    and
-char ^      pt-caret-eq    level-bit-xor  cc-binop, cc-emit-xor-rdi-rcx    cc-xor
-char |      pt-pipe-eq     level-bit-or   cc-binop, cc-emit-or-rdi-rcx     or
+\ op          compound       level                    emitter                         evaluator
+char *      pt-star-eq     level-mul      cc-binop, cc-emit-imul-edx:eax-ebx:ecx  *
+char /      pt-slash-eq    level-mul      cc-binop, cc-emit-idiv-quotient         cc-div
+char %      pt-percent-eq  level-mul      cc-binop, cc-emit-idiv-remainder        cc-mod
+char +      pt-plus-eq     level-add      cc-binop, cc-emit-add-edx:eax-ebx:ecx   +
+char -      pt-minus-eq    level-add      cc-binop, cc-emit-sub-edx:eax-ebx:ecx   -
+pt-shl      pt-shl-eq      level-shift    cc-binop, cc-emit-shl-edx:eax-cl        cc-shl
+pt-shr      pt-shr-eq      level-shift    cc-binop, cc-emit-sar-edx:eax-cl        cc-sar   \ signed
+char <      [lit] 0        level-rel      cc-binop, cc-emit-cmp-lt                cc-lt
+char >      [lit] 0        level-rel      cc-binop, cc-emit-cmp-gt                cc-gt
+pt-le       [lit] 0        level-rel      cc-binop, cc-emit-cmp-le                cc-le
+pt-ge       [lit] 0        level-rel      cc-binop, cc-emit-cmp-ge                cc-ge
+pt-eq-eq    [lit] 0        level-eq       cc-binop, cc-emit-cmp-eq                cc-eq
+pt-bang-eq  [lit] 0        level-eq       cc-binop, cc-emit-cmp-ne                cc-ne
+char &      pt-amp-eq      level-bit-and  cc-binop, cc-emit-and-edx:eax-ebx:ecx   and
+char ^      pt-caret-eq    level-bit-xor  cc-binop, cc-emit-xor-edx:eax-ebx:ecx   cc-xor
+char |      pt-pipe-eq     level-bit-or   cc-binop, cc-emit-or-edx:eax-ebx:ecx    or
 [lit] 0 ,                                         \ end of table
 
 \ cc-binop-row ( key field -- row | 0 )  The first row whose cell at byte
@@ -1080,7 +1082,7 @@ variable cc-expr-op-row
     cc-expr-op-row @ bo-op + @
     dup [char] / = if, drop cc-emit-udiv-quotient exit, then,
     dup [char] % = if, drop cc-emit-udiv-remainder exit, then,
-    dup pt-shr = if, drop cc-emit-shr-rdi-cl exit, then,
+    dup pt-shr = if, drop cc-emit-shr-edx:eax-cl exit, then,
     dup [char] < = if, drop cc-emit-cmp-ult exit, then,
     dup pt-le = if, drop cc-emit-cmp-ule exit, then,
     dup [char] > = if, drop cc-emit-cmp-ugt exit, then,
@@ -1099,14 +1101,14 @@ variable cc-expr-op-row
   cc-expr-op-row @ bo-level + @ level-add = if,
     cc-expr-left-type @ ty-ptr
     cc-expr-right-type @ ty-ptr 0= and if,
-      cc-expr-left-step cc-emit-scale-rdi
+      cc-expr-left-step cc-emit-scale-eax
     then,
   then,
-  cc-emit-mov-rcx-rdi cc-emit-pop-rdi
+  cc-emit-mov-ebx:ecx-edx:eax cc-emit-pop-edx:eax
   cc-expr-op-row @ bo-op + @ [char] + = if,
     cc-expr-left-type @ ty-ptr 0=
     cc-expr-right-type @ ty-ptr [lit] 0 <> and if,
-      cc-expr-right-step cc-emit-scale-rdi
+      cc-expr-right-step cc-emit-scale-eax
     then,
   then,
   cc-expr-left-type @ cc-expr-common @ cc-emit-convert-value
@@ -1116,8 +1118,8 @@ variable cc-expr-op-row
     cc-expr-left-type @ ty-ptr cc-expr-right-type @ ty-ptr and if,
       cc-expr-left-step
       dup [lit] 1 <> if,
-        cc-emit-push-rdi cc-emit-mov-rdi-int
-        cc-emit-mov-rcx-rdi cc-emit-pop-rdi cc-emit-idiv-quotient
+        cc-emit-push-edx:eax cc-emit-mov-edx:eax-int
+        cc-emit-mov-ebx:ecx-edx:eax cc-emit-pop-edx:eax cc-emit-idiv-quotient
       else, drop then,
       ty-long [lit] 0 ty-make cc-expr-common !
     then,
@@ -1126,7 +1128,7 @@ variable cc-expr-op-row
   dup level-rel = swap level-eq = or if,
     ty-int [lit] 0 ty-make cc-expr-common !
   then,
-  cc-expr-common @ cc-emit-convert-rdi
+  cc-expr-common @ cc-emit-convert-edx:eax
   cc-expr-common @ cc-expr-common-desc cc-mark-typed-value
   cc-expr-common @ ty-ptr if,
     cc-expr-left-qualified @ cc-expr-right-qualified @ or cc-last-expr-qualified !
@@ -1145,10 +1147,10 @@ variable cc-expr-op-row
     >r                                            ( ; R: row )
     cc-emit-materialize                           \ left must be a value
     cc-last-expr-type @ cc-last-struct-desc @ cc-last-expr-array-inner @ cc-last-expr-null @ cc-last-expr-qualified @
-    cc-emit-push-rdi                              \ save left
-    cc-parse-unary                                \ rdi = right
+    cc-emit-push-edx:eax                          \ save left
+    cc-parse-unary                                \ edx:eax = right
     r> cc-native-binop-apply
-                                                  \ rdi = left OP right
+                                                  \ edx:eax = left OP right
   repeat,
   drop                                            \ cc-binop?'s 0
   cc-putback-token ;                              \ we read one too many
@@ -1165,10 +1167,10 @@ variable cc-expr-op-row
     >r                                            ( ; R: row )
     cc-emit-materialize                           \ left must be a value
     cc-last-expr-type @ cc-last-struct-desc @ cc-last-expr-array-inner @ cc-last-expr-null @ cc-last-expr-qualified @
-    cc-emit-push-rdi                              \ save left
-    cc-parse-mul                                  \ rdi = right
+    cc-emit-push-edx:eax                          \ save left
+    cc-parse-mul                                  \ edx:eax = right
     r> cc-native-binop-apply
-                                                  \ rdi = left OP right
+                                                  \ edx:eax = left OP right
   repeat,
   drop                                            \ cc-binop?'s 0
   cc-putback-token ;                              \ we read one too many
@@ -1177,7 +1179,7 @@ variable cc-expr-op-row
 \ cc-parse-shift: add (('<<'|'>>') add)*
 \ ===========================================================================
 \ C puts shift between relational and additive: `a + b << c` is
-\ `(a + b) << c`.  Variable-count shifts take the count in rcx (CL).
+\ `(a + b) << c`.  Variable-count shifts take the count in cl.
 
 : cc-parse-shift
   cc-parse-add
@@ -1187,10 +1189,10 @@ variable cc-expr-op-row
     >r                                            ( ; R: row )
     cc-emit-materialize                           \ left must be a value
     cc-last-expr-type @ cc-last-struct-desc @ cc-last-expr-array-inner @ cc-last-expr-null @ cc-last-expr-qualified @
-    cc-emit-push-rdi                              \ save left
-    cc-parse-add                                  \ rdi = right
+    cc-emit-push-edx:eax                          \ save left
+    cc-parse-add                                  \ edx:eax = right
     r> cc-native-binop-apply
-                                                  \ rdi = left OP right
+                                                  \ edx:eax = left OP right
   repeat,
   drop                                            \ cc-binop?'s 0
   cc-putback-token ;                              \ we read one too many
@@ -1207,10 +1209,10 @@ variable cc-expr-op-row
     >r                                            ( ; R: row )
     cc-emit-materialize                           \ left must be a value
     cc-last-expr-type @ cc-last-struct-desc @ cc-last-expr-array-inner @ cc-last-expr-null @ cc-last-expr-qualified @
-    cc-emit-push-rdi                              \ save left
-    cc-parse-shift                                \ rdi = right
+    cc-emit-push-edx:eax                          \ save left
+    cc-parse-shift                                \ edx:eax = right
     r> cc-native-binop-apply
-                                                  \ rdi = left OP right
+                                                  \ edx:eax = left OP right
   repeat,
   drop                                            \ cc-binop?'s 0
   cc-putback-token ;                              \ we read one too many
@@ -1227,10 +1229,10 @@ variable cc-expr-op-row
     >r                                            ( ; R: row )
     cc-emit-materialize                           \ left must be a value
     cc-last-expr-type @ cc-last-struct-desc @ cc-last-expr-array-inner @ cc-last-expr-null @ cc-last-expr-qualified @
-    cc-emit-push-rdi                              \ save left
-    cc-parse-rel                                  \ rdi = right
+    cc-emit-push-edx:eax                          \ save left
+    cc-parse-rel                                  \ edx:eax = right
     r> cc-native-binop-apply
-                                                  \ rdi = left OP right
+                                                  \ edx:eax = left OP right
   repeat,
   drop                                            \ cc-binop?'s 0
   cc-putback-token ;                              \ we read one too many
@@ -1249,10 +1251,10 @@ variable cc-expr-op-row
     >r                                            ( ; R: row )
     cc-emit-materialize                           \ left must be a value
     cc-last-expr-type @ cc-last-struct-desc @ cc-last-expr-array-inner @ cc-last-expr-null @ cc-last-expr-qualified @
-    cc-emit-push-rdi                              \ save left
-    cc-parse-eq                                   \ rdi = right
+    cc-emit-push-edx:eax                          \ save left
+    cc-parse-eq                                   \ edx:eax = right
     r> cc-native-binop-apply
-                                                  \ rdi = left OP right
+                                                  \ edx:eax = left OP right
   repeat,
   drop                                            \ cc-binop?'s 0
   cc-putback-token ;                              \ we read one too many
@@ -1269,10 +1271,10 @@ variable cc-expr-op-row
     >r                                            ( ; R: row )
     cc-emit-materialize                           \ left must be a value
     cc-last-expr-type @ cc-last-struct-desc @ cc-last-expr-array-inner @ cc-last-expr-null @ cc-last-expr-qualified @
-    cc-emit-push-rdi                              \ save left
-    cc-parse-bit-and                              \ rdi = right
+    cc-emit-push-edx:eax                          \ save left
+    cc-parse-bit-and                              \ edx:eax = right
     r> cc-native-binop-apply
-                                                  \ rdi = left OP right
+                                                  \ edx:eax = left OP right
   repeat,
   drop                                            \ cc-binop?'s 0
   cc-putback-token ;                              \ we read one too many
@@ -1289,10 +1291,10 @@ variable cc-expr-op-row
     >r                                            ( ; R: row )
     cc-emit-materialize                           \ left must be a value
     cc-last-expr-type @ cc-last-struct-desc @ cc-last-expr-array-inner @ cc-last-expr-null @ cc-last-expr-qualified @
-    cc-emit-push-rdi                              \ save left
-    cc-parse-bit-xor                              \ rdi = right
+    cc-emit-push-edx:eax                          \ save left
+    cc-parse-bit-xor                              \ edx:eax = right
     r> cc-native-binop-apply
-                                                  \ rdi = left OP right
+                                                  \ edx:eax = left OP right
   repeat,
   drop                                            \ cc-binop?'s 0
   cc-putback-token ;                              \ we read one too many
@@ -1306,16 +1308,16 @@ variable cc-expr-op-row
 \
 \ Codegen sketch (with three rel32 fixups stashed on rstack):
 \   <eval a>
-\   test rdi,rdi
+\   test edx:eax
 \   jz   .false_LHS
 \   <eval b>
-\   test rdi,rdi
+\   test edx:eax
 \   jz   .false_RHS
-\   mov rdi, 1
+\   mov edx:eax, 1
 \   jmp  .end
 \ .false_LHS:
 \ .false_RHS:
-\   mov rdi, 0
+\   mov edx:eax, 0
 \ .end:
 \
 \ We push the three fixups onto rstack so the data stack stays clear for the
@@ -1328,20 +1330,20 @@ variable cc-expr-op-row
     tok-kind @ tk-punct = tok-num @ pt-and-and = and
   while,
     cc-emit-materialize
-    cc-emit-test-rdi
+    cc-emit-test-edx:eax
     cc-emit-jz-rel32-placeholder >r               \ R: fixup-false-LHS
     cc-parse-bit-or
     cc-emit-materialize
-    cc-emit-test-rdi
+    cc-emit-test-edx:eax
     cc-emit-jz-rel32-placeholder >r               \ R: f-LHS f-RHS
-    [lit] 1 cc-emit-mov-rdi-imm32
+    [lit] 1 cc-emit-mov-edx:eax-imm32
     cc-emit-jmp-rel32-placeholder >r              \ R: f-LHS f-RHS f-end
     \ False-target lands here for both fixups.
     r> r>                                         ( f-end f-RHS ; R: f-LHS )
     cc-patch-rel32-to-here                        \ patch f-RHS
     r>                                            ( f-end f-LHS )
     cc-patch-rel32-to-here                        \ patch f-LHS
-    [lit] 0 cc-emit-mov-rdi-imm32
+    [lit] 0 cc-emit-mov-edx:eax-imm32
     cc-patch-rel32-to-here                        \ patch f-end
     cc-mark-int-value
   repeat,
@@ -1354,20 +1356,20 @@ variable cc-expr-op-row
     tok-kind @ tk-punct = tok-num @ pt-or-or = and
   while,
     cc-emit-materialize
-    cc-emit-test-rdi
+    cc-emit-test-edx:eax
     cc-emit-jnz-rel32-placeholder >r              \ R: fixup-true-LHS
     cc-parse-log-and
     cc-emit-materialize
-    cc-emit-test-rdi
+    cc-emit-test-edx:eax
     cc-emit-jnz-rel32-placeholder >r              \ R: t-LHS t-RHS
-    [lit] 0 cc-emit-mov-rdi-imm32
+    [lit] 0 cc-emit-mov-edx:eax-imm32
     cc-emit-jmp-rel32-placeholder >r              \ R: t-LHS t-RHS f-end
     \ True-target lands here for both fixups.
     r> r>                                         ( f-end t-RHS ; R: t-LHS )
     cc-patch-rel32-to-here
     r>                                            ( f-end t-LHS )
     cc-patch-rel32-to-here
-    [lit] 1 cc-emit-mov-rdi-imm32
+    [lit] 1 cc-emit-mov-edx:eax-imm32
     cc-patch-rel32-to-here                        \ patch f-end
     cc-mark-int-value
   repeat,
@@ -1382,7 +1384,7 @@ variable cc-expr-op-row
 \
 \ Codegen:
 \   <eval cond>
-\   test rdi,rdi
+\   test edx:eax
 \   jz   .else
 \   <eval then-arm>
 \   jmp  .end
@@ -1396,7 +1398,7 @@ variable cc-expr-op-row
   tok-kind @ tk-punct = tok-num @ [char] ? = and if,
     \ '?' — consume and emit branch.
     cc-emit-materialize
-    cc-emit-test-rdi
+    cc-emit-test-edx:eax
     cc-emit-jz-rel32-placeholder >r               \ R: f-else
     cc-parse-comma-fwd                            \ then-arm
     cc-emit-materialize
@@ -1425,7 +1427,7 @@ variable cc-expr-op-row
       else,
         cc-patch-rel32-to-here
         cc-expr-save-native-types
-        cc-expr-common @ cc-emit-convert-rdi
+        cc-expr-common @ cc-emit-convert-edx:eax
       then,
       cc-expr-common @ cc-expr-common-desc cc-mark-typed-value
       cc-expr-common @ ty-ptr if,
@@ -1477,7 +1479,7 @@ variable cc-assign-field
   over lv-temporary = if, [lit] 120 cc-die then,
   cc-check-static-init
   over lv-local = if,
-    nip cc-emit-lea-rdi-local
+    nip cc-emit-lea-edx:eax-local
   else,
     drop dup lv-deref = swap lv-deref-byte = or
     cc-last-expr-type @ ty-base ty-struct =
@@ -1487,10 +1489,10 @@ variable cc-assign-field
   cc-last-expr-qualified @ >r
   cc-last-field-rec @ >r
   cc-last-expr-type @ >r cc-last-struct-desc @ >r tok-num @ >r
-  cc-emit-push-rdi
+  cc-emit-push-edx:eax
   r@ [char] = <> if,
     cc-last-expr-type @ cc-last-field-rec @ cc-field-load
-    cc-emit-push-rdi
+    cc-emit-push-edx:eax
   then,
   cc-parse-assign-fwd cc-emit-materialize
   r> cc-assign-op ! r> cc-assign-desc ! r> cc-assign-type !
@@ -1505,11 +1507,11 @@ variable cc-assign-field
       cc-assign-type @ cc-assign-desc @ cc-aggregate-compound
       [lit] 120 cc-die
     then,
-    cc-emit-mov-rsi-rdi
-    cc-emit-pop-rdi cc-emit-push-rdi               \ rsi=source; rdi=destination
-    cc-assign-type @ cc-assign-desc @ cc-expr-type-size cc-emit-rep-count-rcx
+    cc-emit-mov-esi-eax
+    cc-emit-pop-edx:eax cc-emit-push-edx:eax      \ esi = source; eax = destination
+    cc-assign-type @ cc-assign-desc @ cc-expr-type-size cc-emit-rep-count
     [lit] 243 cc-emit-byte [lit] 164 cc-emit-byte  \ rep movsb
-    cc-emit-pop-rdi
+    cc-emit-pop-edx:eax
     cc-assign-type @ cc-assign-desc @ cc-mark-typed-value
     cc-assign-qualified @ cc-last-expr-qualified ! exit,
   then,
@@ -1522,16 +1524,16 @@ variable cc-assign-field
     then,
     cc-assign-type @ ty-ptr if,
       cc-expr-op-row @ bo-level + @ level-add = if,
-        cc-assign-type @ cc-assign-desc @ cc-expr-pointee-size cc-emit-scale-rdi
+        cc-assign-type @ cc-assign-desc @ cc-expr-pointee-size cc-emit-scale-eax
       then,
     then,
-    cc-emit-mov-rcx-rdi cc-emit-pop-rdi
+    cc-emit-mov-ebx:ecx-edx:eax cc-emit-pop-edx:eax
     cc-expr-left-type @ cc-expr-common @ cc-emit-convert-value
     cc-expr-right-type @ cc-expr-common @ cc-emit-convert-right
     cc-native-binop-emit cc-expr-common @ cc-last-expr-type !
   then,
   cc-last-expr-type @ cc-assign-type @ cc-emit-convert-value
-  cc-emit-pop-rcx
+  cc-emit-pop-ebx:ecx
   cc-assign-type @ cc-assign-field @ cc-field-store
   cc-assign-type @ cc-assign-field @ cc-field-value-type
   cc-assign-desc @ cc-mark-typed-value
@@ -1553,7 +1555,7 @@ variable cc-assign-field
 
 \ cc-parse-expr always ends with a materialize so any consumer (return,
 \ if/while cond, expression-statement, function-call argument, decl
-\ initializer, ...) receives an actual value in rdi rather than a pending
+\ initializer, ...) receives an actual value in edx:eax rather than a pending
 \ deref-address.
 : cc-parse-comma
   cc-parse-assign

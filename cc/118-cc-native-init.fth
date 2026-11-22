@@ -29,14 +29,14 @@ variable cc-ni-entry-patch
 : cc-ni-address ( offset -- )
   cc-ni-static @ if,
     nc-slot @ cc-emit-global-ref
-  else, nc-slot @ cc-emit-lea-rdi-local then,
-  dup if, cc-emit-add-rdi-imm32 else, drop then, ;
+  else, nc-slot @ cc-emit-lea-edx:eax-local then,
+  dup if, cc-emit-add-edx:eax-imm32 else, drop then, ;
 : cc-ni-copy-bytes ( n -- )
   cc-emit-rep-count [lit] 243 cc-emit-byte [lit] 164 cc-emit-byte ;
 : cc-ni-zero-object
   [lit] 0 cc-ni-address
   cc-nobject-size cc-emit-rep-count
-  cc-emit-xor-rax-rax
+  cc-emit-zero-edx:eax
   [lit] 243 cc-emit-byte [lit] 170 cc-emit-byte ;
 
 \ The literal lexer retains escapes. Count exactly their decoded bytes.
@@ -140,7 +140,7 @@ defer cc-ni-value-fwd
   [lit] 0 cc-emit-byte
   1+ dup ni-array @ > if, drop ni-array @ then,
   r> cc-patch-rel32-to-here
-  swap cc-emit-movabs-rdi-imm64 cc-emit-mov-rsi-rdi
+  swap cc-emit-mov-edx:eax-imm64 cc-emit-mov-esi-eax
   ni-offset @ cc-ni-address cc-ni-copy-bytes ;
 
 : cc-value-static-init drop ;
@@ -148,20 +148,20 @@ defer cc-ni-value-fwd
 : cc-ni-scalar
   cc-ni-aggregate? cc-ni-static @ and if, [lit] 219 cc-die then,
   cc-ni-static @ if, ni-type @ cc-value-static-init then,
-  ni-offset @ cc-ni-address cc-emit-push-rdi
+  ni-offset @ cc-ni-address cc-emit-push-edx:eax
   cc-putback-token cc-parse-assign
   cc-ni-aggregate? if,
     cc-last-expr-type @ ty-base ty-struct <>
     cc-last-expr-type @ ty-ptr [lit] 0 <> or
     cc-last-struct-desc @ ni-desc @ <> or if, [lit] 224 cc-die then,
-    cc-emit-mov-rsi-rdi
-    cc-emit-pop-rdi
+    cc-emit-mov-esi-eax
+    cc-emit-pop-edx:eax
     ni-type @ ni-desc @ cc-nsize cc-ni-copy-bytes
   else,
     cc-emit-materialize
     cc-last-expr-type @ cc-last-struct-desc @ ni-type @ ni-desc @ cc-value-shape
     cc-last-expr-type @ ni-type @ cc-value-init
-    cc-emit-pop-rcx ni-type @ cc-emit-store-typed-via-rcx
+    cc-emit-pop-ebx:ecx ni-type @ cc-emit-store-typed-via-ecx
   then,
   cc-next-token-keep ;
 

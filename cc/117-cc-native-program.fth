@@ -47,7 +47,7 @@ variable cc-native-frame-patch
   cc-here-vaddr nc-id @ cc-sym-val cell[] !
   nc-id @ cc-sym-call-fixups @ cc-here-vaddr cc-walk-and-patch-to-vaddr
   [lit] 0 nc-id @ cc-sym-call-fixups !
-  nc-id @ cc-sym-addr-fixups @ cc-here-vaddr cc-walk-and-patch-imm64-to-vaddr
+  nc-id @ cc-sym-addr-fixups @ cc-here-vaddr cc-walk-and-patch-address
   [lit] 0 nc-id @ cc-sym-addr-fixups !
   nc-name @ nc-nlen @ cc-is-main? if, cc-here-vaddr cc-main-vaddr ! then,
   nc-ty @ cc-native-return-type ! nc-desc @ cc-native-return-desc !
@@ -66,7 +66,7 @@ variable cc-native-frame-patch
     cc-next-token-keep [char] } cc-tok-punct? 0= while,
     cc-putback-token cc-parse-stmt
   repeat,
-  cc-emit-xor-rax-rax cc-emit-epilogue
+  cc-emit-zero-edx:eax cc-emit-epilogue
   cc-native-finish-gotos
   cc-fn-local-count @ [lit] 8 * [lit] 16 cc-nalign
   cc-native-frame-patch @ cc-out-patch-4le
