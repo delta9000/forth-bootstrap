@@ -151,32 +151,6 @@ defer cc-emit-track-pop-fwd
 : cc-emit-add-rdi-imm32                           ( imm32 -- )
   x{ 48 81 c7 } cc-emit-4le ;                     \ add rdi, imm32
 
-\ Param-spill helpers: store the SYS-V argument register holding the i'th
-\ argument into local slot i.  Each one is `mov [rbp + disp8], <reg>`.
-\ ModR/M byte: mod=01 (disp8), rm=rbp(=5).  reg field varies per source reg.
-\ REX byte is 48 (W only) for rsi/rdx/rcx, 4C (W+R) for r8/r9.
-\
-\   reg=rsi(6): 01_110_101 = 0x75
-\   reg=rdx(2): 01_010_101 = 0x55
-\   reg=rcx(1): 01_001_101 = 0x4D
-\   reg=r8 (0 with R bit): 01_000_101 = 0x45
-\   reg=r9 (1 with R bit): 01_001_101 = 0x4D
-
-: cc-emit-store-local-from-rsi                    ( slot -- )
-  x{ 48 89 } $75 cc-emit-local-ea ;               \ mov qword [rbp+disp], rsi
-
-: cc-emit-store-local-from-rdx                    ( slot -- )
-  x{ 48 89 } $55 cc-emit-local-ea ;               \ mov qword [rbp+disp], rdx
-
-: cc-emit-store-local-from-rcx                    ( slot -- )
-  x{ 48 89 } $4d cc-emit-local-ea ;               \ mov qword [rbp+disp], rcx
-
-: cc-emit-store-local-from-r8                     ( slot -- )
-  x{ 4c 89 } $45 cc-emit-local-ea ;               \ mov qword [rbp+disp], r8
-
-: cc-emit-store-local-from-r9                     ( slot -- )
-  x{ 4c 89 } $4d cc-emit-local-ea ;               \ mov qword [rbp+disp], r9
-
 \ mov rax, [rbp + disp]:  48 8B 45 <disp8>  (or 48 8B 85 <disp32>)
 \ ModR/M(mod=01, reg=rax=0, rm=rbp=5) = 01_000_101 = 0x45.  Used to load a
 \ function-pointer local into rax just before an indirect `call rax` — keeps
@@ -612,20 +586,6 @@ variable cc-bss-base-vaddr                       \ set by cc-finalize-globals
   dup cc-bss-pos @ + cc-bss-cap [lit] 82 cc-check-cap
   cc-bss-pos @ cc-bss-flag +                       ( bytes slot )
   swap cc-bss-pos +! ;
-
-\ cc-globals-store-8le ( v slot -- )  Write `v` as 8-byte LE into globals-buf
-\ at the given slot offset.
-: cc-globals-store-8le                             ( v slot -- )
-  cc-globals-buf +                                 ( v addr )
-  >r                                                ( v ; R: addr )
-  dup r@                       c!
-  [lit] 256 / dup r@ 1+ c!
-  [lit] 256 / dup r@ [lit] 2 + c!
-  [lit] 256 / dup r@ [lit] 3 + c!
-  [lit] 256 / dup r@ [lit] 4 + c!
-  [lit] 256 / dup r@ [lit] 5 + c!
-  [lit] 256 / dup r@ [lit] 6 + c!
-  [lit] 256 /     r> [lit] 7 + c! ;
 
 \ cc-gfixup-add ( patch-offset slot -- )  Record a deferred global-vaddr fixup.
 \ Indexes its two parallel arrays with cell[] (030-cc-io.fth).

@@ -2282,16 +2282,6 @@ create cc-builtin-name-O_TRUNC       s, O_TRUNC
 \ then rewinds the reader (cc-src-pos 0, cc-src-line 1) for the lexer.  An
 \ #if still open at the end dies with 39.
 
-\ Negative parameter tags below -1 identify dynamic object-like builtins.
-\ They are real table entries: defined/#ifdef, replacement and undef work
-\ through the same lookup as ordinary macros, without fixed line answers.
-create cc-pp-name-line s, __LINE__
-create cc-pp-name-file s, __FILE__
-: cc-prep-location-builtins
-  true cc-pp-location-enabled !
-  cc-pp-name-line [lit] 8 [lit] 0 [lit] 0 [lit] 0 [lit] 2 - cc-macro-record
-  cc-pp-name-file [lit] 8 [lit] 0 [lit] 0 [lit] 0 [lit] 3 - cc-macro-record ;
-
 \ Optional target-owned predefined macros. The default preserves native output.
 : cc-prep-target-default ;
 defer cc-prep-target-fwd

@@ -226,6 +226,20 @@ variable cc-sd-build-field-desc                   \ pointee desc for struct-ptr 
     then,
   then, ;
 
+\ cc-globals-store-8le ( v slot -- )  Write `v` as 8-byte LE into globals-buf
+\ at the given slot offset.
+: cc-globals-store-8le                             ( v slot -- )
+  cc-globals-buf +                                 ( v addr )
+  >r                                                ( v ; R: addr )
+  dup r@                       c!
+  [lit] 256 / dup r@ 1+ c!
+  [lit] 256 / dup r@ [lit] 2 + c!
+  [lit] 256 / dup r@ [lit] 3 + c!
+  [lit] 256 / dup r@ [lit] 4 + c!
+  [lit] 256 / dup r@ [lit] 5 + c!
+  [lit] 256 / dup r@ [lit] 6 + c!
+  [lit] 256 /     r> [lit] 7 + c! ;
+
 variable cc-decl-base                              \ base type kind
 
 \ cc-parse-local-declarator ( init-ptr -- )  One declarator of a local
@@ -570,6 +584,32 @@ variable cc-fn-prior-sym-id                       \ prior sk-func id for fwd-fix
       cc-parse-param-list-loop
     then,
   then, ;
+
+\ Param-spill helpers: store the SYS-V argument register holding the i'th
+\ argument into local slot i.  Each one is `mov [rbp + disp8], <reg>`.
+\ ModR/M byte: mod=01 (disp8), rm=rbp(=5).  reg field varies per source reg.
+\ REX byte is 48 (W only) for rsi/rdx/rcx, 4C (W+R) for r8/r9.
+\
+\   reg=rsi(6): 01_110_101 = 0x75
+\   reg=rdx(2): 01_010_101 = 0x55
+\   reg=rcx(1): 01_001_101 = 0x4D
+\   reg=r8 (0 with R bit): 01_000_101 = 0x45
+\   reg=r9 (1 with R bit): 01_001_101 = 0x4D
+
+: cc-emit-store-local-from-rsi                    ( slot -- )
+  x{ 48 89 } $75 cc-emit-local-ea ;               \ mov qword [rbp+disp], rsi
+
+: cc-emit-store-local-from-rdx                    ( slot -- )
+  x{ 48 89 } $55 cc-emit-local-ea ;               \ mov qword [rbp+disp], rdx
+
+: cc-emit-store-local-from-rcx                    ( slot -- )
+  x{ 48 89 } $4d cc-emit-local-ea ;               \ mov qword [rbp+disp], rcx
+
+: cc-emit-store-local-from-r8                     ( slot -- )
+  x{ 4c 89 } $45 cc-emit-local-ea ;               \ mov qword [rbp+disp], r8
+
+: cc-emit-store-local-from-r9                     ( slot -- )
+  x{ 4c 89 } $4d cc-emit-local-ea ;               \ mov qword [rbp+disp], r9
 
 \ cc-emit-spill-params ( -- )  In the function prologue, spill the SYS-V
 \ argument registers (rdi/rsi/rdx/rcx/r8/r9) into the local slots reserved

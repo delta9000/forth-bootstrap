@@ -8,6 +8,16 @@ create cc-target-name-linux      s, __linux__
 create cc-target-name-amd64      s, __x86_64__
 create cc-target-name-lp64       s, __LP64__
 
+\ Negative parameter tags below -1 identify dynamic object-like builtins.
+\ They are real table entries: defined/#ifdef, replacement and undef work
+\ through the same lookup as ordinary macros, without fixed line answers.
+create cc-pp-name-line s, __LINE__
+create cc-pp-name-file s, __FILE__
+: cc-prep-location-builtins
+  true cc-pp-location-enabled !
+  cc-pp-name-line [lit] 8 [lit] 0 [lit] 0 [lit] 0 [lit] 2 - cc-macro-record
+  cc-pp-name-file [lit] 8 [lit] 0 [lit] 0 [lit] 0 [lit] 3 - cc-macro-record ;
+
 : cc-target-predefines
   cc-target-sysv @ if,
     cc-prep-location-builtins
