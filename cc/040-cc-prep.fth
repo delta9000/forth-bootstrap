@@ -998,7 +998,7 @@ variable cc-pp-arg-paste
     swap [lit] 16 * + dup @ swap [lit] 8 + @
   else, 2drop [lit] 0 [lit] 0 then, ;
 
-: cc-pp-substitute-direct
+: cc-pp-substitute
   [lit] 0 cc-pp-sub-joining !
   begin, dup while,
     over c@
@@ -1030,8 +1030,6 @@ variable cc-pp-arg-paste
       [lit] 0 cc-pp-sub-joining ! swap 1+ swap 1-
     then, then, then,
   repeat, 2drop ;
-
-: cc-pp-substitute  cc-pp-substitute-direct ;
 
 \ The busy flag of macro i.
 : cc-macro-busy-cell  cc-macro-busy cell[] ;       ( i -- cell )

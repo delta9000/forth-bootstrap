@@ -381,8 +381,8 @@ variable cc-bss-base-vaddr                       \ set by cc-finalize-globals
     x{ 89 01 }                                    \ mov dword [ecx], eax
   else, cc-emit-store-via-rcx then, ;
 
-\ cc-native-local-load ( slot ty -- )
-: cc-native-local-load
+\ cc-emit-load-local-typed ( slot ty -- )
+: cc-emit-load-local-typed
   swap cc-emit-lea-rdi-local cc-emit-load-typed-via-rdi ;
 
 \ ===========================================================================
@@ -441,9 +441,8 @@ variable cc-bss-base-vaddr                       \ set by cc-finalize-globals
   x{ 89 c1 }                                      \ mov ecx, eax
   x{ 89 d3 } ;                                    \ mov ebx, edx
 
-\ A function returns its value in edx:eax, where expressions keep theirs.
-: cc-value-return ;
-: cc-emit-mov-rdi-rax ;
+\ A function returns its value in edx:eax, where expressions keep theirs,
+\ so a call's result and a return's value need no move.
 
 : cc-emit-xor-rax-rax
   x{ 31 c0 }                                      \ xor eax, eax
@@ -497,12 +496,12 @@ variable cc-bss-base-vaddr                       \ set by cc-finalize-globals
   x{ 31 c8 }                                      \ xor eax, ecx
   x{ 31 da } ;                                    \ xor edx, ebx
 
-: cc-value-complement
+: cc-emit-not-rdi
   x{ f7 d0 }                                      \ not eax
   x{ f7 d2 } ;                                    \ not edx
 
 \ Negating the low half borrows from the high one unless it was 0.
-: cc-value-negate
+: cc-emit-neg-rdi
   x{ f7 d8 }                                      \ neg eax
   x{ 83 d2 00 }                                   \ adc edx, 0
   x{ f7 da } ;                                    \ neg edx
@@ -641,13 +640,13 @@ variable cc-bss-base-vaddr                       \ set by cc-finalize-globals
 \ ===========================================================================
 
 \ ZF := the pair is 0.  The pair is preserved.
-: cc-value-test
+: cc-emit-test-rdi
   x{ 85 c0 }                                      \ test eax, eax
   x{ 75 02 }                                      \ jnz +2
   x{ 85 d2 } ;                                    \ test edx, edx
 
 \ The pair := (the pair == 0).  Used by unary '!'.
-: cc-value-not
+: cc-emit-not-zero-flag
   x{ 09 d0 }                                      \ or eax, edx
   x{ 0f 94 c0 }                                   \ sete al
   x{ 0f b6 c0 }                                   \ movzx eax, al

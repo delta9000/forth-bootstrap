@@ -314,7 +314,7 @@ variable cc-ff-result-record
   [char] ) cc-tok-punct? 0= if, [lit] 121 cc-die then,
   dup cc-native-reverse-args ;
 
-: cc-native-call                           ( id -- )
+: cc-parse-call                           ( id -- )
   cc-check-static-init
   dup cc-sym-kind-of sk-func <> if,
     dup cc-sym-kind-of sk-local = if,
@@ -337,16 +337,14 @@ variable cc-ff-result-record
       cc-sym-val-of cc-emit-call-vaddr
     then,
     r> cc-native-drop-args
-  then,
-  cc-emit-mov-rdi-rax ;
+  then, ;
 
-: cc-native-indirect                         ( -- )
+: cc-parse-indirect-call                         ( -- )
   cc-check-static-init
   cc-emit-materialize cc-emit-push-rdi
   cc-native-parse-args
   dup cc-native-load-call-target cc-emit-call-rax
   1+ cc-native-drop-args
-  cc-emit-mov-rdi-rax
   ty-int [lit] 0 ty-make [lit] 0 cc-mark-typed-value ;
 
 : cc-native-call-result ( id -- ty desc )
@@ -354,10 +352,6 @@ variable cc-ff-result-record
   else, ty-int [lit] 0 ty-make then,
   swap cc-expr-symbol-desc ;
 : cc-native-function-desc drop [lit] 0 ;
-
-\ cc-parse-call ( id -- )  The '(' has been consumed.  Parse the arguments,
-\ emit the call, and leave the result in rdi.
-: cc-parse-call cc-native-call ;
 
 \ ===========================================================================
 \ cc-parse-primary: the operand, then its postfix operators
@@ -378,7 +372,7 @@ variable cc-ff-result-record
 \ Native strings concatenate adjacent tokens after escape decoding. Each
 \ piece's temporary terminator is removed; exactly one final NUL remains.
 \ Output positions count decoded bytes, including any explicit embedded NUL.
-: cc-native-string
+: cc-parse-string-literal
   cc-emit-jmp-rel32-placeholder
   cc-here-vaddr swap                              ( str-vaddr fixup-off )
   cc-out-pos @ >r
@@ -394,8 +388,6 @@ variable cc-ff-result-record
   cc-patch-rel32-to-here
   cc-emit-movabs-rdi-imm64 ;
 
-
-: cc-parse-string-literal cc-native-string ;
 
 \ cc-parse-func-ref ( id -- )  A function name as a value — `op = square;`.
 \ Load the function's absolute vaddr into rdi via movabs.  Result is not an
@@ -467,7 +459,7 @@ variable cc-ff-result-record
   then,
   drop
   dup cc-sym-val-of dup cc-mark-local-lvalue
-  over cc-sym-type-of cc-native-local-load
+  over cc-sym-type-of cc-emit-load-local-typed
   dup cc-sym-type-of cc-last-expr-type !
   cc-expr-symbol-desc cc-last-struct-desc !
   r> cc-last-expr-array-inner ! r> cc-last-expr-qualified ! ;
@@ -690,7 +682,7 @@ variable cc-change-delta
         drop cc-parse-postfix-index
       else,
         dup lparen = if,
-          drop cc-native-indirect
+          drop cc-parse-indirect-call
         else,
           cc-parse-postfix-field
         then,
@@ -830,17 +822,17 @@ variable cc-change-delta
   [char] - cc-tok-punct? if,
     cc-parse-unary cc-emit-materialize
     cc-last-expr-type @ cc-unary-type
-    cc-value-negate dup cc-emit-convert-rdi
+    cc-emit-neg-rdi dup cc-emit-convert-rdi
     cc-last-struct-desc @ cc-mark-typed-value exit,
   then,
   [char] ! cc-tok-punct? if,
     cc-parse-unary cc-emit-materialize
-    cc-value-not cc-mark-int-value exit,
+    cc-emit-not-zero-flag cc-mark-int-value exit,
   then,
   [char] ~ cc-tok-punct? if,
     cc-parse-unary cc-emit-materialize
     cc-last-expr-type @ cc-unary-type
-    cc-value-complement dup cc-emit-convert-rdi
+    cc-emit-not-rdi dup cc-emit-convert-rdi
     [lit] 0 cc-mark-typed-value exit,
   then,
   [char] + cc-tok-punct? if,
@@ -1336,11 +1328,11 @@ variable cc-expr-op-row
     tok-kind @ tk-punct = tok-num @ pt-and-and = and
   while,
     cc-emit-materialize
-    cc-value-test
+    cc-emit-test-rdi
     cc-emit-jz-rel32-placeholder >r               \ R: fixup-false-LHS
     cc-parse-bit-or
     cc-emit-materialize
-    cc-value-test
+    cc-emit-test-rdi
     cc-emit-jz-rel32-placeholder >r               \ R: f-LHS f-RHS
     [lit] 1 cc-emit-mov-rdi-imm32
     cc-emit-jmp-rel32-placeholder >r              \ R: f-LHS f-RHS f-end
@@ -1362,11 +1354,11 @@ variable cc-expr-op-row
     tok-kind @ tk-punct = tok-num @ pt-or-or = and
   while,
     cc-emit-materialize
-    cc-value-test
+    cc-emit-test-rdi
     cc-emit-jnz-rel32-placeholder >r              \ R: fixup-true-LHS
     cc-parse-log-and
     cc-emit-materialize
-    cc-value-test
+    cc-emit-test-rdi
     cc-emit-jnz-rel32-placeholder >r              \ R: t-LHS t-RHS
     [lit] 0 cc-emit-mov-rdi-imm32
     cc-emit-jmp-rel32-placeholder >r              \ R: t-LHS t-RHS f-end
@@ -1404,7 +1396,7 @@ variable cc-expr-op-row
   tok-kind @ tk-punct = tok-num @ [char] ? = and if,
     \ '?' — consume and emit branch.
     cc-emit-materialize
-    cc-value-test
+    cc-emit-test-rdi
     cc-emit-jz-rel32-placeholder >r               \ R: f-else
     cc-parse-comma-fwd                            \ then-arm
     cc-emit-materialize

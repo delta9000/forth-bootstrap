@@ -386,7 +386,6 @@ variable cc-loop-switch-depth
     cc-last-expr-type @ cc-last-struct-desc @
     cc-native-return-type @ cc-native-return-desc @ cc-return-shape
     cc-last-expr-type @ cc-native-return-type @ cc-emit-convert-value
-    cc-value-return                           \ result -> rax
     cc-switch-depth @ cc-emit-switch-unwind
     cc-emit-epilogue
     [char] ; cc-expect-punct-c
