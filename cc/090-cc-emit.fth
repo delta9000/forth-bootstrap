@@ -38,20 +38,11 @@ defer cc-emit-track-pop-fwd
 \ pop rdi:  0x5F
 : cc-emit-pop-rdi   cc-emit-track-pop-fwd x{ 5f } ;  \ pop rdi
 
-\ pop rsi:  0x5E
-: cc-emit-pop-rsi   cc-emit-track-pop-fwd x{ 5e } ;  \ pop rsi
-
 \ pop rdx:  0x5A
 : cc-emit-pop-rdx   cc-emit-track-pop-fwd x{ 5a } ;  \ pop rdx
 
 \ pop rcx:  0x59
 : cc-emit-pop-rcx   cc-emit-track-pop-fwd x{ 59 } ;  \ pop rcx
-
-\ pop r8:   0x41 0x58  (REX.B + pop)
-: cc-emit-pop-r8    cc-emit-track-pop-fwd x{ 41 58 } ;  \ pop r8
-
-\ pop r9:   0x41 0x59
-: cc-emit-pop-r9    cc-emit-track-pop-fwd x{ 41 59 } ;  \ pop r9
 
 \ push rbx (0x53) / pop rbx (0x5B).  Used by switch to preserve the outer
 \ value of rbx across the switch (which uses rbx to hold the scrutinee).
@@ -95,10 +86,6 @@ defer cc-emit-track-pop-fwd
 \ mov rdi, [rbp + disp]:  48 8B 7D <disp8>  (or 48 8B BD <disp32>)
 : cc-emit-load-local                              ( slot -- )
   x{ 48 8b } $7d cc-emit-local-ea ;               \ mov rdi, qword [rbp+disp]
-
-\ mov [rbp + disp], rdi:  48 89 7D <disp8>  (or 48 89 BD <disp32>)
-: cc-emit-store-local                             ( slot -- )
-  x{ 48 89 } $7d cc-emit-local-ea ;               \ mov qword [rbp+disp], rdi
 
 \ lea rdi, [rbp + disp]:  48 8D 7D <disp8>  (or 48 8D BD <disp32>)
 \ ModR/M(mod=01, reg=rdi=7, rm=rbp=5) = 0x7D.  Loads the *address* of the local
@@ -150,13 +137,6 @@ defer cc-emit-track-pop-fwd
 \ a struct base/pointer in rdi by a field offset.  imm32 is sign-extended.
 : cc-emit-add-rdi-imm32                           ( imm32 -- )
   x{ 48 81 c7 } cc-emit-4le ;                     \ add rdi, imm32
-
-\ mov rax, [rbp + disp]:  48 8B 45 <disp8>  (or 48 8B 85 <disp32>)
-\ ModR/M(mod=01, reg=rax=0, rm=rbp=5) = 01_000_101 = 0x45.  Used to load a
-\ function-pointer local into rax just before an indirect `call rax` — keeps
-\ rdi/rsi/etc. (already loaded with SYS-V args) untouched.
-: cc-emit-load-local-into-rax                     ( slot -- )
-  x{ 48 8b } $45 cc-emit-local-ea ;               \ mov rax, qword [rbp+disp]
 
 \ call rax:  FF D0   (no REX needed; rax = reg 0).
 \ ModR/M(mod=11, reg=/2 = CALL r/m64, rm=rax=0) = 11_010_000 = 0xD0.
@@ -353,18 +333,10 @@ defer cc-emit-restore-callee-fwd
 \ only the upper bound needs checking — which keeps every in-range constant
 \ on the exact imm32 bytes it emitted before.
 : cc-emit-mov-rdi-int                             ( v -- )
-  cc-target-lp64 @ if,
-    \ Unsigned magnitude also catches literals with bit 63 set.
-    dup [lit] 2147483648 / if,
-      cc-emit-movabs-rdi-imm64
-    else, cc-emit-mov-rdi-imm32 then,
-    exit,
-  then,
-  dup [lit] 2147483647 > if,
+  \ Unsigned magnitude also catches literals with bit 63 set.
+  dup [lit] 2147483648 / if,
     cc-emit-movabs-rdi-imm64
-  else,
-    cc-emit-mov-rdi-imm32
-  then, ;
+  else, cc-emit-mov-rdi-imm32 then, ;
 
 \ cc-emit-movabs-rdi-imm64-placeholder ( -- patch-offset )
 \ Emits `48 BF 00 00 00 00 00 00 00 00`; returns the imm64 file-offset.
@@ -454,34 +426,6 @@ defer cc-emit-restore-callee-fwd
 : cc-emit-neg-rdi
   x{ 48 f7 df } ;                                 \ neg rdi
 
-\ inc qword [rbp + disp]: 48 FF 45 <disp8>  (or 48 FF 85 <disp32>)
-\ ModR/M(mod=01, reg=/0=INC, rm=rbp=5) = 01_000_101 = 0x45.  Increments the
-\ local slot in place without disturbing rdi/rcx (used by post-increment).
-: cc-emit-inc-mem-local                           ( slot -- )
-  x{ 48 ff } $45 cc-emit-local-ea ;               \ inc qword [rbp+disp]
-
-\ dec qword [rbp + disp]: 48 FF 4D <disp8>  (or 48 FF 8D <disp32>)
-\ ModR/M(mod=01, reg=/1=DEC, rm=rbp=5) = 01_001_101 = 0x4D.
-: cc-emit-dec-mem-local                           ( slot -- )
-  x{ 48 ff } $4d cc-emit-local-ea ;               \ dec qword [rbp+disp]
-
-\ The same through the address in rcx, for a ++ / -- whose operand is a
-\ pointer target, an element or a field (rcx holds its address).
-\ byte? picks the one-byte form (a char).
-\   inc qword [rcx]  48 FF 01      inc byte [rcx]  FE 01
-\   dec qword [rcx]  48 FF 09      dec byte [rcx]  FE 09
-: cc-emit-inc-via-rcx                             ( byte? -- )
-  0= if, x{ 48 } $ff else, $fe then,
-  cc-emit-byte  x{ 01 } ;                         \ inc qword [rcx] / inc byte [rcx]
-: cc-emit-dec-via-rcx                             ( byte? -- )
-  0= if, x{ 48 } $ff else, $fe then,
-  cc-emit-byte  x{ 09 } ;                         \ dec qword [rcx] / dec byte [rcx]
-
-\ mov rdi, [rcx]  48 8B 39   /  movzx rdi, byte [rcx]  48 0F B6 39
-: cc-emit-load-via-rcx                            ( byte? -- )
-  x{ 48 }
-  if, x{ 0f } $b6 else, $8b then,
-  cc-emit-byte  x{ 39 } ;                         \ movzx rdi, byte [rcx] / mov rdi, qword [rcx]
 
 \ cc-emit-not-zero-flag.  Canonicalize rdi to 0/1 = (rdi == 0).
 \ Pattern: xor rax,rax; test rdi,rdi; sete al; mov rdi,rax.  Used by unary '!'.
@@ -539,19 +483,6 @@ create cc-gfixup-default-slot cc-gfixup-default-cap [lit] 8 * allot
 variable cc-gfixup-slot-buffer
 cc-gfixup-default-slot cc-gfixup-slot-buffer !
 : cc-gfixup-slot ( -- address ) cc-gfixup-slot-buffer @ ;
-\ Complete original insn-attrtab.c needs 17,502 deferred global references.
-\ Round the direct bound up to a 512-entry quantum; keep the default intact.
-\ Both columns select one fixed, disjoint pair of mapped arrays.
-[lit] 17920 constant cc-gfixup-direct-cap
-variable cc-gfixup-direct-base
-: cc-gfixup-direct-workspace ( -- )
-  cc-gfixup-direct-base @ 0= if,
-    cc-gfixup-direct-cap [lit] 16 * [lit] 81 cc-workspace-map
-    cc-gfixup-direct-base !
-  then,
-  cc-gfixup-direct-cap cc-gfixup-limit !
-  cc-gfixup-direct-base @ cc-gfixup-out-pos-buffer !
-  cc-gfixup-direct-base @ cc-gfixup-direct-cap [lit] 8 * + cc-gfixup-slot-buffer ! ;
 variable cc-gfixup-count
 
 variable cc-globals-base-vaddr                   \ set by cc-finalize-globals
@@ -708,9 +639,7 @@ defer cc-emit-convert-right
 
 \ cc-emit-load-local-typed ( slot ty -- )  LP64 memory width, legacy qword.
 : cc-emit-load-local-typed
-  cc-target-lp64 @ if,
-    swap cc-emit-lea-rdi-local cc-emit-load-typed-via-rdi
-  else, drop cc-emit-load-local then, ;
+  swap cc-emit-lea-rdi-local cc-emit-load-typed-via-rdi ;
 
 \ Unsigned division clears rdx, then DIV rcx uses the full rdx:rax dividend.
 \ Both operands must already have been converted to the common C type.

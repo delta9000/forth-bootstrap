@@ -92,7 +92,7 @@ variable cc-ntag-u
     tok-str-addr @ tok-str-len @ cc-sym-find
     dup 0< if, drop else, cc-sym-kind-of sk-typedef = or then,
   then, ;
-' cc-native-type-start is cc-native-type-start-fwd
+' cc-native-type-start is cc-type-start?
 
 : cc-ntypedef-check-noop ;
 defer cc-ntypedef-check-fwd
@@ -191,7 +191,7 @@ defer cc-nspec-check-fwd
   kw-char cc-nspec-count if, ty-char exit, then,
   kw-short cc-nspec-count if, ty-short exit, then,
   kw-long cc-nspec-count if,
-    kw-long cc-nspec-count [lit] 1 > cc-target-lp64 @ and if,
+    kw-long cc-nspec-count [lit] 1 > if,
       ty-llong
     else, ty-long then, exit,
   then,
@@ -229,10 +229,6 @@ defer cc-nbase-scalar-fwd
   while, repeat,
   cc-putback-token cc-nspec-check-fwd
   cc-nspec-base kw-unsigned cc-nspec-count
-  over ty-float = [lit] 2 cc-npick ty-double = or
-  [lit] 2 cc-npick ty-ldouble = or cc-native-float-types-fwd 0= and if,
-    [lit] 214 cc-die
-  then,
   if,
     dup ty-char = if, drop ty-uchar else,
     dup ty-short = if, drop ty-ushort else,
@@ -500,7 +496,7 @@ defer cc-native-type-shape-fwd
   nc-qualified @ cc-type-name-qualified !
   r> nc-base-inner ! r> nc-base-array !
   r> nc-qualified ! r> nc-base-qualified ! ;
-' cc-native-type-name is cc-native-type-name-fwd
+' cc-native-type-name is cc-parse-type-name
 
 defer cc-native-function-fwd
 

@@ -49,7 +49,6 @@ cc-pp-sink [lit] 24 +  constant cc-pp-out-code     \ die code when it fills
 
 \ Direct mode keeps unavailable-token metadata outside the C byte stream.
 \ The selected sink's shadow bytes are derived from its existing buffer.
-variable cc-prep-direct                         \ explicit headers; no shim macros
 variable cc-pp-out-flags
 defer cc-pp-select-flags-fwd
 
@@ -125,7 +124,7 @@ variable cc-pp-scratch-top                        \ first free byte
 \ includes and stored replacement bodies have no such flags.
 variable cc-pp-flags-base
 : cc-pp-flag-address ( address -- shadow-address-or-zero )
-  cc-prep-direct @ 0= cc-pp-flags-base @ 0= or if, drop [lit] 0 exit, then,
+  cc-pp-flags-base @ 0= if, drop [lit] 0 exit, then,
   dup cc-pp-scratch >= over cc-pp-scratch cc-pp-scratch-cap + < and if,
     cc-pp-scratch - cc-pp-flags-base @ + exit,
   then,
@@ -145,12 +144,10 @@ variable cc-pp-flags-base
 ' cc-pp-copy-marked-byte is cc-pp-copy-byte-fwd
 : cc-pp-flags-init
   [lit] 0 cc-pp-out-flags !
-  cc-prep-direct @ if,
-    cc-src-cap cc-src-direct-cap > if, [lit] 43 cc-die then,
-    cc-pp-flags-base @ 0= if,
-      cc-pp-scratch-cap cc-src-direct-cap + [lit] 43 cc-workspace-map
-      cc-pp-flags-base !
-    then,
+  cc-src-cap cc-src-direct-cap > if, [lit] 43 cc-die then,
+  cc-pp-flags-base @ 0= if,
+    cc-pp-scratch-cap cc-src-direct-cap + [lit] 43 cc-workspace-map
+    cc-pp-flags-base !
   then,
   cc-pp-select-flags ;
 \ A paste containing an unavailable token needs token-level placemarker
@@ -237,13 +234,12 @@ variable cc-macro-pool-pos
 \ Direct GCC maps six equally sized parallel arrays; the text pool is unchanged.
 \ Fixed opt-in policy; changing one array never changes legacy macro limits.
 [lit] 4608 constant cc-macro-direct-cap
-variable cc-macro-direct-base
 \ The selectors that switch these arrays follow the include pool below.
 
 \ cc-pp-to-pool ( -- )  Make the macro pool the sink (die 35 when full).
 : cc-pp-to-pool
   cc-macro-pool cc-macro-pool-pos @
-  cc-prep-direct @ if, cc-macro-pool-cap else, [lit] 65536 then, [lit] 35
+  cc-macro-pool-cap [lit] 35
   cc-pp-sink-push ;
 
 \ cc-pp-from-pool ( -- )  Keep what was written to the pool; resume the
@@ -286,8 +282,7 @@ cc-macro-hash-reset
 \ table already holds cc-macro-cap macros.
 : cc-macro-record
   cc-macro-count @ 1+
-  cc-prep-direct @ if, cc-macro-cap else, [lit] 1024 then,
-  [lit] 34 cc-check-cap
+  cc-macro-cap [lit] 34 cc-check-cap
   cc-macro-count @ >r
   r@ cc-macro-params    cell[] !
   r@ cc-macro-body-len  cell[] !
@@ -297,12 +292,6 @@ cc-macro-hash-reset
   r@ cc-macro-link
   [lit] 0 r> cc-macro-busy cell[] !
   [lit] 1 cc-macro-count +! ;
-
-\ cc-macro-add ( name-a name-u body-a body-u -- )  Add an object-like
-\ macro, copying name and body into the pool (the built-in macros).
-: cc-macro-add
-  >r >r cc-pp-pool-copy r> r> cc-pp-pool-copy
-  true cc-macro-record ;
 
 \ cc-macro-find ( a u -- i | -1 )  The newest macro named a u, so a later
 \ #define of the same name wins: the newest of its bucket's chain whose
@@ -644,21 +633,8 @@ variable cc-prep-inc-depth
 variable cc-prep-inc-top                         \ direct-mode bytes in use
 [lit] 32 constant cc-prep-direct-depth
 
-\ cc-prep-inc-slot-addr ( depth -- addr )
-: cc-prep-inc-slot-addr
-  cc-prep-inc-slot-cap *  cc-prep-inc-pool + ;
-
-\ Direct mode packs the live include stack at cc-prep-inc-top into a
-\ selected pool: by default the dictionary pool above, 1 MiB.  The
-\ direct-GCC workspace maps a separate pool instead.  Every live byte
-\ outside a directive or skipped group is also copied into the expanded
-\ source, so the pool shares that buffer's bound (030): 7 MiB, from the
-\ binutils 2.30 i386-opc.c measurement (5,334,945 bytes live in i386-tbl.h,
-\ 5,415,887 expanded) plus 25%, rounded up to whole MiB.
-cc-src-direct-cap constant cc-prep-inc-direct-cap
 variable cc-prep-inc-buffer
 variable cc-prep-inc-limit
-variable cc-prep-inc-direct-base
 : cc-prep-inc-buf ( -- address ) cc-prep-inc-buffer @ ;
 : cc-prep-inc-cap ( -- bytes ) cc-prep-inc-limit @ ;
 
@@ -676,24 +652,6 @@ variable cc-prep-inc-direct-base
   cc-prep-inc-slot-cap cc-prep-inc-slot-count * cc-prep-inc-limit !
 ;
 cc-prep-default-workspace
-: cc-prep-direct-workspace ( -- )
-  cc-macro-direct-base @ 0= if,
-    cc-macro-direct-cap [lit] 48 *
-    [lit] 34 cc-workspace-map cc-macro-direct-base !
-  then,
-  cc-prep-inc-direct-base @ 0= if,
-    cc-prep-inc-direct-cap [lit] 32 cc-workspace-map cc-prep-inc-direct-base !
-  then,
-  cc-macro-direct-cap cc-macro-limit !
-  cc-macro-direct-base @ cc-macro-direct-cap [lit] 0 * + cc-macro-name-addr-buffer !
-  cc-macro-direct-base @ cc-macro-direct-cap [lit] 8 * + cc-macro-name-len-buffer !
-  cc-macro-direct-base @ cc-macro-direct-cap [lit] 16 * + cc-macro-body-addr-buffer !
-  cc-macro-direct-base @ cc-macro-direct-cap [lit] 24 * + cc-macro-body-len-buffer !
-  cc-macro-direct-base @ cc-macro-direct-cap [lit] 32 * + cc-macro-params-buffer !
-  cc-macro-direct-base @ cc-macro-direct-cap [lit] 40 * + cc-macro-busy-buffer !
-  cc-prep-inc-direct-base @ cc-prep-inc-buffer !
-  cc-prep-inc-direct-cap cc-prep-inc-limit !
-;
 
 \ ===========================================================================
 \ Path building.  Concat prefix + name + NUL into cc-prep-path-buf.
@@ -702,10 +660,6 @@ cc-prep-default-workspace
 [lit] 1024 constant cc-prep-path-cap
 create cc-prep-path-buf  cc-prep-path-cap allot
 variable cc-prep-path-out
-
-create cc-prep-tests-prefix  s, tests/cc/
-
-[lit] 9 constant cc-prep-tests-prefix-len
 
 \ cc-prep-append ( src-addr src-len -- )  Append bytes to cc-prep-path-buf.
 \ Dies with code 33 if they and the closing NUL would not fit.
@@ -882,31 +836,15 @@ variable cc-prep-load-name-u
 : cc-prep-load-file
   cc-prep-load-name-u ! cc-prep-load-name-a !
   cc-prep-inc-depth @ 1+
-  cc-prep-direct @ if, cc-prep-direct-depth else, cc-prep-inc-slot-count then,
-  [lit] 31 cc-check-cap
-  cc-prep-direct @ if,
-    cc-prep-open-include
-  else,
-    [lit] 0 [lit] 0 cc-prep-load-name-a @ cc-prep-load-name-u @
-    cc-prep-build-path cc-prep-path-buf cc-prep-try-open
-    dup 0< if,
-      drop cc-prep-tests-prefix cc-prep-tests-prefix-len
-      cc-prep-load-name-a @ cc-prep-load-name-u @
-      cc-prep-build-path cc-prep-path-buf cc-prep-try-open
-    then,
-  then,
+  cc-prep-direct-depth [lit] 31 cc-check-cap
+  cc-prep-open-include
   dup 0< if, drop [lit] 30 cc-die then,
   >r
-  cc-prep-direct @ if,
-    cc-prep-record-path
-    cc-prep-inc-buf cc-prep-inc-top @ +
-    r@ over cc-prep-inc-cap
-    cc-prep-inc-top @ - [lit] 32 cc-read-all
-    dup cc-prep-inc-top +!
-  else,
-    cc-prep-inc-depth @ cc-prep-inc-slot-addr
-    r@ over cc-prep-inc-slot-cap [lit] 32 cc-read-all
-  then,
+  cc-prep-record-path
+  cc-prep-inc-buf cc-prep-inc-top @ +
+  r@ over cc-prep-inc-cap
+  cc-prep-inc-top @ - [lit] 32 cc-read-all
+  dup cc-prep-inc-top +!
   r> close drop ;
 
 \ ===========================================================================
@@ -1027,17 +965,6 @@ variable cc-pp-ca-start                           \ where this argument began
     then, then, then, then, then, then,
   again, ;
 
-\ cc-pp-expand-args ( recs n -- )  Expand every argument fully, before it
-\ is substituted (C's rule), and record the expanded text in its place.
-: cc-pp-expand-args
-  begin, dup while,
-    1- 2dup [lit] 16 * +                           ( recs k rec )
-    dup >r  dup @ swap [lit] 8 + @                 ( recs k a u ; R: rec )
-    cc-pp-temp-begin cc-pp-expand-text cc-pp-temp-end
-    r@ [lit] 8 + !  r> !
-  repeat,
-  2drop ;
-
 \ Argument records retain both spellings: ordinary substitution uses the
 \ fully expanded argument; # and ## use its unexpanded spelling.
 : cc-pp-duplicate-args
@@ -1051,29 +978,6 @@ variable cc-pp-ca-start                           \ where this argument began
 variable cc-pp-sub-raw
 variable cc-pp-sub-recs
 variable cc-pp-sub-n
-
-\ cc-pp-substitute ( a u -- )  Write a function-like macro's body, each
-\ parameter marker (1, k) replaced by argument k's expanded text between
-\ blanks; a parameter with no argument is empty.
-: cc-pp-substitute-legacy
-  begin, dup while,
-    over c@ [lit] 1 = if,
-      over 1+ c@                                   ( a u k )
-      dup cc-pp-sub-n @ < if,
-        [lit] 16 * cc-pp-sub-recs @ +
-        bl cc-prep-emit-byte
-        dup @ swap [lit] 8 + @ cc-pp-emit-bytes
-        bl cc-prep-emit-byte
-      else,
-        drop
-      then,
-      swap [lit] 2 + swap [lit] 2 -
-    else,
-      over c@ cc-prep-emit-byte
-      swap 1+ swap 1-
-    then,
-  repeat,
-  2drop ;
 
 \ cc-pp-trim-slice ( a u -- a' u' )  Strip argument-edge whitespace.
 : cc-pp-trim-slice
@@ -1259,8 +1163,7 @@ variable cc-pp-arg-paste
     then, then, then,
   repeat, 2drop ;
 
-: cc-pp-substitute
-  cc-prep-direct @ if, cc-pp-substitute-direct else, cc-pp-substitute-legacy then, ;
+: cc-pp-substitute  cc-pp-substitute-direct ;
 
 \ The busy flag of macro i.
 : cc-macro-busy-cell  cc-macro-busy cell[] ;       ( i -- cell )
@@ -1322,16 +1225,6 @@ create cc-pp-map-resume  cc-prep-direct-depth 1+ [lit] 8 * allot
   repeat, drop 2drop
   r@ [lit] 16 + ! cc-src-line @ r@ [lit] 8 + !
   cc-pp-line-map @ r@ ! r> cc-pp-line-map ! ;
-\ cc-pp-line-map-find ( output-line -- a u source-line true | false )
-: cc-pp-line-map-find
-  cc-pp-line-map-on @ 0= if, drop [lit] 0 exit, then,
-  cc-pp-line-map @
-  begin, dup while,
-    2dup [lit] 8 + @ < 0= if,
-      swap over [lit] 8 + @ - over [lit] 16 + @ + >r
-      dup [lit] 32 + swap [lit] 24 + @ r> true exit,
-    then, @
-  repeat, 2drop [lit] 0 ;
 
 \ cc-pp-expand-object ( i -- )  Scan object-like macro i's body in place of
 \ its name.
@@ -1347,7 +1240,7 @@ create cc-pp-map-resume  cc-prep-direct-depth 1+ [lit] 8 * allot
   dup cc-macro-body-addr cell[] @  over cc-macro-body-len cell[] @
   cc-pp-expand-text
   [lit] 0 swap cc-macro-busy-cell !
-  r> cc-prep-direct @ if, cc-pp-rescan-tail-fwd else, drop then, ;
+  r> cc-pp-rescan-tail-fwd ;
 : cc-pp-expand-object
   true cc-pp-location-begin cc-pp-expand-object-body cc-pp-location-end ;
 
@@ -1366,13 +1259,9 @@ create cc-pp-map-resume  cc-prep-direct-depth 1+ [lit] 8 * allot
   then,
   r>                                               ( i recs n )
   2dup cc-pp-duplicate-args >r
-  cc-prep-direct @ if,
-    2dup >r >r
-    >r over r> swap cc-pp-expand-used-args
-    r> r>
-  else,
-    2dup cc-pp-expand-args
-  then,                                           ( i recs n )
+  2dup >r >r
+  >r over r> swap cc-pp-expand-used-args
+  r> r>                                           ( i recs n )
   r> cc-pp-sub-raw !
   cc-pp-temp-begin
   cc-pp-sub-n ! cc-pp-sub-recs !                   ( i )
@@ -1383,7 +1272,7 @@ create cc-pp-map-resume  cc-prep-direct-depth 1+ [lit] 8 * allot
   cc-pp-expand-text
   [lit] 0 r> cc-macro-busy-cell !
   r> cc-pp-scratch-top !
-  r> cc-prep-direct @ if, cc-pp-rescan-tail-fwd else, drop then, ;
+  r> cc-pp-rescan-tail-fwd ;
 : cc-pp-expand-call
   [lit] 0 cc-pp-location-begin cc-pp-expand-call-body cc-pp-location-end ;
 
@@ -1813,9 +1702,7 @@ variable cc-prep-inc-expanded
       else, cc-prep-advance then,
     repeat,
     cc-prep-src-pos @ swap -
-    cc-prep-direct @ if,
-      dup 0= cc-prep-peek cc-prep-inc-end @ <> or if, [lit] 30 cc-die then,
-    then,
+    dup 0= cc-prep-peek cc-prep-inc-end @ <> or if, [lit] 30 cc-die then,
     cc-prep-peek cc-prep-inc-end @ = if, cc-prep-advance then,
     cc-prep-inc-expanded @ if,
       \ Macro expansion must yield exactly one header operand.
@@ -1830,24 +1717,22 @@ variable cc-prep-inc-expanded
       then,
     then,
     [lit] 0 cc-prep-inc-expanded !
-    cc-prep-inc-mode @ [lit] 1 = cc-prep-direct @ or if,
-      cc-prep-inc-top @ >r
-      cc-prep-load-file
-      cc-prep-src-addr @ cc-prep-save-addr cc-prep-save-slot !
-      cc-prep-src-len  @ cc-prep-save-len  cc-prep-save-slot !
-      cc-prep-src-pos  @ cc-prep-save-pos  cc-prep-save-slot !
-      [lit] 1 cc-prep-inc-depth +!
-      cc-prep-src-len ! cc-prep-src-addr ! [lit] 0 cc-prep-src-pos !
-      cc-pp-location-enter
-      [lit] 1 cc-pp-line-map-note
-      cc-pp-scan
-      [lit] 1 cc-prep-inc-depth -!
-      cc-prep-save-addr cc-prep-save-slot @ cc-prep-src-addr !
-      cc-prep-save-len  cc-prep-save-slot @ cc-prep-src-len  !
-      cc-prep-save-pos  cc-prep-save-slot @ cc-prep-src-pos  !
-      r> cc-prep-inc-top !
-      cc-pp-map-resume cc-pp-location-cell @ cc-pp-line-map-note
-    else, 2drop then,
+    cc-prep-inc-top @ >r
+    cc-prep-load-file
+    cc-prep-src-addr @ cc-prep-save-addr cc-prep-save-slot !
+    cc-prep-src-len  @ cc-prep-save-len  cc-prep-save-slot !
+    cc-prep-src-pos  @ cc-prep-save-pos  cc-prep-save-slot !
+    [lit] 1 cc-prep-inc-depth +!
+    cc-prep-src-len ! cc-prep-src-addr ! [lit] 0 cc-prep-src-pos !
+    cc-pp-location-enter
+    [lit] 1 cc-pp-line-map-note
+    cc-pp-scan
+    [lit] 1 cc-prep-inc-depth -!
+    cc-prep-save-addr cc-prep-save-slot @ cc-prep-src-addr !
+    cc-prep-save-len  cc-prep-save-slot @ cc-prep-src-len  !
+    cc-prep-save-pos  cc-prep-save-slot @ cc-prep-src-pos  !
+    r> cc-prep-inc-top !
+    cc-pp-map-resume cc-pp-location-cell @ cc-pp-line-map-note
   then, ;
 
 \ A computed operand is rescanned with the same macro engine as C text.
@@ -1862,7 +1747,7 @@ variable cc-prep-inc-expanded
   [lit] 0 cc-prep-inc-expanded !
   cc-prep-skip-blanks
   cc-prep-peek [char] " = cc-prep-peek [char] < = or
-  cc-prep-direct @ 0= or if, cc-prep-include-literal exit, then,
+  if, cc-prep-include-literal exit, then,
   cc-pp-scratch-top @ >r
   cc-pp-line-slice
   cc-pp-temp-begin cc-pp-expand-text cc-pp-temp-end
@@ -2105,7 +1990,7 @@ variable cc-pp-param-count
     cc-prep-peek dup [char] " = swap [char] ' = or if,
       put-emit cc-pp-put-mode !  cc-pp-literal
     else,
-    cc-prep-peek [char] # = cc-prep-direct @ and if,
+    cc-prep-peek [char] # = if,
       cc-pp-copy-hash
     else,
     cc-prep-peek digit? if,
@@ -2243,37 +2128,7 @@ create cc-prep-name-line     s, line
 \ descriptors, see Appendix F), <stdlib.h>'s EXIT_SUCCESS/EXIT_FAILURE and
 \ <fcntl.h>'s open(2) flags.
 
-create cc-pp-t0      s, 0
-create cc-pp-t1      s, 1
-create cc-pp-t2      s, 2
-create cc-pp-t64     s, 64
-create cc-pp-t512    s, 512
-create cc-pp-teof    s, 0xFFFFFFFFFFFFFFFF
 
-create cc-builtin-name-NULL          s, NULL
-create cc-builtin-name-EOF           s, EOF
-create cc-builtin-name-EXIT_SUCCESS  s, EXIT_SUCCESS
-create cc-builtin-name-EXIT_FAILURE  s, EXIT_FAILURE
-create cc-builtin-name-stdin         s, stdin
-create cc-builtin-name-stdout        s, stdout
-create cc-builtin-name-stderr        s, stderr
-create cc-builtin-name-O_RDONLY      s, O_RDONLY
-create cc-builtin-name-O_WRONLY      s, O_WRONLY
-create cc-builtin-name-O_CREAT       s, O_CREAT
-create cc-builtin-name-O_TRUNC       s, O_TRUNC
-
-: cc-prep-builtins
-  cc-builtin-name-NULL          [lit]  4  cc-pp-t0   [lit] 1  cc-macro-add
-  cc-builtin-name-EOF           [lit]  3  cc-pp-teof [lit] 18 cc-macro-add
-  cc-builtin-name-EXIT_SUCCESS  [lit] 12  cc-pp-t0   [lit] 1  cc-macro-add
-  cc-builtin-name-EXIT_FAILURE  [lit] 12  cc-pp-t1   [lit] 1  cc-macro-add
-  cc-builtin-name-stdin         [lit]  5  cc-pp-t0   [lit] 1  cc-macro-add
-  cc-builtin-name-stdout        [lit]  6  cc-pp-t1   [lit] 1  cc-macro-add
-  cc-builtin-name-stderr        [lit]  6  cc-pp-t2   [lit] 1  cc-macro-add
-  cc-builtin-name-O_RDONLY      [lit]  8  cc-pp-t0   [lit] 1  cc-macro-add
-  cc-builtin-name-O_WRONLY      [lit]  8  cc-pp-t1   [lit] 1  cc-macro-add
-  cc-builtin-name-O_CREAT       [lit]  7  cc-pp-t64  [lit] 2  cc-macro-add
-  cc-builtin-name-O_TRUNC       [lit]  7  cc-pp-t512 [lit] 3  cc-macro-add ;
 
 \ ===========================================================================
 \ cc-preprocess  ( -- )
@@ -2301,7 +2156,6 @@ defer cc-prep-target-fwd
   cc-src-buf cc-pp-out !  [lit] 0 cc-pp-out-pos !
   cc-src-cap cc-pp-out-cap !  [lit] 36 cc-pp-out-code !
   cc-pp-flags-init
-  cc-prep-direct @ 0= if, cc-prep-builtins then,
   [lit] 0 cc-pp-location-enabled ! [lit] 1 cc-pp-location-line !
   [lit] 0 cc-pp-location-rescan ! [lit] 0 cc-pp-location-depth !
   cc-prep-target-fwd

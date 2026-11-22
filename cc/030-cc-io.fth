@@ -178,30 +178,6 @@ variable cc-out-pos
   256 /     r> 7 + cc-out-patch-byte ;
 
 \ ===========================================================================
-\ C. Output file write
-\ ===========================================================================
-\ Open flags (Linux x86-64 asm-generic):
-\   O_WRONLY=1, O_CREAT=64, O_TRUNC=512  →  bitwise OR = 577.
-\ Mode 0o755 = decimal 493.
-\
-\ 010-lib.fth's `open` already takes ( path flags mode -- fd ) — its signature
-\ matches what we need, so no open3 wrapper is required here.
-
-\ cc-write-output ( path-addr -- )  path-addr must point at NUL-terminated bytes.
-\ Opens path with O_WRONLY|O_CREAT|O_TRUNC, mode 0755; writes
-\ cc-out-buf[0..cc-out-pos@] to it; closes.  On open failure (fd < 0),
-\ dies with code 22.
-: cc-write-output
-  577 493 open                        ( fd )
-  dup 0< if,
-    drop
-    [lit] 22 cc-die
-  then,
-  >r                                              ( ; R: fd )
-  r@ cc-out-buf cc-out-pos @ write drop           \ write all bytes
-  r> close drop ;
-
-\ ===========================================================================
 \ D. Helpers shared by the preprocessor, lexer and symbol table
 \ ===========================================================================
 
@@ -255,15 +231,7 @@ variable cc-nf-lens
   repeat, 2drop
   r> cc-name-buckets 1- and ;
 
-\ Direct GCC source workspace is opt-in; default buffers stay dictionary-backed.
-\ Measured raw/expanded/output maxima are 2,782,995/5,415,887/3,901,856 bytes.
-\ Raw and output round to whole MiB. Expanded text splices in every included
-\ byte, so it and the direct include pool (040) share one bound: the measured
-\ maximum (binutils i386-opc.c) plus 25%, rounded up to whole MiB. 3/7/4 MiB.
-3145728 constant cc-in-direct-cap
 7340032 constant cc-src-direct-cap
-4194304 constant cc-out-direct-cap
-variable cc-io-direct-base
 
 \ Round before mmap only after rejecting zero, negative and overflowing sizes.
 \ Requests are policy constants at callers; this helper never grows a buffer.
@@ -278,12 +246,3 @@ defer cc-workspace-syscall-fwd
 : cc-workspace-map ( bytes code -- address )
   >r r@ cc-workspace-round cc-workspace-syscall-fwd
   dup [lit] 0 <= if, r@ cc-die then, r> drop ;
-: cc-io-direct-workspace ( -- )
-  cc-io-direct-base @ 0= if,
-    cc-in-direct-cap cc-src-direct-cap + cc-out-direct-cap + 20 cc-workspace-map
-    cc-io-direct-base !
-  then,
-  cc-io-direct-base @ cc-in-buffer ! cc-in-direct-cap cc-in-limit !
-  cc-io-direct-base @ cc-in-direct-cap + cc-src-buffer !
-  cc-src-direct-cap cc-src-limit !
-  cc-src-buf cc-src-direct-cap + cc-out-buffer ! cc-out-direct-cap cc-out-limit ! ;

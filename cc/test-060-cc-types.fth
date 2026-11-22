@@ -33,7 +33,7 @@ swap ty-ptr [lit] 0 =                              and
 \ ty-size
 \ ===========================================================================
 
-ty-int  [lit] 0 ty-make ty-size [lit] 8 =          and  \ int    -> 8
+ty-int  [lit] 0 ty-make ty-size [lit] 4 =          and  \ int    -> 4
 ty-char [lit] 0 ty-make ty-size [lit] 1 =          and  \ char   -> 1
 ty-char [lit] 1 ty-make ty-size [lit] 8 =          and  \ char*  -> 8
 ty-void [lit] 0 ty-make ty-size [lit] 0 =          and  \ void   -> 0

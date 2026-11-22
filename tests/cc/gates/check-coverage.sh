@@ -71,8 +71,7 @@ indirect=(
 
 # "<code>|<why no C program reaches it>"
 unreachable=(
-  "22|cc-write-output (cc/030-cc-io.fth): open(2) of /tmp/cc-out fails; that is the file system, not the program"
-  "62|cc-scope-pop (cc/070-cc-sym.fth) with no push; every pop is paired with a push in the parser, so it is a parser bug (a stray '}' dies 202 or 186)"
+  "62|cc-scope-pop (cc/070-cc-sym.fth) with no push; every pop is paired with a push in the parser, so reaching it is a parser bug"
 )
 
 # Untested, to do.  Grouped by the first file that raises each code; -v
@@ -80,13 +79,9 @@ unreachable=(
 todo=(
   49                                            # 040-cc-prep.fth
   213 240                                       # 060-cc-types.fth
-  118 123                                       # 100-cc-expr.fth
-  214                                           # 110-cc-decl.fth
   210                                           # 115-cc-native.fth
   222 226                                       # 118-cc-native-init.fth
   130                                           # i386/090-emit.fth
-  # raised only by the M2 subset's arms of 100 and 110
-  91 92 94 98 102 103 104 105 106 107 108 109 114 115 122 148
 )
 
 # ---------------------------------------------------------------------------

@@ -42,16 +42,7 @@
 \ stops with error 130 rather than emit x86-64 bytes.
 : cc-emit-x86-64-only  [lit] 130 cc-die ;
 
-: cc-emit-pop-rsi               cc-emit-x86-64-only ;
-: cc-emit-pop-r8                cc-emit-x86-64-only ;
-: cc-emit-pop-r9                cc-emit-x86-64-only ;
 : cc-emit-shl-rdi-imm8          cc-emit-x86-64-only ;
-: cc-emit-load-local-into-rax   cc-emit-x86-64-only ;
-: cc-emit-inc-mem-local         cc-emit-x86-64-only ;
-: cc-emit-dec-mem-local         cc-emit-x86-64-only ;
-: cc-emit-inc-via-rcx           cc-emit-x86-64-only ;
-: cc-emit-dec-via-rcx           cc-emit-x86-64-only ;
-: cc-emit-load-via-rcx          cc-emit-x86-64-only ;
 
 \ ===========================================================================
 \ Extending the low half
@@ -166,11 +157,6 @@
   dup
   x{ 8b } [lit] 0 $45 cc-emit-half-ea             \ mov eax, dword [ebp+disp]
   x{ 8b } [lit] 4 $55 cc-emit-half-ea ;           \ mov edx, dword [ebp+disp+4]
-
-: cc-emit-store-local                             ( slot -- )
-  dup
-  x{ 89 } [lit] 0 $45 cc-emit-half-ea             \ mov dword [ebp+disp], eax
-  x{ 89 } [lit] 4 $55 cc-emit-half-ea ;           \ mov dword [ebp+disp+4], edx
 
 \ The address of a local.  A pointer is 4 bytes, so its high half is 0.
 : cc-emit-lea-rdi-local                           ( slot -- )

@@ -49,17 +49,6 @@
 : cc-ad-inner [lit] 24 + @ ;
 : cc-ad-size [lit] 32 + @ ;
 : cc-ad-align [lit] 40 + @ ;
-: cc-ad-qualified [lit] 48 + @ ;
-
-\ The M2-Planet route (Stage A) keeps the original data model unless opted in.
-variable cc-target-lp64
-[lit] 0 cc-target-lp64 !
-
-\ Restricted first-stage bootstrap approximation, never the default ABI.
-\ Portable bootstrap float values travel as integer bits in 8-byte cells.
-\ This flag does not implement IEEE floating arithmetic or conversions.
-variable cc-bootstrap-floatbits
-[lit] 0 cc-bootstrap-floatbits !
 
 \ ty-make ( base ptrdepth -- ty )  Pack base and ptr-depth into one word.
 : ty-make
@@ -75,39 +64,33 @@ variable cc-bootstrap-floatbits
 
 \ ty-size ( ty -- bytes )  Scalar/pointer storage size, not aggregate size.
 \ The caller resolves struct descriptors before asking their size/alignment.
-\ LP64 is the AMD64 System V model: int=4, long/pointer=8, long double=16.
-\ Both long long kinds take the final eight-byte answer, exactly as long.
-\ The default retains the original char=1 and other non-void scalars=8;
-\ _Bool is one byte in both models.
+\ int is 4 bytes, and long and pointers are 8 here (065 makes them 4).
+\ Both long long kinds take the final eight-byte answer.  A float, double
+\ or long double travels as its bits in an 8-byte cell; there is no
+\ floating-point arithmetic.
 : ty-size
   dup ty-ptr [lit] 0 > if, drop [lit] 8 exit, then,
   ty-base
   dup ty-void = if, drop [lit] 0 exit, then,
   dup ty-char = over ty-bool = or if, drop [lit] 1 exit, then,
-  cc-target-lp64 @ if,
-    cc-bootstrap-floatbits @ if,
-      dup ty-float = over ty-double = or over ty-ldouble = or if,
-        drop [lit] 8 exit,
-      then,
-    then,
-    dup ty-uchar = if, drop [lit] 1 exit, then,
-    dup ty-short = over ty-ushort = or if, drop [lit] 2 exit, then,
-    dup ty-int = over ty-uint = or over ty-float = or if,
-      drop [lit] 4 exit,
-    then,
-    dup ty-ldouble = if, drop [lit] 16 exit, then,
+  dup ty-float = over ty-double = or over ty-ldouble = or if,
+    drop [lit] 8 exit,
+  then,
+  dup ty-uchar = if, drop [lit] 1 exit, then,
+  dup ty-short = over ty-ushort = or if, drop [lit] 2 exit, then,
+  dup ty-int = over ty-uint = or if,
+    drop [lit] 4 exit,
   then,
   drop [lit] 8 ;
 
 \ ty-unsigned? ( ty -- flag )  Pointers compare as unsigned addresses.
-\ Plain char is signed in LP64; legacy byte expressions are zero-extended.
+\ Plain char is signed.
 : ty-unsigned?
   dup ty-ptr [lit] 0 > if, drop true exit, then,
   ty-base
   dup ty-uchar = over ty-ushort = or
   over ty-uint = or over ty-ulong = or over ty-ullong = or
-  over ty-bool = or
-  swap ty-char = cc-target-lp64 @ 0= and or ;
+  swap ty-bool = or ;
 
 \ ty-long-long? ( ty -- flag )  Scalar long long, signed or unsigned.
 : ty-long-long?
@@ -176,7 +159,6 @@ variable cc-literal-long
 \ As a bootstrap extension, a decimal value beyond signed long uses ulong.
 \ Range tests use unsigned division, so bit-63-set constants stay correct.
 : cc-integer-literal-type
-  cc-target-lp64 @ 0= if, ty-int [lit] 0 ty-make exit, then,
   cc-integer-literal-check
   cc-literal-long @ [lit] 1 > if,
     cc-literal-unsigned @ tok-num @ 2^63 / or if,
@@ -242,16 +224,12 @@ variable cc-literal-long
 \ bfd's (elf_backend_data, 143).  The legacy M2-Planet subset
 \ keeps its documented 16-field limit and small arena.
 
-[lit] 16 constant cc-sd-max-fields
-[lit] 1023 constant cc-sd-lp64-max-fields
+[lit] 1023 constant cc-sd-field-cap
 [lit] 56 constant cc-sd-header-bytes
 [lit] 8 constant cc-sd-initial-fields
 
-: cc-sd-field-cap
-  cc-target-lp64 @ if, cc-sd-lp64-max-fields else, cc-sd-max-fields then, ;
-
 : cc-sd-record-bytes-default
-  cc-target-lp64 @ if, [lit] 48 else, [lit] 40 then, ;
+  [lit] 48 ;
 defer cc-sd-record-bytes
 ' cc-sd-record-bytes-default is cc-sd-record-bytes
 

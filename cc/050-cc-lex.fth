@@ -20,7 +20,6 @@
 [lit] 4 constant tk-chr
 [lit] 5 constant tk-punct
 [lit] 6 constant tk-kw
-[lit] 7 constant tk-float
 
 \ Multi-char punctuation codes start at 256 to avoid clash with single-byte
 \ ASCII codes used directly for one-char punct (e.g. '(' = 40).

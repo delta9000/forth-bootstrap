@@ -253,7 +253,7 @@ variable cc-for-step-end
   \ --- Init (optional); declaration scope ends with this loop. ---
   cc-next-token-keep
   [char] ; cc-tok-punct? 0= if,
-    cc-target-lp64 @ if, cc-native-type-start-fwd else, [lit] 0 then, if,
+    cc-type-start? if,
       cc-native-decl-fwd
     else,
       cc-putback-token cc-parse-expr [char] ; cc-expect-punct-c
@@ -444,10 +444,9 @@ variable cc-switch-type           \ LP64: promoted controlling type
   cc-switch-cases-head @ r@ [lit] 16 + !          \ node[16] = old head
   r> cc-switch-cases-head ! ;                     \ head := node
 
-\ LP64 labels are converted to the promoted controlling type (C90 6.6.4.2),
+\ Labels are converted to the promoted controlling type (C90 6.6.4.2),
 \ so a 32-bit label is sign- or zero-extended exactly as the scrutinee is.
 : cc-switch-label                                 ( K -- K' )
-  cc-target-lp64 @ 0= if, exit, then,
   cc-switch-type @ ty-size [lit] 4 = if,
     [lit] 4294967295 and
     cc-switch-type @ ty-unsigned? 0= if,
@@ -476,11 +475,9 @@ variable cc-switch-type           \ LP64: promoted controlling type
 \ which is free during dispatch, and compare registers.  Every other
 \ label keeps the imm32 form.
 : cc-emit-switch-compare                          ( K -- )
-  cc-target-lp64 @ if,
-    dup [lit] 2147483648 + [lit] 4294967296 / if,
-      cc-emit-movabs-rdi-imm64 cc-emit-cmp-rbx-rdi
-      exit,
-    then,
+  dup [lit] 2147483648 + [lit] 4294967296 / if,
+    cc-emit-movabs-rdi-imm64 cc-emit-cmp-rbx-rdi
+    exit,
   then,
   cc-emit-cmp-rbx-imm32 ;
 
@@ -534,7 +531,7 @@ variable cc-switch-type           \ LP64: promoted controlling type
 
   \ '{' (case|default|stmt)* '}'
   [char] { cc-expect-punct-c
-  cc-target-lp64 @ if, cc-scope-push then,
+  cc-scope-push
 
   begin,
     cc-next-token-keep
@@ -592,7 +589,7 @@ variable cc-switch-type           \ LP64: promoted controlling type
   r> cc-break-stack-head     !
   r> cc-switch-default-vaddr !
   r> cc-switch-cases-head    !
-  cc-target-lp64 @ if, cc-scope-pop then, ;
+  cc-scope-pop ;
 
 \ ===========================================================================
 \ break / continue statements
@@ -655,22 +652,6 @@ create cc-label-default-switch-depth cc-label-default-cap [lit] 8 * allot
 variable cc-label-switch-depth-buffer
 cc-label-default-switch-depth cc-label-switch-depth-buffer !
 : cc-label-switch-depth ( -- address ) cc-label-switch-depth-buffer @ ;
-\ Original insn-recog.c has at most 739 labels in one function (recog_20).
-\ Five disjoint, page-sized arrays support the fixed 1,024-label direct bound.
-[lit] 1024 constant cc-label-direct-cap
-variable cc-label-direct-base
-: cc-label-direct-workspace ( -- )
-  cc-label-direct-base @ 0= if,
-    cc-label-direct-cap [lit] 40 * [lit] 171 cc-workspace-map
-    cc-label-direct-base !
-  then,
-  cc-label-direct-cap cc-label-limit !
-  cc-label-direct-base @ cc-label-direct-cap [lit] 0 * + cc-label-name-addr-buffer !
-  cc-label-direct-base @ cc-label-direct-cap [lit] 8 * + cc-label-name-len-buffer !
-  cc-label-direct-base @ cc-label-direct-cap [lit] 16 * + cc-label-vaddr-buffer !
-  cc-label-direct-base @ cc-label-direct-cap [lit] 24 * + cc-label-fixup-buffer !
-  cc-label-direct-base @ cc-label-direct-cap [lit] 32 * + cc-label-switch-depth-buffer !
-;
 variable cc-label-count
 
 \ Each table is indexed with cell[] (030).
@@ -722,10 +703,8 @@ variable cc-label-count
   >r                                              ( ; R: id )
   cc-here-vaddr r@ cc-label-set-vaddr
   cc-switch-depth @ r@ cc-label-switch-depth cell[] !
-  \ Native forward gotos use end-of-function switch-stack trampolines.
-  cc-target-lp64 @ if, r> drop else,
-    r> cc-label-fixups @ cc-walk-and-patch-fixups
-  then, ;
+  \ Forward gotos use end-of-function switch-stack trampolines.
+  r> drop ;
 
 \ cc-parse-goto-stmt ( -- )  "goto" already consumed.  Grammar:  goto IDENT ;
 \
@@ -764,31 +743,12 @@ variable cc-label-count
     [lit] 173 cc-die
   then,
   tok-str-addr @ tok-str-len @ cc-label-find-or-create   ( id )
-  cc-target-lp64 @ if,
-    dup cc-label-vaddr-of if,
-      cc-switch-depth @ over cc-label-switch-depth cell[] @
-      cc-native-goto-adjust
-      cc-label-vaddr-of cc-emit-jmp-vaddr
-    else,
-      cc-emit-jmp-rel32-placeholder cc-native-goto-fixup
-    then,
-    [char] ; cc-expect-punct-c exit,
-  then,
-
-  \ Unwind any open switch scrutinees before jumping (assumes the label is
-  \ not inside any switch — a goto to a label inside any switch is unsupported).
-  cc-switch-depth @ cc-emit-switch-unwind
-
-  dup cc-label-vaddr-of                           ( id vaddr )
-  dup [lit] 0 <> if,
-    \ Backward jump to known target.
-    cc-emit-jmp-vaddr                             ( id )
-    drop                                          ( -- )
+  dup cc-label-vaddr-of if,
+    cc-switch-depth @ over cc-label-switch-depth cell[] @
+    cc-native-goto-adjust
+    cc-label-vaddr-of cc-emit-jmp-vaddr
   else,
-    drop                                          ( id )
-    \ Forward ref: emit placeholder, prepend offset to label's fixup list.
-    cc-emit-jmp-rel32-placeholder                 ( id fixup-offset )
-    swap cc-label-fixups cc-add-fixup-to-list     ( -- )
+    cc-emit-jmp-rel32-placeholder cc-native-goto-fixup
   then,
   [char] ; cc-expect-punct-c ;
 
@@ -829,7 +789,7 @@ variable cc-label-count
   tok-str-addr @ tok-str-len @                    ( a u )
   cc-peek-after-is-colon? if,
     cc-define-label
-    cc-target-lp64 @ if, cc-parse-stmt-fwd then,
+    cc-parse-stmt-fwd
     exit,
   then,
   2drop
@@ -844,18 +804,16 @@ variable cc-label-count
 : cc-parse-stmt
   cc-skip-storage-quals
   cc-next-token-keep
-  cc-target-lp64 @ if,
-    kw-case cc-tok-kw? if,
-      cc-switch-depth @ 0= if, [lit] 170 cc-die then,
-      cc-switch-case cc-parse-stmt-fwd exit,
-    then,
-    kw-default cc-tok-kw? if,
-      cc-switch-depth @ 0= if, [lit] 170 cc-die then,
-      cc-switch-default cc-parse-stmt-fwd exit,
-    then,
-    cc-native-type-start-fwd kw-typedef cc-tok-kw? or if,
-      cc-native-decl-fwd exit,
-    then,
+  kw-case cc-tok-kw? if,
+    cc-switch-depth @ 0= if, [lit] 170 cc-die then,
+    cc-switch-case cc-parse-stmt-fwd exit,
+  then,
+  kw-default cc-tok-kw? if,
+    cc-switch-depth @ 0= if, [lit] 170 cc-die then,
+    cc-switch-default cc-parse-stmt-fwd exit,
+  then,
+  cc-type-start? kw-typedef cc-tok-kw? or if,
+    cc-native-decl-fwd exit,
   then,
   [char] ;    cc-tok-punct? if, exit, then,           \ the empty statement
   kw-return   cc-tok-kw? if, cc-parse-return            exit, then,

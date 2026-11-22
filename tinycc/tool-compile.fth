@@ -10,9 +10,6 @@
 \ tinycc/tcc-compile-i386.fth, but with M2libc's include paths, and the
 \ output is written executable (0755), so that no chmod is needed before
 \ chmod itself is built.
-true cc-target-lp64 !
-true cc-prep-direct !
-[lit] 1 cc-bootstrap-floatbits !
 true cc-native-syscall-any !
 [lit] 8388608 cc-arena-map
 create tool-include s, vendor/stage0-posix/M2libc

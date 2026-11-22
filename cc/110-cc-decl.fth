@@ -15,18 +15,13 @@
 \ Bookkeeping
 \ ===========================================================================
 
-defer cc-native-type-name-fwd
+defer cc-parse-type-name
 defer cc-native-decl-fwd
-defer cc-native-type-start-fwd
 \ Native declarations use dynamically sized frames, patched after the body.
 variable cc-native-return-type
 variable cc-native-return-desc
 variable cc-type-name-array
 variable cc-type-name-inner
-\ Declaration spelling and executable value support are separate decisions.
-: cc-native-float-types-default cc-bootstrap-floatbits @ ;
-defer cc-native-float-types-fwd
-' cc-native-float-types-default is cc-native-float-types-fwd
 variable cc-native-frame-limit
 [lit] 131072 cc-native-frame-limit !
 
@@ -34,15 +29,12 @@ variable cc-main-vaddr                            \ vaddr where main starts
 variable cc-call-main-patch                       \ file-offset of rel32 to patch
 variable cc-fn-local-count                        \ # locals in current function
 
-\ Every function gets the same frame: cc-frame-slots 8-byte slots below rbp,
-\ shared by its parameters and every local in every block of its body (a
-\ slot is never reused).  cc-fn-add-slots ( n -- ) claims the next n; the
-\ one that would pass the frame's end dies with code 162 instead of
-\ silently overlapping the stack below it.
-[lit] 32 constant cc-frame-slots
+\ A function's locals share one frame of 8-byte slots, sized when its body
+\ ends (a slot is never reused).  cc-fn-add-slots ( n -- ) claims the next
+\ n; the one that would pass cc-native-frame-limit dies with code 162.
 : cc-fn-add-slots
   dup cc-fn-local-count @ +
-  cc-target-lp64 @ if, cc-native-frame-limit @ else, cc-frame-slots then,
+  cc-native-frame-limit @
   [lit] 162 cc-check-cap
   cc-fn-local-count +! ;
 
@@ -169,10 +161,8 @@ create cc-main-name-bytes  s, main
   begin, dup cc-sym-count @ < while,
     dup cc-sym-kind-of sk-func = if,
       dup cc-sym-call-fixups @  over cc-sym-addr-fixups @  or if,
-        cc-target-lp64 @ if,
-          dup cc-sym-name-addr cell[] @ over cc-sym-name-len cell[] @ cc-err-write
-          cc-die-end [lit] 1 cc-err-write
-        then,
+        dup cc-sym-name-addr cell[] @ over cc-sym-name-len cell[] @ cc-err-write
+        cc-die-end [lit] 1 cc-err-write
         [lit] 206 cc-die
       then,
     then,
@@ -274,37 +264,9 @@ variable cc-decl-storage
   repeat,
   cc-putback-token ;
 
-\ cc-skip-enum-tag ( -- )  The current token is `enum` used as a type
-\ (`enum BINDING kind`): consume the tag.  An enum's values are ints, so
-\ the type is int.
-: cc-skip-enum-tag
-  cc-next-token-keep
-  tok-kind @ tk-ident <> if, cc-putback-token then, ;
-
 \ ===========================================================================
 \ Pieces of a type: a struct tag, a function pointer's parameters, a keyword
 \ ===========================================================================
-
-\ cc-lookup-struct-tag-soft ( -- desc-or-0 )  Read an IDENT token and look
-\ it up as a struct tag: its descriptor, or 0 if the tag isn't found or
-\ isn't registered as a struct.  Lets the parser tolerate opaque/incomplete
-\ struct references in headers that declare but don't define the struct
-\ (e.g. cc_globals.c's `struct type* foo;`).
-: cc-lookup-struct-tag-soft                       ( -- desc-or-0 )
-  cc-next-token-keep
-  tok-kind @ tk-ident <> if,
-    [lit] 148 cc-die
-  then,
-  tok-str-addr @ tok-str-len @ cc-sym-find-tag        ( id-or-neg1 )
-  dup 0< if,
-    drop [lit] 0
-  else,
-    dup cc-sym-kind-of sk-struct <> if,
-      drop [lit] 0
-    else,
-      cc-sym-val-of
-    then,
-  then, ;
 
 \ cc-skip-fnptr-params ( -- )  Skip everything from the current position
 \ through the matching ')'.  Uses paren-depth counter starting at 1
@@ -317,9 +279,6 @@ variable cc-decl-storage
   while,
     cc-next-token-keep
     tok-kind @ tk-eof = if, [lit] 184 cc-die then,
-    cc-target-lp64 @ cc-native-float-types-fwd 0= and if,
-      kw-float cc-tok-kw? kw-double cc-tok-kw? or if, [lit] 214 cc-die then,
-    then,
     tok-kind @ tk-punct = if,
       tok-num @ lparen = if, 1+ then,
       tok-num @ [char] ) = if, 1- then,
@@ -352,48 +311,6 @@ variable cc-decl-storage
 
 variable cc-cast-desc                              \ struct TAG's descriptor, or 0
 
-\ cc-type-start? ( -- f )  Does the current token begin a type name?
-: cc-type-start?
-  cc-target-lp64 @ if, cc-native-type-start-fwd exit, then,
-  cc-tok-is-basic-type-kw?  cc-qualifier? or
-  kw-struct cc-tok-kw? or  kw-enum cc-tok-kw? or
-  tok-kind @ tk-ident = if,
-    tok-str-addr @ tok-str-len @ cc-sym-find
-    dup 0< if, drop else, cc-sym-kind-of sk-typedef = or then,
-  then, ;
-
-\ cc-parse-type-name ( -- ty )  The current token begins a type name; read
-\ it, stars and all, and leave the token after it pending.
-: cc-parse-type-name
-  cc-target-lp64 @ if, cc-native-type-name-fwd exit, then,
-  [lit] 0 cc-cast-desc !
-  begin, cc-qualifier? while, cc-next-token-keep repeat,
-  kw-struct cc-tok-kw? if,
-    cc-lookup-struct-tag-soft cc-cast-desc !
-    ty-struct [lit] 0
-  else,
-  kw-enum cc-tok-kw? if,
-    cc-skip-enum-tag ty-int [lit] 0
-  else,
-  tok-kind @ tk-ident = if,
-    tok-str-addr @ tok-str-len @ cc-sym-find cc-sym-val-of
-    dup ty-base swap ty-ptr
-  else,
-    \ Keywords: int, char, void, and combinations such as `unsigned int`
-    \ or `long long`; any char makes it char.
-    ty-int
-    begin,
-      kw-char cc-tok-kw? if, drop ty-char then,
-      kw-void cc-tok-kw? if, drop ty-void then,
-      cc-next-token-keep cc-tok-is-basic-type-kw?
-    while,
-    repeat,
-    cc-putback-token
-    [lit] 0
-  then, then, then,                                ( base ptr )
-  cc-skip-qualifiers
-  cc-count-stars + ty-make ;
-
 \ cc-try-cast ( -- f )  The current token is '('.  If a type name follows,
 \ compile the whole cast — type, ')', then the operand, a unary
 \ expression — and answer true.  Otherwise answer false with the token
@@ -416,7 +333,7 @@ defer cc-cast-null-fwd
     cc-putback-token [lit] 0 exit,
   then,
   cc-parse-type-name >r                            ( ; R: ty )
-  cc-target-lp64 @ if, cc-type-name-array @ if, [lit] 238 cc-die then, then,
+  cc-type-name-array @ if, [lit] 238 cc-die then,
   [char] ) cc-expect-punct-c
   cc-type-name-qualified @ >r
   cc-cast-desc @ >r                                ( ; R: ty qualification desc )
@@ -424,12 +341,8 @@ defer cc-cast-null-fwd
   cc-emit-materialize
   r> r> r> swap >r                                 ( desc ty ; R: qualification )
   over cc-cast-desc !                              \ the operand may hold casts
-  cc-target-lp64 @ if,
-    cc-last-expr-type @ over cc-cast-types-fwd
-    cc-last-expr-type @ over cc-cast-value-fwd
-  else,
-    dup ty-base ty-char = over ty-ptr 0= and if, cc-emit-zx-byte-rdi then,
-  then,
+  cc-last-expr-type @ over cc-cast-types-fwd
+  cc-last-expr-type @ over cc-cast-value-fwd
   cc-last-expr-type @ over cc-last-expr-null @ r@ cc-cast-null-fwd >r
   cc-mark-not-lvalue
   cc-last-expr-type !
@@ -494,18 +407,15 @@ defer cc-return-shape-fwd
   else,
     cc-putback-token
     cc-parse-expr
-    cc-target-lp64 @ if,
-      cc-last-expr-type @ cc-last-struct-desc @
-      cc-native-return-type @ cc-native-return-desc @ cc-return-shape-fwd
-      cc-last-expr-type @ cc-native-return-type @ cc-emit-convert-value
-    then,
+    cc-last-expr-type @ cc-last-struct-desc @
+    cc-native-return-type @ cc-native-return-desc @ cc-return-shape-fwd
+    cc-last-expr-type @ cc-native-return-type @ cc-emit-convert-value
     cc-value-return-fwd                           \ result -> rax (SYS-V)
     cc-switch-depth @ cc-emit-switch-unwind
     cc-emit-epilogue
     [char] ; cc-expect-punct-c
   then, ;
 
-\ Bind the expression parser's native sizeof type queries after declaration parsing.
+\ Bind the expression parser's sizeof type query after declaration parsing.
 : cc-native-sizeof-type cc-parse-type-name cc-cast-desc @ ;
-' cc-type-start? is cc-sizeof-type-start-fwd
 ' cc-native-sizeof-type is cc-sizeof-type-fwd

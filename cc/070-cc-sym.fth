@@ -157,9 +157,9 @@ defer cc-sym-find-tag
 \   how readers tell this meaning from an array length (so the subset has
 \   no arrays of structs).
 : cc-sym-struct-desc-of
-  cc-target-lp64 @ if, cc-sym-desc else, cc-sym-extra then, cell[] @ ;  \ ( id -- desc )
+  cc-sym-desc cell[] @ ;  \ ( id -- desc )
 : cc-sym-set-struct-desc
-  cc-target-lp64 @ if, cc-sym-desc else, cc-sym-extra then, cell[] ! ;
+  cc-sym-desc cell[] ! ;
 : cc-sym-array-inner-of cc-sym-inner cell[] @ ;
 : cc-sym-set-array-inner cc-sym-inner cell[] ! ;  \ ( desc id -- )
 \   call fixups: for an sk-func not yet defined, the head of the list of

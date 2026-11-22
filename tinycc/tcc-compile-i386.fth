@@ -15,9 +15,6 @@
 \ not its sizes): a private all-stack call ABI, float and double as
 \ 8-byte bit patterns only, and the one system call primitive of
 \ cc/i386/119-runtime.fth.
-true cc-target-lp64 !
-true cc-prep-direct !
-[lit] 1 cc-bootstrap-floatbits !
 [lit] 8388608 cc-arena-map
 variable tcc-fd
 variable tcc-pointer
