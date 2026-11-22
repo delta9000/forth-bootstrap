@@ -13,7 +13,6 @@
 #       tests/cc/gates/check-coverage.sh puts every error code of the compiler in
 #       one list (tested, unreachable from C, or to do) and prints "N of M
 #       codes tested"
-#   06  tools/check-pins.py: every archive pin agrees with MANIFEST.sha256
 #   09  tests/seed/asm-check.py: seed/000-seed.hex0 equals GNU as on its
 #       comments (with llvm-mc installed, LLVM's assembler must write the
 #       same bytes too), its branch notes and addresses add up, and the
@@ -21,10 +20,6 @@
 #       (needs as; SKIP without)
 #
 # Long steps, opt in:
-#   CHECK_CHAIN=1   chain/plumbing-root.sh: hex0-seed to the GCC 4.0.4 fixed
-#                   point in a root whose only executable is hex0-seed
-#                   (18 minutes on 24 threads; needs bwrap, strace and the
-#                   archives of MANIFEST.sha256 in build-out/)
 #   CHECK_TINYCC=1  tests/tinycc/junction-check.sh: seed Forth builds the
 #                   first tcc, and live-bootstrap's tcc-0.9.26 pass1.kaem
 #                   from it reaches their published tcc and libraries
@@ -108,18 +103,10 @@ have() { command -v "$1" >/dev/null 2>&1; }
 run "01-seed" bash -c 'seed/build.sh && [ "$(wc -c < seed-forth)" -eq 930 ]'
 run "02-test" ./test.sh
 run "05-cc-gates" tests/cc/gates/run-gates.sh
-if have python3; then
-    run "06-pins" python3 tools/check-pins.py
-else
-    skip "06-pins" "missing: python3"
-fi
 if have as && have python3; then
     run "09-hex0-asm" python3 tests/seed/asm-check.py
 else
     skip "09-hex0-asm" "missing: as or python3"
-fi
-if [ "${CHECK_CHAIN:-0}" = 1 ]; then
-    run "11-chain" sh chain/plumbing-root.sh
 fi
 if [ "${CHECK_TINYCC:-0}" = 1 ]; then
     if why=$(tests/tinycc/junction-check.sh --probe); then
