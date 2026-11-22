@@ -235,14 +235,11 @@ the sign bit of the wrapped 64-bit difference, and so on
 
 `native!` is applied 28 times in all: to `key` in `forth/010-lib.fth`,
 and in this file to the eleven code words named in the first row, to
-the fourteen recompiled words, to `find`, and once for `over`. The one
-for `over` does not reach the library's `over`: by then the file has
-defined its own immediate `over`, which `'` finds, so the jump is
-written into that wrapper, and the library's `over`
-(`>r dup r> swap`) is left as it was **[measured]** (after the file is
-loaded its first byte is still `6A`; every other target's is `E9`).
-Words compiled in the library that call `over` keep running that
-definition. The comment above the line in the file says otherwise.
+the fourteen recompiled words, to `find`, and once for `over`. By the
+time `over` is redirected the file has defined its own immediate
+`over`, which `'` would find, so the redirect names the library's word
+through `seed-over`, the constant taken before that definition. After
+the file is loaded every target's first byte is `E9` **[measured]**.
 
 The hash walk (`fh-insert`, `fh-index`, `fh-find`) is Forth: 4,096
 8-byte buckets, 16-byte nodes of a link and a header address, header

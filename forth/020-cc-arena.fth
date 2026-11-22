@@ -189,7 +189,8 @@ variable code-start
 \ The return stack is the x86 stack and holds cells too, the low half
 \ nearest esp, so inline >r, r> and r@ are two pushes, two pops and two
 \ loads from [esp].  Interpreted, they must not add a call frame of their
-\ own, so they end in a jump to the seed's word (jmp-xt,).
+\ own, so they end in a jump to the word they replace (jmp-xt,): the
+\ seed's >r and r>, the library's r@.
 : jmp-xt,  ( xt -- )
   c{ e9 } here 4 + - ,4 ;                                   \ jmp rel32
 ' >r constant seed->r
@@ -249,7 +250,8 @@ variable code-start
 ' alpha-upper? code: alpha-upper?  here code-start !  65 26 in-range,  code-start @ native!
 \ The rest of 010-lib.fth's hot words, compiled again from the same text
 \ so the copies above take effect, and the old bodies sent to the new ones.
-' over code: over  here code-start !
+\ over's old body is seed-over: ' over would find the immediate over above.
+seed-over code: over  here code-start !
   over, ret,  code-start @ native!
 ' over constant native-over
 : over  compiling? if, over, else, native-over execute then, ; immediate
