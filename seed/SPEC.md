@@ -88,7 +88,7 @@ bytes), then the program. No section headers. 84 bytes in 28 fields.
 | `e_shoff`, `e_flags` | 0 | |
 | `e_ehsize` | 52 | |
 | `e_phentsize` | 32 | Linux requires it; builder-hex0 steps by 0x20 without reading it (B2:1747) |
-| `e_phnum` | 1 | builder-hex0 copies every program header's bytes whatever its type (B2:1739-1749) and takes the break from the last (B2:1767) |
+| `e_phnum` | 1 | builder-hex0 copies every program header's bytes whatever its type (B2:1739-1750) and takes the break from the last (B2:1767) |
 | `e_shentsize`, `e_shnum`, `e_shstrndx` | 0 | |
 | `p_type` | 1 (`PT_LOAD`) | Linux; builder-hex0 does not read it |
 | `p_offset` | 0 | the checker takes file offset N as address 0x08048000 + N |
@@ -112,21 +112,23 @@ bytes, so that it ends below 0x08049000 (section 3).
   break is plain RAM that reads and writes (P§2).
 
 So on both kernels every byte from the end of the file to 0x0A048000
-reads as zero at entry. On builder-hex0 the break starts about 28 MiB
-below the image's end, inside the dictionary space, and growing the break
+reads as zero at entry. On builder-hex0 the break starts about 31.9 MiB
+below the image's end (at 0x080684A7 for this 1,191-byte file), inside
+the dictionary space, and growing the break
 zeroes everything from the old break to the new (B2:1435-1441, P§2).
 Section 3.2 deals with that.
 
 Why 32 MiB: the library never asks the kernel for the megabyte buffers it
 creates in the dictionary (`cc/030-cc-io.fth`: the input, source and
-output buffers). When the size was chosen, the compile of the first tcc
-on the x86-64 seed of that tag left HERE 9.01 MiB above its load address
-**[measured]** (Appendix C), and this seed's compiled calls and returns
-are longer (section 8). With this document's layout the same compile
-ended 9.00 MiB above the initial HERE **[measured]**
-(`forth/CONTRACT.md`, section 9).
+output buffers, 4 MiB together). When the size was chosen, the compile
+of the first tcc on the x86-64 seed of tag `experiments-2026-11-21` left
+HERE 9.01 MiB above its load address (Appendix C), and this seed's
+compiled calls and returns are longer (section 8). On this seed and this
+tree the same compile ends with HERE 8.85 MiB above the initial HERE
+**[measured]** (`forth/CONTRACT.md`, section 9).
 32 MiB costs nothing on Linux and about 18 ms of zeroing on builder-hex0
-(2.1 cycles per byte, P§2).
+(computed from P§2's 2.1 cycles per byte at 3792.8 MHz; the seed's own
+`brk` was not timed).
 
 Zero fill is an interface: the library relies on untouched memory reading
 as zero. The seed MUST NOT write anywhere outside the regions of section
@@ -188,7 +190,7 @@ are an interface, in this order, 8 bytes each:
 
 | offset | name | content | depended on by |
 |---|---|---|---|
-| +0 | STATE | 0 interpreting, 1 compiling | `forth/010-lib.fth` (`constant`, `create`, `defer`, `interpret`, `hex-lay`) and `forth/020-cc-arena.fth` (`code:`, `compiling?`); the library stores a whole cell of 0 |
+| +0 | STATE | 0 interpreting, 1 compiling | `forth/010-lib.fth` (`constant`, `create`, `defer`, `interpret`, `hex-lay`, `[lit]`) and `forth/020-cc-arena.fth` (`code:`, `compiling?`, `constant`, `create`); the library stores a whole cell of 0 |
 | +8 | LATEST | address of the newest dictionary header | `forth/010-lib.fth` (`latest`, `immediate`); `forth/020-cc-arena.fth` (`fh-find`) |
 | +16 | HERE | address of the first free dictionary byte | `forth/010-lib.fth` (`here-addr`, `here`, `,`, `c,`, `allot`, `native!`); `forth/020-cc-arena.fth` (`rel32!`) |
 | +24 | LAST_FOUND | address of the header `find` matched last | `forth/010-lib.fth` (`found-immediate?`: `latest 16 +`); `forth/020-cc-arena.fth` (`fh-find` stores it) |
@@ -206,8 +208,9 @@ Rules for all six:
 - STATE and LAST_FOUND start as 0. INPUT is set once, to the descriptor
   `open` returned for FILE. ARGV is set once and never read by the seed.
 - A value in an address cell is at most 32 bits. ARGV's can be above
-  2^31 on Linux, where the stack is near 0xFFFFD000: it MUST be stored
-  zero-extended, not sign-extended.
+  2^31 on Linux, where the stack of a 32-bit program lies just below
+  2^32 (ARGV was 0xFFEE3E74, 0xFFDEB474 and 0xFFAD5514 in three runs
+  **[measured]**): it MUST be stored zero-extended, not sign-extended.
 
 The rest of the page:
 
@@ -391,8 +394,9 @@ because `-`, `and` and `+` work on all 64 bits and the return cell's high
 half is 0.
 
 A fifth case comes from `forth/020-cc-arena.fth` (`jmp-xt,` and its
-`>r`, `r>` and `r@`): a word defined in Forth that ends in a jump
-(`E9 rel32`) to the seed's `>r` or `r>`. When
+`>r` and `r>`): a word defined in Forth that ends in a jump
+(`E9 rel32`) to the seed's `>r` or `r>`. (Its `r@` ends in a jump to the
+library's `r@`; the seed has none.) When
 the library's interpreter executes it, the return stack holds one cell,
 the return into the interpreter. The jump adds none, so the seed's `>r`
 takes that cell for its own return address, puts n under it and returns
@@ -438,8 +442,8 @@ Exactly these 21 names MUST be present, and no others:
     dup drop swap >r r>   @ ! c@ c!   + * / nand 0=
     key token find   syscall6   state : ;
 
-All 21 are used by the files the route loads **[measured]**: Appendix C
-has the counts.
+All 21 names occur in the files the route loads **[measured]**:
+Appendix C has the counts.
 
 ## 7. The 21 words
 
@@ -471,13 +475,14 @@ return stack. Every word except `;` has flags 0.
 low half is the low 32 bits of aL·bL, and its high half is the high 32
 bits of aL·bL, plus aL·bH, plus aH·bL, modulo 2^32. The term aH·bH never
 reaches the low 64 bits. So the forms needed are one 32×32→64 unsigned
-multiply and two 32×32→32 multiplies. In the first-tcc compile
-**[measured]**, 443,827 of 3,234,871 multiplies had an operand of 2^32 or
-more, 127,305 wrapped past 64 bits, and none had both operands at or
-above 2^32; 143 multiplied by 2^64 - 1.
+multiply and two 32×32→32 multiplies. In the first-tcc compile counted
+for Appendix C (on the tree of tag `experiments-2026-11-21`, not
+repeated on this one), 443,827 of 3,234,871 multiplies had an operand of
+2^32 or more, 127,305 wrapped past 64 bits, and none had both operands
+at or above 2^32.
 
-**Divide.** MUST be exact for the whole range. The forms that occur
-**[measured]**:
+**Divide.** MUST be exact for the whole range. The forms that occurred
+in the same count (Appendix C):
 
 - a divisor below 2^32 with a dividend of 2^32 or more and a quotient of
   2^32 or more: 45,061 of 1,054,373 divides in the first-tcc compile.
@@ -502,7 +507,7 @@ vector 0 has no handler.
 code compiles calls to these two words and lays no multiply or divide
 instruction of its own (`forth/CONTRACT.md`, section 2), so their speed
 matters a little: about a million divides and three million multiplies
-per compile.
+in the first-tcc compile of Appendix C.
 
 Edge cases the library builds on:
 
@@ -673,8 +678,9 @@ decodes them, or types a seed address in.
 
 `native!` writes its 4 displacement bytes with `,4`, which divides by 256
 between bytes. So `/` cannot itself be patched this way, nor any word
-`,4` runs: the half-written jump would be executed **[measured]** (it
-crashed the instrumented run of Appendix C). No file does.
+`,4` runs (`dup`, `c,` and what `c,` is built from): the half-written
+jump would be executed. No file does: the words given to `native!` are
+listed in `forth/CONTRACT.md`, section 4.2.
 
 ## 8. What the compiler lays down
 
@@ -778,14 +784,14 @@ Every row was measured (P§n) unless marked "read".
 | descriptor 0 is the disk stream, with no end of file | P§5 | 1, 7.2 |
 | `open` of a missing file returns -1, not an errno | P§5 | 4.3: the sign bit is the test |
 | descriptors start at 4; 448 slots per process, not bounds-checked (read, B2:98, 1077-1085) | P§5 | the seed opens one file; the library closes each included file |
-| `read` of a file returns the bytes asked for, and 0 at its end | P§5 | 7.2 |
-| descriptors 1 and 2 write to the console | P§5, B2:1470 | 9.3 |
+| `read` of a file returns the bytes it has, up to the count asked for, and 0 at its end | P§5 | 7.2 |
+| descriptors 0 to 2 write to the console | P§5 (0 and 2 written to), B2:1470 | 9.3 |
 | registers are zero at entry; `argc`, `argv`, null, `envp` on the stack; no auxv | P§4 | 4.3: nothing assumed of the registers |
 | interrupts are enabled in a program the shell starts and disabled in one a program starts; none was seen delivered | P§6 | nothing live below esp covers either case |
 | an argument longer than 255 bytes is cut and runs into its neighbour | P§4 | the boot's commands keep to 255 bytes (`forth/CONTRACT.md`, section 7.2) |
 | `execve` of a missing file stops the machine | P§4 | the boot runs the seed only after `hex0` has built it (the same) |
 | `fork` followed by `exit` without `execve` loses the parent | P§3 | the seed never forks |
-| the internal shell passes one argument | P§ "List format", B2:2439-2457 | the seed is started by kaem-optional-seed, which passes many |
+| the internal shell passes one argument | P§4, B2:2439-2457 | the seed is started by kaem-optional-seed, which passes many |
 | the built-in `hex0` has no end-of-file test inside a comment (read, B2:2361-2368) | | 12, rule 2 |
 
 ## 11. What is not required
@@ -825,11 +831,14 @@ Not free, although they look like shortcuts:
 The source is hex0 that three readers must turn into the same bytes:
 stage0-posix's `hex0-seed`, builder-hex0's built-in `hex0`, and the
 checker. The first two share these rules (B2:2308-2393;
-`vendor/stage0-posix/AMD64/hex0_AMD64.hex0:79-133`): `#` or `;` starts a
+`vendor/stage0-posix/AMD64/hex0_AMD64.hex0:79-150`): `#` or `;` starts a
 comment that runs to the next LF (the checker accepts only `;` after the
 bytes of a line, though hex0 takes either); outside comments the characters
 `0-9A-Fa-f` are hex digits, taken two at a time, and every other
-character is ignored.
+character is ignored. One difference: hex0-seed also takes `G` and `g`
+as a digit, of value 16 **[measured]** (`41 G0 g1 42` assembles to
+`41 00 01 42`), and builder-hex0 ignores them. Rule 1 keeps both
+letters out of the byte lines.
 
 The checker is `tests/seed/asm-check.py`. It assembles the comments with
 `as --32`, and with `llvm-mc -triple=i386-unknown-linux-gnu` when
@@ -837,10 +846,10 @@ installed, and requires both to write the bytes the hex gives. Its
 rules:
 
 1. **Lines.** Each line is blank, a comment starting with `;` or `#`, or
-   pairs of hex digits (either case, spaces allowed between pairs)
-   optionally followed by `;` and a comment. Anything else stops the
-   check. One field or one instruction per byte line. A pair never spans
-   two lines.
+   pairs of hex digits (either case, whitespace allowed between pairs
+   but not inside one) followed by `;` and a comment. Anything else
+   stops the check. One field or one instruction per byte line. A pair
+   never spans two lines.
 2. **Bytes of the file.** ASCII only; lines end with LF, with no CR; the
    last byte of the file is LF. The last rule is not cosmetic:
    builder-hex0's comment loop reads until LF and does not test for end
@@ -857,16 +866,24 @@ rules:
    `FIELD = VALUE`, where VALUE is a number, one of `ELFCLASS32`,
    `ELFDATA2LSB`, `EV_CURRENT`, `ELFOSABI_NONE`, `ET_EXEC`, `EM_386`,
    `PT_LOAD`, `R|W|X`, or for the magic exactly `magic "\x7fELF"`; the
-   padding line's comment is exactly `e_ident padding (7 zero bytes)`.
+   padding line's comment is `e_ident padding (7 zero bytes)` (the
+   checker also takes `e_ident padding = 0`). A named constant is
+   checked by its value only, not against the field it stands on.
    Optional notes in parentheses after the value: `(_start)` on
    `e_entry` (then a routine named `_start` must be the entry),
-   `(the whole file)` on `p_filesz`, `(32 MiB ...)` on `p_memsz`,
-   `(no section headers)`, `(little-endian)`, `(System V)`. Any other
-   note fails. The checker also requires the values of section 2, and a
-   file of at most 4096 bytes.
+   `(the whole file)` on `p_filesz`, `(32 MiB ...)` on `p_memsz`, and on
+   any field `(no section headers)`, `(little-endian)`, `(System V)`,
+   which are not checked. Any other complete parenthesised note fails;
+   text after the value that is not one is not read. The checker also
+   requires the values of section 2, and an image of at most 4096
+   bytes.
 4. **No raw data elsewhere.** After the ELF fields every byte line is a
    dictionary header field or an instruction. A constant such as `?` and
-   newline has to be an immediate operand.
+   newline has to be an immediate operand. The checker does not enforce
+   this: it hands the comment to the assemblers as written, so a
+   directive (`3F ; .byte 0x3F`) assembles to its bytes and passes
+   **[measured]**. The rule is kept by reading; the file has no such
+   line.
 5. **The memory map**, in comment lines:
    - regions as `;;   0x0NNNNNNN = description` (eight uppercase hex
      digits). One description MUST start with each of `data-stack base`,
@@ -888,9 +905,9 @@ rules:
    file offset NNN (uppercase hex, no load address added); `;; .name:`
    (lower-case letters and underscores) is a label local to the last
    routine. The stated offset must be the offset of the next byte line.
-   A `;;` line that contains ` @ 0x`, starts with `;; ---`, or looks like
-   `.name:` and does not match a pattern fails, except lines starting
-   `;; =====`. Routine names become assembler symbols: keep them plain
+   Any comment line that contains ` @ 0x`, starts with `;; ---`, or is
+   only `;; .name` with or without the colon, and does not match a
+   pattern fails, except lines starting `;; =====`. Routine names become assembler symbols: keep them plain
    identifiers that are not register names and not the sysvar names.
 7. **Instructions.** The comment up to its second `;` is the instruction
    in Intel syntax with NASM's `byte [`, `word [`, `dword [` (rewritten
@@ -898,15 +915,22 @@ rules:
    instruction part the only parentheses allowed are the notes of rules
    8 and 9. The bytes must be the encoding GNU as chooses for that text,
    and llvm-mc must choose the same.
-   - **The `xchg` trap.** The two assemblers differ on register-to-register
-     `xchg` when neither register is eax: `xchg ebx, ecx` is `87 CB` from
-     as and `87 D9` from llvm-mc **[measured]**, and each gives the other
-     bytes for `xchg ecx, ebx`. The checker allows no exception, so such
-     an `xchg` cannot pass. `xchg` with eax (the one-byte `90+r` form)
-     and `xchg` between a register and memory both pass **[measured]**.
-   - A `call`, `jmp` or conditional jump takes a label or a 32-bit
-     register. Use only `call`, `jmp`, `jcc` and `ret` to transfer
-     control.
+   - **The `xchg` trap.** The two assemblers differ on `xchg` between
+     two 32-bit registers when neither is eax: `xchg ebx, ecx` is
+     `87 CB` from as and `87 D9` from llvm-mc **[measured]**, and each
+     gives the other bytes for `xchg ecx, ebx`. The checker allows no
+     exception, so such an `xchg` cannot pass. `xchg` with eax (the
+     one-byte `90+r` form) and `xchg` between a register and memory both
+     pass **[measured]**. Two 8-bit registers differ even with al
+     (`xchg al, bl`: `86 D8` and `86 C3`); the file has none.
+   - A `call` or `jmp` takes a label or a 32-bit register, a
+     conditional jump a label. Use only `call`, `jmp`, `jcc` and `ret`
+     to transfer control, with the mnemonic in lower case. The checker
+     rejects the other transfers it knows by name (`loop`, `jcxz`,
+     `retf`, `iret`, `syscall`, `enter`, `leave` and their kin) and
+     matches names in lower case only: an upper-case `JMP`, or an
+     instruction outside its list such as `int3` or `ud2`, passes it
+     **[measured]**. The file has neither.
 8. **Branch notes.** A branch or call to a label carries
    `(rel8 = 0xA - 0xB)` or `(rel32 = 0xA - 0xB)`: A the target's file
    offset, B the offset just past the line, and A - B the displacement
@@ -918,8 +942,11 @@ rules:
    NAME's header offset. The note comes last in the instruction part.
 10. **LATEST.** The initial LATEST MUST be set by an instruction written
     exactly as `mov dword [LATEST], 0x0804NNNN (NAME header)`; the chain
-    walk starts from the first such line. NAME cannot be `;`, because the
-    comment is split at `;` first.
+    walk starts from the first such line. NAME must be the last header
+    in the file, and the walk must reach every header once, in reverse
+    file order, and end at a link of 0; the names must be exactly the 21
+    of section 6.2. NAME cannot be `;`, because the comment is split at
+    `;` first.
 11. **Dictionary headers.** `;; --- NAME @ 0xNNN --- header`, with
     `  IMMEDIATE` (two spaces) appended for an immediate word, then
     exactly four byte lines:
@@ -929,18 +956,32 @@ rules:
     and then at once a routine heading at header offset + 10 + N.
     PREVNAME is the header before this one in the file.
 12. **The convention.** Checked from the text, as far as text can show
-    it: a `call` whose operand is a register, or the routine heading that
-    directly follows a dictionary header, MUST come directly after a line
-    `push 0`; and between a dictionary header and the next heading of
-    either kind there MUST be no bare `ret`, only `ret 4`. A routine with
-    its own heading that is not a word's code may end in `ret`.
-13. **The image.** If `./seed-forth` exists it must equal the bytes
+    it: a `call` whose operand is a register, or is the routine whose
+    heading directly follows a dictionary header (a word's code), MUST
+    have `push 0`, written so, as the byte line before it; comment and
+    label lines may stand between. Between a dictionary header and the
+    next heading of either kind there MUST be no `ret` but `ret 4`. A
+    routine with its own heading that is not a word's code may end in
+    `ret`.
+13. **The image.** When the file checked is `seed/000-seed.hex0` and
+    `seed-forth` exists at the repository root, it must equal the bytes
     as the script reads them.
+
+Where a rule shows a number of spaces, the checker takes any run of
+whitespace, except the two spaces before `IMMEDIATE`.
 
 **The file's bytes are frozen.** Its comments change only to keep a
 path or a cross-reference true: every comment is stripped before the
-bytes are read, so such an edit leaves the image as it is, and check 13
-above holds it to that.
+bytes are read, so such an edit leaves the image as it is. No check
+holds the bytes to a pinned hash. `./check-all.sh` step 01 rebuilds
+`seed-forth` from the file and then tests its size (1,191 bytes), the
+assemblers' agreement with the comments, and check 13, which shows that
+hex0-seed and the checker read the same bytes from the file; steps 14
+and 15 compare builder-hex0's assembly with the host's. The image this
+document describes is sha256
+`b5f70ffb4ae44a83558d271915e1e9d7ef0af33d57cd91fd3ea762959450652d`
+(`sha256sum seed-forth` after `seed/build.sh`), which is how to confirm
+that an edit to a comment changed nothing.
 
 ## 13. Acceptance
 
@@ -956,7 +997,7 @@ These need only the seed.
 | `seed/build.sh` | 01 | hex0-seed assembles the file into `./seed-forth`, 1,191 bytes |
 | `python3 tests/seed/asm-check.py` | 01 | section 12 |
 | `tests/seed/test.sh` | 02 | the cases below; all pass |
-| `tests/seed/test.sh --strace` | 03 | the same cases under `strace -f` (`tests/seed/strace-check.py`): the only calls are `brk`, `open`, `read`, `write` and `exit`; `open` once per case, twice in the two cases that open a second file through `syscall6`, and not at all with no argument; no `read` of descriptor 0; every `read` has count 1; no `brk` below the current break |
+| `tests/seed/test.sh --strace` | 03 | the same cases under `strace -f` (`tests/seed/strace-check.py`): the only calls are `brk`, `open`, `read`, `write` and `exit`; `open` once per case, twice in the two cases whose own Forth calls `open` through `syscall6` (the INPUT case and the failed `open`), and not at all with no argument; no `read` of descriptor 0; every `read` has count 1; no `brk` below the current break |
 | `tests/seed/boot-check.sh` | 14 | builder-hex0's built-in `hex0` assembles the same source in a boot, the result equals the host's `./seed-forth`, and it runs there |
 
 The cases of `tests/seed/test.sh`, 76 of them. Each puts seed-level
@@ -1019,13 +1060,12 @@ token of 256 bytes or more, and the two that give the seed no file. For
 those the expectation rests on this document and on the seed.
 
 Until tag `experiments-2026-11-21` the second opinion was the x86-64
-seed: 65 of the 76 cases ran on both seeds and had to print the same
-bytes.
+seed, run on the same text; `tinycc/README.md` at that tag gives 65 of
+the 76 cases as run on both seeds.
 
 Judge every case by its output as well as its exit status. A broken
 primitive can make the outer loop read the next token as the end of
-input and exit 0 (a broken `0=` did this to the host's vector check), so
-a case whose expected output is empty, judged by its exit status alone,
+input and exit 0, so a case whose expected output is empty, judged by its exit status alone,
 proves little. Each case SHOULD print a last line after its last test,
 and the script require it. `tests/seed/test.sh` compares each case's
 whole output, so this holds wherever a case's expected output is not
@@ -1059,11 +1099,13 @@ without it. kaem has its own pin, `tinycc/kaem`.
 The seed's bytes are frozen. If they ever change:
 
 - `check-all.sh` step 01 tests the size, 1,191 bytes; `README.md`,
-  `seed/README.md` and `tinycc/README.md` state it, and `tinycc/README.md`
-  and `forth/CONTRACT.md`, section 9, the sha256 `b5f70ffb…`.
-- No file under `tests/pins/` holds the seed's hash, and none needs to:
-  the boot compares the two assemblies of it with each other (steps 14
-  and 15).
+  `CLAUDE.md`, `seed/README.md` and `tinycc/README.md` state it, and
+  `CLAUDE.md`, `tinycc/README.md` and `forth/CONTRACT.md`, section 9,
+  the sha256 `b5f70ffb…`.
+- No file under `tests/pins/` holds the seed's hash, and no check
+  compares it: the boot compares the two assemblies of the seed with
+  each other (steps 14 and 15), which a change to the source moves
+  together. The hash is in section 12.
 - No pin of `tests/pins/tinycc.sha256` depends on the seed's bytes; all
   depend on its behaviour.
 - The book, a separate project, quotes `seed/000-seed.hex0`,
@@ -1085,9 +1127,10 @@ each has to be right by reading the code against this document:
 - nothing kept below esp. Linux writes nothing there, and on
   builder-hex0 a violation shows only if the bytes are read back after a
   call.
-- esi saved across `int 0x80` in the seed's own `read`, `open` and
-  `brk`. builder-hex0 was measured to preserve it for those three (P§1),
-  so a seed that relies on that passes.
+- esi saved across `int 0x80` in `key`'s `read`. builder-hex0 was
+  measured to preserve ebx to ebp across `read` (P§1), and Linux
+  preserves them, so a seed that relies on that passes. (The seed's
+  `brk` and `open` are made at entry, before esi holds anything.)
 - the high half of INPUT, ARGV, LATEST, HERE and LAST_FOUND being 0, and
   the `push 0` being 0 and not some other value, beyond what the first
   tcc's bytes happen to depend on.
@@ -1108,7 +1151,7 @@ each has to be right by reading the code against this document:
 What `forth/010-lib.fth`, `forth/020-cc-arena.fth` and the later layers
 rely on in the seed, and the section that specifies each. (This appendix
 used to map the x86-64 seed's interface onto this one; that table is in
-this file at tag `experiments-2026-11-21`.)
+`seed/i386/SPEC.md` at tag `experiments-2026-11-21`.)
 
 | interface | here |
 |---|---|
@@ -1198,42 +1241,53 @@ seed the text exits 0, and with one expectation made wrong it exits 1
 
 ## Appendix C. Measurements
 
-These were made before the seed existed, to size it and to find out
-what its `*` and `/` have to handle: on the host, with the x86-64 seed
-and library of tag `experiments-2026-11-21` and the i386 back end loaded
-over that tree's compiler, in a scratch copy at commit 47d0d5b. The
-compiler's files have been folded and renamed since, so the counts
-describe that tree. None has been repeated on this seed except where
-`forth/CONTRACT.md`, section 9, says so.
+Two kinds. The count of the 21 words was taken on this tree. Everything
+after it was measured before the seed existed, to size it and to find
+out what its `*` and `/` have to handle: on the host, with the x86-64
+seed and library of tag `experiments-2026-11-21` and the i386 back end
+loaded over that tree's compiler, in a scratch copy at commit 47d0d5b.
+The compiler's files have been folded and renamed since, so those
+numbers describe that tree, and none of them has been repeated on this
+seed. What was measured again on this seed and this tree is in
+`forth/CONTRACT.md`, section 9.
 
-**The first tcc built as pinned**: `92d11438…`, 975,624 bytes, in
-0.46 s.
+**Uses of the 21 words** **[measured]** on this tree: tokens equal to
+the name, outside `\` comments (a `( )` comment is not skipped, so a
+name in a stack comment counts), in `forth/010-lib.fth`, in
+`forth/020-cc-arena.fth`, and in `forth/layers.fth`, the `cc/` files it
+lists, the two drivers and the two jobs of `tinycc/` together. From its
+line 136 on, `forth/020-cc-arena.fth` defines words of its own under
+most of these names, so a token in the third column usually names that
+word, which is built on the seed's.
 
-**Uses of the 21 words** in that load set (tokens outside `\` comments):
-
-| word | the library (010) | the arena file (020) | the other layers and the drivers |
+| word | the library (010) | the arena file (020) | the other layers, the drivers and the jobs |
 |---|---:|---:|---:|
-| `dup` | 37 | 21 | 631 |
-| `drop` | 14 | 11 | 441 |
-| `swap` | 33 | 31 | 282 |
-| `>r` | 14 | 12 | 222 |
-| `r>` | 15 | 14 | 239 |
-| `@` | 15 | 50 | 1844 |
-| `!` | 15 | 43 | 889 |
-| `c@` | 12 | 8 | 67 |
-| `c!` | 5 | 4 | 27 |
-| `+` | 25 | 37 | 341 |
-| `*` | 2 | 7 | 159 |
-| `/` | 11 | 5 | 103 |
+| `dup` | 45 | 21 | 430 |
+| `drop` | 19 | 11 | 285 |
+| `swap` | 37 | 29 | 217 |
+| `>r` | 15 | 11 | 175 |
+| `r>` | 16 | 13 | 189 |
+| `@` | 25 | 41 | 1188 |
+| `!` | 19 | 37 | 628 |
+| `c@` | 14 | 7 | 50 |
+| `c!` | 6 | 3 | 16 |
+| `+` | 33 | 34 | 248 |
+| `*` | 6 | 5 | 112 |
+| `/` | 12 | 3 | 69 |
 | `nand` | 6 | 2 | 1 |
-| `0=` | 22 | 12 | 277 |
-| `key` | 1 | 1 | 0 |
-| `token` | 4 | 0 | 1 |
+| `0=` | 23 | 13 | 193 |
+| `key` | 2 | 0 | 2 |
+| `token` | 5 | 0 | 1 |
 | `find` | 2 | 1 | 0 |
-| `syscall6` | 5 | 2 | 1 |
-| `state` | 10 | 4 | 0 |
-| `:` | 92 | 99 | 936 |
-| `;` | 89 | 95 | 960 |
+| `syscall6` | 6 | 0 | 0 |
+| `state` | 11 | 4 | 0 |
+| `:` | 102 | 96 | 584 |
+| `;` | 99 | 92 | 633 |
+
+The rest is the tag's tree.
+
+**The first tcc built as pinned** there: `92d11438…`, 975,624 bytes, in
+0.46 s.
 
 **Multiply and divide.** A copy of that tree's 020 had its inline `*`
 and `/` removed and, early in the file, the seed's `*` and `/`
@@ -1277,8 +1331,10 @@ keeps its hash. This seed's dictionary differs from that one's in every
 address and size, and it reproduced the pins of section 13.2, which
 confirms it.
 
-**Assemblers.** GNU as 2.47 and llvm-mc 23.1.5 in 32-bit mode write the
-same bytes for every instruction form this document and
-`forth/CONTRACT.md` name, including operands that are assembler
-constants (`mov eax, [HERE]`), except register-to-register `xchg` without
-eax (section 12, rule 7).
+**Assemblers** **[measured]** on this tree. GNU as 2.47 and llvm-mc
+23.1.5 in 32-bit mode write the same bytes for every instruction line of
+`seed/000-seed.hex0` (`tests/seed/asm-check.py`: 343 instructions, 840
+bytes) and of the two files of `forth/` (`tests/forth/asm-check.py`),
+including operands that are assembler constants (`mov eax, [HERE]`).
+They differ on register-to-register `xchg` without eax (section 12,
+rule 7), which no line uses.
