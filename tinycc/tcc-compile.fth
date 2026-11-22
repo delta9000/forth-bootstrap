@@ -3,8 +3,9 @@
 \ From seed-forth's tools/tcc-compile.fth (commit 550a0c5, on
 \ origin/qemu-final), with the output path changed from
 \ build-out/tcc-seed.partial.  Loaded after
-\ forth/010-lib.fth and the compiler layers 020 to 119 (without 081, which
-\ native mode does not call); tinycc/build-first-tcc.sh gives the list.
+\ forth/010-lib.fth and the compiler layers 020 to 119 (without 081, 114
+\ and 116, which native mode does not call); tinycc/build-first-tcc.sh
+\ gives the list.
 \ The bytes after it on stdin are exactly build-out/tcc-sources/direct-input.c.
 \ Forth does all the preprocessing and emits one complete static x86_64 ELF:
 \ no assembler, linker or host C compiler takes part.

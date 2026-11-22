@@ -2,15 +2,18 @@
 
 A C compiler written in Forth, loaded into the seed after
 `forth/010-lib.fth` in numeric order (`compiler-layers.sh` prints the
-order).  Files 020 to 120 are the core: arena and buffers, preprocessor,
-lexer, types and symbols, ELF output and code generation, expressions,
-declarations, statements, functions and the entry word `cc-main`, which
-reads C on stdin and writes an executable.  115, 117, 118 and 119 add
-native mode (LP64 storage with a private calling convention), and 121 to
-141 the
-System V target that GCC's sources need: relocatable objects, calls,
-the runtime, target headers, constant expressions, varargs, floating
-values, bitfields, records passed by value, the linker and archives.
+order).  Files 020 to 112 are the core every mode loads: arena and
+buffers, preprocessor, lexer, types and symbols, ELF output and code
+generation, expressions, what declarations share, and statements.  From
+there each mode has its own layers.  114, 116 and 120 are the C subset
+that compiles M2-Planet, each value in an 8-byte slot: its declarations
+and functions, its file-scope forms, libc shims and driver, and the entry
+word `cc-main`, which reads C on stdin and writes an executable.  115,
+117, 118 and 119 are native mode (LP64 storage with a private calling
+convention), which loads neither 114 nor 116.  121 to 141 add the System V
+target that GCC's sources need: relocatable objects, calls, the runtime,
+target headers, constant expressions, varargs, floating values,
+bitfields, records passed by value, the linker and archives.
 `i386/` holds a second native back end, for i386 with ILP32 types: files
 loaded between the layers above (`i386/layers.sh` prints the order), each
 redefining the machine words of the layer before it for the layers after

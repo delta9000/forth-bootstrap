@@ -2,7 +2,7 @@
 \ preparation tool against M2libc (tinycc/build-tools.sh).
 \
 \ Loaded after forth/010-lib.fth, the compiler layers 020 to 119 (without
-\ 081) and two definitions that name the tool:
+\ 081, 114 and 116) and two definitions that name the tool:
 \     create tool-output s, build-out/tinycc/bin/NAME [lit] 0 c,
 \     create tool-source s, PATH  tool-source [lit] LENGTH cc-prep-source-name
 \ (build-tools.sh prints them with bash's printf; tinycc/tools/catm.fth has

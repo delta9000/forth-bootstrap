@@ -14,7 +14,8 @@ pin is in `tests/pins/tinycc.sha256`.  Two checkouts at different paths
 built the same bytes.
 
 seed-forth is the only program that compiles anything.  It reads
-`forth/010-lib.fth`, the compiler layers 020 to 119 without 081,
+`forth/010-lib.fth`, the compiler layers 020 to 119 without 081, 114 and
+116 (object files, and the functions and driver of the M2-Planet subset),
 `tinycc/tcc-compile.fth` and `build-out/tcc-sources/direct-input.c`.  The
 layers are loaded in native mode (`cc/115`, `117`-`119`): LP64 types,
 float and double as 8-byte bit patterns, and a complete static ELF written
@@ -56,7 +57,7 @@ The source it compiles:
 `tinycc/build-tools.sh` (run by `build-first-tcc.sh`) builds the programs
 that check, unpack and patch the sources, with no host compiler.
 seed-forth compiles each in native mode, as it compiles the first tcc
-(layers 020 to 119), against stage0-posix's M2libc
+(the same layers), against stage0-posix's M2libc
 (`vendor/stage0-posix/M2libc`, in the repository):
 
 | program | source |
@@ -147,8 +148,11 @@ Host programs left, from `strace -f -e trace=execve`:
   seed-built tools, and nothing from the host.
 - `tools/fetch-archives.py` (python3) downloads the archives.
 
-This route uses only the compiler layers 020 to 119 in native mode: not
-seed-cc, the layers 120 and up, or `chain/runtime/gcc-seed`.
+This route uses only the native-mode layers named above: not seed-cc,
+`cc/081`, `114`, `116`, the layers 120 and up, or
+`chain/runtime/gcc-seed`.  (The recipe runner and `hex0-disk` of the hex0
+hand-off are compiled in the M2-Planet subset's mode and do load 114, 116
+and 120.)
 
 ## The junction
 
@@ -329,7 +333,10 @@ Checks, all on the host through its IA32 support (`CHECK_I386=1
   write past the end of a file and only grow the newest file.
 - `tests/cc/i386/run-corpus.sh`: small C programs compiled by the i386
   back end and by gcc `-m32` print the same lines.  They cover what the
-  pins cannot see: the high halves of `long long` values.
+  pins cannot see: the high halves of `long long` values.  Its `die-N-*.c`
+  must be refused with error N: a `long long` division, and what only the
+  object target's layers compile (`__LINE__`, a bitfield, arithmetic on a
+  double, a struct passed by value).
 - `tests/cc/i386/asm-check.py` and `tests/cc/i386/x86-64-bytes-check.sh`:
   the encoders' bytes equal GNU as on their comments, and no x86-64
   encoder of `cc/090-cc-emit.fth` or REX prefix of a later layer is
