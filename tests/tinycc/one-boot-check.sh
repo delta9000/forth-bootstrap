@@ -14,7 +14,7 @@
 #   1. builder-hex0's built-in hex0 assembles /seed-forth and
 #      /kaem-optional-seed;
 #   2. kaem-optional-seed runs /boot/seed.kaem: the seed compiles
-#      vendor/mescc-tools/Kaem into /x86/bin/kaem (eight arguments), and
+#      vendor/mescc-tools/Kaem into /x86/bin/kaem (its name and seven arguments), and
 #      that kaem runs /kaem.run;
 #   3. the seed compiles the eleven tools; they check and unpack the
 #      archives and prepare the first tcc's sources; the seed compiles the

@@ -3,7 +3,7 @@
 \ table.  Loaded after 010-lib.fth and 020-cc-arena.fth.
 \
 \ Four responsibilities:
-\   A. Slurp stdin into the 1 MiB cc-in-buf.  The preprocessor (040) turns
+\   A. Read the input files into the 1 MiB cc-in-buf.  The preprocessor (040) turns
 \      it into the 2 MiB cc-src-buf, which the lexer walks via peek/next.
 \   B. Accumulate the output ELF into cc-out-buf via emit-byte / 4le / 8le
 \      with patch-byte / patch-4le for back-fixups.
@@ -19,7 +19,7 @@
 \ A. Input buffer, source buffer + reader
 \ ===========================================================================
 
-\ cc-in-buf holds stdin exactly as read; nothing but the preprocessor reads it.
+\ cc-in-buf holds the input files exactly as read; nothing but the preprocessor reads it.
 1048576 constant cc-in-cap
 create cc-in-buf cc-in-cap allot
 variable cc-in-len

@@ -26,8 +26,10 @@ one-boot.kaem  /kaem.run, in this order:
           first tcc to /usr/bin/tcc-mes;
       live-bootstrap's text, cut from steps/mes-0.28/pass1.kaem and
           steps/tcc-0.9.26/pass1.kaem (build-out/tinycc/lb/) at marker
-          lines that must each occur once: the lines tinycc/lb-replay.sh
-          runs on the host.  Of mes-0.28, the unpacking and the header
+          lines that must each occur once: the markers
+          tinycc/lb-replay.sh cuts at on the host, except that the boot
+          resumes tcc-0.9.26 at "# test tcc-mes", past the cp and chmod
+          lb-replay.sh keeps to install its tcc-mes.  Of mes-0.28, the unpacking and the header
           install; of tcc-0.9.26, "# Vars" to "# Checksums" without the two
           MesCC commands and the cp and chmod that install their tcc-mes;
       ours: copies of what tcc-mes made, the exporter, and the export.

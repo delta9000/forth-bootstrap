@@ -330,7 +330,7 @@ check "0branch backward: a loop" 0 'ABCD' prelude \
 check "branch backward and 0branch forward: a loop with its test first" 0 'ABCD!' prelude \
     "${FLOW}"$': t begin dup 69 - 0branch mark dup emit 1 + branch again resolve drop 33 emit ; 65 t\n'
 # A definition that ends in a jump (E9 rel32) to the seed's >r, as
-# cc/020-cc-arena.fth:183-193 lays it: compiled, and from the outer loop,
+# forth/020-cc-arena.fth's jmp-xt, and jmp-seed->r, lay it: compiled, and from the outer loop,
 # where the only return cell is the loop's.
 check "a definition ending in a jump to >r" 0 'GFH' prelude \
     "${FLOW}"$': ,4 dup c, 256 / dup c, 256 / dup c, 256 / c, ;\n: jmp, 233 c, token find here 4 + - ,4 0 state ! ; immediate\n: my>r jmp, >r\n: t 70 my>r 71 emit r> emit ; t\n72 my>r r> emit\n'

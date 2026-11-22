@@ -1,8 +1,8 @@
 /* tinycc/m2libc-native.c -- M2libc's x86/linux layer for the Forth
    compiler, in plain C.
 
-   The seed's job tinycc/jobs/tool.fth puts this ahead of each tool's C source on the
-   compiler's stdin.  M2libc (vendor/stage0-posix/M2libc) is compiled in
+   The seed's job tinycc/jobs/tool.fth puts this ahead of each tool's C source in the
+   compiler's input.  M2libc (vendor/stage0-posix/M2libc) is compiled in
    its own M2 mode, as M2-Mesoplanet builds stage0's tools: __M2__ makes
    its headers include its .c files.  This file stands in for what
    M2-Planet and M2libc's assembly provide:

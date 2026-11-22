@@ -40,7 +40,7 @@ variable cc-nctx
 : cc-native-qual-note
   cc-nctx @ if, cc-qualifier-bit nc-qualified @ or nc-qualified ! then, ;
 ' cc-native-qual-note is cc-qual-note
-\ cc-nzero ( a n -- )  Zero n bytes at a.  Its callers zero 24 to 2,600
+\ cc-nzero ( a n -- )  Zero n bytes at a.  Its callers zero 64, 80 or 232
 \ bytes at a time.
 : cc-nzero
   begin, dup while,
