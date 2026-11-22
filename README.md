@@ -33,7 +33,7 @@ builder-hex0 (live-bootstrap's kernel; its stage 1 is the one binary)
 Why it is built this way:
 
 - What has to be trusted should be small enough to read.  To reach that
-  tcc, what only this route reads is 8,266 lines: 6,754 of its own (the
+  tcc, what only this route reads is 8,264 lines: 6,752 of its own (the
   seed, the Forth library, the compiler, the C shims under the two C
   libraries, the jobs and scripts) and 1,512 of Mes libc, kaem and
   M2libc that MesCC's path does not compile.  What only the stage0-posix,
