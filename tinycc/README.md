@@ -338,10 +338,7 @@ Two documents specify what runs on builder-hex0 below the C compiler:
   code the Forth library and `020-cc-arena.fth` lay for the Forth system
   itself (as opposed to `cc/090-cc-emit.fth`, which is the code of the
   compiled C program), `include`, allocation by `brk`, the boot's disk
-  and scripts, and kaem built by the seed.  It was written when an x86-64
-  seed and library stood beside these files and describes each i386 file
-  against its x86-64 original; those originals are at tag
-  `experiments-2026-11-21`.
+  and scripts, and kaem built by the seed.
 
 Every run is `seed-forth forth/010-lib.fth JOB [ARG ...]`.
 
