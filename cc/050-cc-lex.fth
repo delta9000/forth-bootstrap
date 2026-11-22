@@ -309,7 +309,7 @@ kw, _Bool
 \ cc-lex-number ( -- )  Hex if it starts 0x or 0X, octal if it starts with
 \ 0 and another digit, else decimal.  The full spelling, including a
 \ u/U/l/L suffix, is retained in tok-str-addr/len for type classification.
-\ tok-num still contains the unsigned 64-bit bit pattern, in both targets.
+\ tok-num holds the value's unsigned 64-bit bit pattern.
 : cc-lex-number
   cc-src-buf cc-src-pos @ + >r                    \ numeric token start
   cc-peek-char-2                                  ( c1 c2 )
@@ -624,11 +624,8 @@ variable cc-esc-n
 \ ===========================================================================
 
 \ cc-next-token ( -- )  Skip ws/comments, dispatch on the first byte.
-: cc-lex-extra [lit] 0 ;
-
 : cc-next-token
   cc-skip-ws-and-comments
-  cc-lex-extra if, exit, then,
   cc-eof? if,
     tk-eof tok-kind !
   else,

@@ -21,11 +21,10 @@ variable cc-ni-entry-patch
 : ni-brace  cc-ni-frame @ [lit] 48 + ;
 : ni-nested cc-ni-frame @ [lit] 56 + ;
 
-\ A target may represent a scalar as an opaque record (121: long double);
-\ initializers treat it as one scalar leaf, never as a brace list.
+\ cc-ni-aggregate? ( -- f )  The object being initialized is a struct or
+\ union itself, not a pointer to one.
 : cc-ni-aggregate?
-  ni-type @ ty-base ty-struct = ni-type @ ty-ptr 0= and
-  ni-type @ ni-desc @ cc-opaque-scalar 0= and ;
+  ni-type @ ty-base ty-struct = ni-type @ ty-ptr 0= and ;
 : cc-ni-address ( offset -- )
   cc-ni-static @ if,
     nc-slot @ cc-emit-global-ref
@@ -101,7 +100,7 @@ variable cc-ni-scan-brace
       else,
         cc-ni-scan-have @ 0= if,
           nc-ty @ ty-base dup ty-struct = swap ty-array = or
-          nc-ty @ ty-ptr 0= and nc-ty @ nc-desc @ cc-opaque-scalar 0= and if,
+          nc-ty @ ty-ptr 0= and if,
             [char] { cc-tok-punct? 0= if, [lit] 222 cc-die then,
           then,
           nc-inner @ if,
@@ -143,11 +142,8 @@ defer cc-ni-value-fwd
   swap cc-emit-mov-edx:eax-imm64 cc-emit-mov-esi-eax
   ni-offset @ cc-ni-address cc-ni-copy-bytes ;
 
-: cc-value-static-init drop ;
-
 : cc-ni-scalar
   cc-ni-aggregate? cc-ni-static @ and if, [lit] 219 cc-die then,
-  cc-ni-static @ if, ni-type @ cc-value-static-init then,
   ni-offset @ cc-ni-address cc-emit-push-edx:eax
   cc-putback-token cc-parse-assign
   cc-ni-aggregate? if,
@@ -159,8 +155,6 @@ defer cc-ni-value-fwd
     ni-type @ ni-desc @ cc-nsize cc-ni-copy-bytes
   else,
     cc-emit-materialize
-    cc-last-expr-type @ cc-last-struct-desc @ ni-type @ ni-desc @ cc-value-shape
-    cc-last-expr-type @ ni-type @ cc-value-init
     cc-emit-pop-ebx:ecx ni-type @ cc-emit-store-typed-via-ecx
   then,
   cc-next-token-keep ;
@@ -170,8 +164,6 @@ defer cc-ni-value-fwd
   ni-array @ if, ni-array @ exit, then,
   ni-desc @ cc-sd-union? if, [lit] 1 else, ni-desc @ cc-sd-field-count then, ;
 
-: cc-ni-field ( rec -- handled? ) drop [lit] 0 ;
-
 : cc-ni-child
   ni-array @ if,
     ni-type @ ni-desc @ ni-inner @ [lit] 0
@@ -180,10 +172,9 @@ defer cc-ni-value-fwd
     ni-index @ * ni-offset @ + true cc-ni-value-fwd
   else,
     ni-desc @ ni-index @ cc-sd-field-rec
-    dup cc-ni-field if, drop exit, then,
     dup cc-sf-type over cc-sf-desc
     [lit] 2 cc-npick cc-sf-array-len
-    [lit] 3 cc-npick cc-sf-array-inner
+    [lit] 0                                       \ a member's elements are not arrays
     [lit] 4 cc-npick cc-sf-offset ni-offset @ +
     true cc-ni-value-fwd drop
   then, ;

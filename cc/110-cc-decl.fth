@@ -17,7 +17,6 @@ defer cc-parse-type-name
 defer cc-native-decl-fwd
 \ A function's frame is sized after its body and patched into the prologue.
 variable cc-native-return-type
-variable cc-native-return-desc
 [lit] 131072 constant cc-native-frame-limit        \ slots in one function's frame
 
 variable cc-main-vaddr                            \ vaddr where main starts
@@ -180,9 +179,7 @@ create cc-main-name-bytes  s, main
 
 \ cc-skip-qualifiers ( -- )  Read past any qualifiers; the first token that
 \ isn't one is left pending.
-: cc-qual-note-noop ;
-defer cc-qual-note
-' cc-qual-note-noop is cc-qual-note
+defer cc-qual-note                                \ 115: cc-native-qual-note
 variable cc-prefix-qualified
 variable cc-type-name-qualified
 
@@ -215,15 +212,13 @@ variable cc-type-name-qualified
 \
 \ Only `static` matters: cc-decl-static records whether it was seen, and a
 \ local declared static gets file-scope storage instead of a frame slot
-\ (cc-parse-local-declarator).  The rest are no-ops.  cc-decl-storage
-\ counts the storage-class keywords read, for targets that reject two.
+\ (cc-parse-local-declarator).  The rest are no-ops.
 variable cc-decl-static
 variable cc-decl-extern
-variable cc-decl-storage
 
 : cc-skip-storage-quals
   [lit] 0 cc-prefix-qualified !
-  [lit] 0 cc-decl-static ! [lit] 0 cc-decl-extern ! [lit] 0 cc-decl-storage !
+  [lit] 0 cc-decl-static ! [lit] 0 cc-decl-extern !
   begin,
     cc-next-token-keep
     cc-qualifier? if,
@@ -231,10 +226,6 @@ variable cc-decl-storage
     then,
     kw-static cc-tok-kw? if, true cc-decl-static ! then,
     kw-extern cc-tok-kw? if, true cc-decl-extern ! then,
-    kw-static cc-tok-kw? kw-extern cc-tok-kw? or
-    kw-auto cc-tok-kw? or kw-register cc-tok-kw? or if,
-      [lit] 1 cc-decl-storage +!
-    then,
     tok-kind @ tk-kw =
       tok-kw-id @ kw-static    =
       tok-kw-id @ kw-extern    = or
@@ -301,12 +292,6 @@ variable cc-cast-desc                              \ struct TAG's descriptor, or
 \ compile the whole cast — type, ')', then the operand, a unary
 \ expression — and answer true.  Otherwise answer false with the token
 \ after the '(' put back, for cc-parse-paren.
-: cc-cast-types ( source destination -- ) 2drop ;
-\ Runtime conversion stays separate from the pure cast-type policy.
-: cc-cast-value ( source destination -- ) cc-emit-convert-value ;
-\ Only target-approved integer constant zero casts retain null provenance.
-: cc-cast-null ( source destination null qualified -- null ) 2drop 2drop [lit] 0 ;
-
 : cc-try-cast
   cc-next-token-keep
   cc-type-start? 0= if,
@@ -320,13 +305,10 @@ variable cc-cast-desc                              \ struct TAG's descriptor, or
   cc-emit-materialize
   r> r> r> swap >r                                 ( desc ty ; R: qualification )
   over cc-cast-desc !                              \ the operand may hold casts
-  cc-last-expr-type @ over cc-cast-types
-  cc-last-expr-type @ over cc-cast-value
-  cc-last-expr-type @ over cc-last-expr-null @ r@ cc-cast-null >r
+  dup cc-emit-convert-edx:eax
   cc-mark-not-lvalue
   cc-last-expr-type !
   cc-last-struct-desc !
-  r> cc-last-expr-null !
   r> cc-last-expr-qualified !
   true ;
 
@@ -370,9 +352,6 @@ variable cc-loop-switch-depth
 \ call cc-expect-punct-c again.  Otherwise putback and parse the expression.
 \ Either way, unwind any open switch scrutinees so edi:esi is restored before
 \ the epilogue's ret.
-\ A target may reject a result shape before any conversion is emitted.
-: cc-return-shape ( type descriptor type descriptor -- ) 2drop 2drop ;
-
 : cc-parse-return
   cc-next-token-keep
   tok-kind @ tk-punct = tok-num @ [char] ; = and if,
@@ -382,9 +361,7 @@ variable cc-loop-switch-depth
   else,
     cc-putback-token
     cc-parse-expr
-    cc-last-expr-type @ cc-last-struct-desc @
-    cc-native-return-type @ cc-native-return-desc @ cc-return-shape
-    cc-last-expr-type @ cc-native-return-type @ cc-emit-convert-value
+    cc-native-return-type @ cc-emit-convert-edx:eax
     cc-switch-depth @ cc-emit-switch-unwind
     cc-emit-epilogue
     [char] ; cc-expect-punct-c

@@ -50,7 +50,7 @@ variable cc-native-frame-patch
   nc-id @ cc-sym-addr-fixups @ cc-here-vaddr cc-walk-and-patch-address
   [lit] 0 nc-id @ cc-sym-addr-fixups !
   nc-name @ nc-nlen @ cc-is-main? if, cc-here-vaddr cc-main-vaddr ! then,
-  nc-ty @ cc-native-return-type ! nc-desc @ cc-native-return-desc !
+  nc-ty @ cc-native-return-type !
   nc-params cc-lex-reset
   cc-nctx @ >r cc-ncontext
   cc-scope-push

@@ -14,7 +14,7 @@
   repeat, drop 2drop ;
 
 variable cc-nctx
-[lit] 240 constant cc-nctx-bytes
+[lit] 232 constant cc-nctx-bytes
 : nc-ty     cc-nctx @ ;
 : nc-desc   cc-nctx @ [lit] 8 + ;
 : nc-name   cc-nctx @ [lit] 16 + ;
@@ -37,7 +37,6 @@ variable cc-nctx
 : nc-qualified cc-nctx @ [lit] 208 + ;
 : nc-base-qualified cc-nctx @ [lit] 216 + ;
 : nc-prefix-qualified cc-nctx @ [lit] 224 + ;
-: nc-storage cc-nctx @ [lit] 232 + ;
 : cc-native-qual-note
   cc-nctx @ if, cc-qualifier-bit nc-qualified @ or nc-qualified ! then, ;
 ' cc-native-qual-note is cc-qual-note
@@ -97,14 +96,7 @@ variable cc-ntag-u
 ' cc-native-type-start is cc-type-start?
 
 
-\ A declaration with no type specifier does not default to int.
-: cc-native-implicit-base [lit] 0 ;
-
-
 defer cc-naggregate-fwd
-
-\ A target can retain enum provenance without changing its scalar encoding.
-: cc-nenum-desc [lit] 0 ;
 
 \ Read an enum type and optionally install its enumerators.
 : cc-nenum
@@ -129,7 +121,7 @@ defer cc-naggregate-fwd
     repeat,
     drop
   else, cc-putback-token then,
-  ty-int [lit] 0 ty-make cc-nenum-desc ;
+  ty-int [lit] 0 ty-make [lit] 0 ;                ( -- ty desc )
 
 
 \ C90 lets qualifiers and target specifiers appear between type keywords:
@@ -143,8 +135,7 @@ defer cc-naggregate-fwd
 
 \ Type keywords are counted per spelling: int .. signed use their keyword
 \ numbers 0-6 as slots; float, double and _Bool have named slots after them.
-\ A target may check the multiset; native mode keeps its permissive
-\ keyword sequence.
+\ The counts are not checked against each other: `int int` is accepted.
 [lit] 7 constant cc-nspec-float
 [lit] 8 constant cc-nspec-double
 [lit] 9 constant cc-nspec-bool
@@ -188,7 +179,6 @@ create cc-nspec-counts cc-nspec-slots [lit] 8 * allot
   cc-nctx @ 0= if, cc-ncontext then,
   [lit] 0 nc-base-array ! [lit] 0 nc-base-inner !
   cc-nbase-next-specifier
-  cc-native-implicit-base if, exit, then,
   kw-struct cc-tok-kw? kw-union cc-tok-kw? or if,
     cc-naggregate-fwd exit,
   then,
@@ -399,7 +389,6 @@ variable cc-nmove-bytes
     1+
   repeat, 2drop 2drop r> drop ;
 
-\ A target may add member syntax while retaining the shared declarator.
 \ A member with no name is an anonymous struct or union, whose fields are
 \ promoted; any other type with no name ("int ;") is error 152.
 : cc-nmember ( desc -- )
@@ -441,13 +430,11 @@ variable cc-nmove-bytes
 ' cc-naggregate is cc-naggregate-fwd
 
 \ Type queries preserve the enclosing declaration's array base shape.
-: cc-native-type-shape + ;
 : cc-native-type-name
   cc-nctx @ 0= if, cc-ncontext then,
   nc-base-qualified @ >r nc-qualified @ >r
   nc-base-array @ >r nc-base-inner @ >r
-  cc-nbase cc-cast-desc ! cc-skip-qualifiers cc-count-stars
-  cc-native-type-shape
+  cc-nbase cc-cast-desc ! cc-skip-qualifiers cc-count-stars +
   nc-qualified @ cc-type-name-qualified !
   r> nc-base-inner ! r> nc-base-array !
   r> nc-qualified ! r> nc-base-qualified ! ;
@@ -522,22 +509,12 @@ defer cc-native-init-finish-fwd
   [char] = cc-tok-punct? if, cc-native-init-fwd then, ;
 
 
-\ cc-nstorage-context is the declaration context whose own base may hold
-\ storage-class keywords among its type specifiers (C90 6.5 sets no order);
-\ a target reads them through cc-nbase-specifiers.  nc-storage starts
-\ with the count already read before the base, including a leading typedef.
-variable cc-nstorage-context
 : cc-native-declaration ( top? -- )
   cc-nctx @ >r cc-ncontext nc-top !
   cc-prefix-qualified @ nc-prefix-qualified ! [lit] 0 cc-prefix-qualified !
   cc-decl-static @ nc-static ! cc-decl-extern @ nc-extern !
-  cc-decl-storage @ nc-storage !
-  kw-typedef cc-tok-kw? if,
-    true nc-td ! [lit] 1 nc-storage +! cc-next-token-keep
-  then,
-  cc-nstorage-context @ >r cc-nctx @ cc-nstorage-context !
+  kw-typedef cc-tok-kw? if, true nc-td ! cc-next-token-keep then,
   cc-nbase nc-sdesc ! nc-base !
-  r> cc-nstorage-context !
   cc-next-token-keep
   [char] ; cc-tok-punct? if, r> cc-nctx ! exit, then,
   cc-putback-token

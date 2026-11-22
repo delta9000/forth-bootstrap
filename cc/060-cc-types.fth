@@ -252,9 +252,7 @@ variable cc-literal-long
 \ stale afterwards; callers fetch each record after any such append.
 \ cc-sd-table-moved ( old new bytes -- ) lets side tables keyed by record
 \ address follow the records (115-cc-native.fth: field qualification).
-: cc-sd-table-moved-default  drop 2drop ;
-defer cc-sd-table-moved
-' cc-sd-table-moved-default is cc-sd-table-moved
+defer cc-sd-table-moved                           \ 115: cc-nqualified-move
 variable cc-sd-grow-desc
 : cc-sd-grow
   swap cc-sd-grow-desc !                         ( need )
@@ -297,6 +295,5 @@ variable cc-sd-grow-desc
 
 \ A member that is an array of arrays is refused (213): a record has no
 \ cell for the inner length.
-: cc-sf-array-inner ( rec -- n ) drop [lit] 0 ;
 : cc-sf-set-array-inner ( n rec -- )
   drop if, [lit] 213 cc-die then, ;

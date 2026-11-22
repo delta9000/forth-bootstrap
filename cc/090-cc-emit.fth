@@ -406,9 +406,6 @@ variable cc-bss-base-vaddr                       \ set by cc-finalize-globals
   then,
   drop ;
 
-\ Conversions that are given the source type as well.
-: cc-emit-convert-value ( source destination -- ) nip cc-emit-convert-edx:eax ;
-
 \ cc-emit-convert-ebx:ecx ( ty -- )  Same conversion for the right operand.
 : cc-emit-convert-ebx:ecx
   dup ty-size [lit] 1 = if,
@@ -427,8 +424,6 @@ variable cc-bss-base-vaddr                       \ set by cc-finalize-globals
     ty-unsigned? cc-emit-extend-ecx exit,
   then,
   drop ;
-
-: cc-emit-convert-right ( source destination -- ) nip cc-emit-convert-ebx:ecx ;
 
 \ ===========================================================================
 \ Register-to-register moves

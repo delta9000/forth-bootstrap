@@ -63,7 +63,7 @@ gates=(
 # tests/cc/gates/check-coverage.sh, run at the end, reads this list and
 # counts which of the compiler's error codes it tests.
 die_gates=(
-  "die-10-arena-full.sh|10|cc: line 9119: error 10"
+  "die-10-arena-full.sh|10|cc: line 9280: error 10"
   "die-20-input-too-big.sh|20|cc: line 1: error 20"
   "die-21-output-full.sh|21|cc: line 19784: error 21"
   "die-30-include-missing.c|30|cc: line 2: error 30"

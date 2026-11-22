@@ -122,9 +122,6 @@ variable cc-scope-depth
 \ The walk goes newest first along the name's bucket and returns at the
 \ first match, which gives innermost-scope semantics: -1 means "not
 \ found", anything >= 0 is the matched id.
-\ The default keeps the original single lookup for the bootstrap dialect.
-\ A target can separate C's ordinary and tag namespaces without replacing
-\ the shared symbol records or their scope lifetime.
 : cc-sym-find
   cc-nf-u ! cc-nf-a !
   cc-nf-a @ cc-nf-u @ cc-name-hash cc-sym-bucket cell[] @ 1-     ( id )
