@@ -37,13 +37,40 @@ The encoders in 090 are named for the registers of a 64-bit machine
 and 090's header has the table.  Values are 64 bits wide in the compiler
 and in the code it emits, so `long long` costs nothing extra.
 
-Not diagnosed.  The compiler accepts some programs that are not C: a
-subscript on a function name, a call of an `int` variable, `sizeof` of an
-unknown struct tag, a struct member list that starts with a keyword or a
-number, a stray `}` or `1;` at file scope, `typedef` of a non-type.  It
-compiles the sources of this route; it is not a checker.
+## Known accepts
 
-Checks: the `test-0N0-*.fth` files here run in `./test.sh`.
+The compiler's input is fixed: tcc, Mes libc, M2libc, kaem and the tools,
+all valid C and all pinned by hash.  It therefore refuses what it cannot
+compile and does not check that its input is C.  These thirteen programs
+are not C (gcc `-m32` rejects each), and the compiler writes a program
+for every one without a message.  No refusal is added for them: none can
+occur in the pinned sources, and each would be code to read that the
+route never runs.
+
+| program | what it is |
+|---|---|
+| `int f() { return 0; }  int main() { return f[0]; }` | a subscript on a function name |
+| `int main() { int x; return x(1); }` | a call of an `int` variable |
+| `int main() { return sizeof(struct nosuch); }` | `sizeof` of a struct tag never declared |
+| `int x;  int main() { return sizeof(struct x); }` | `sizeof` of a struct tag that is only a variable's name |
+| `int main() { struct nosuch x; return 0; }` | a local whose struct type is never declared |
+| `int y;  int main() { struct y x; return 0; }` | a local whose struct tag is only a variable's name |
+| `struct s { return a; };` | a member declaration that starts with a statement keyword |
+| `struct s { 1 a; };` | a member declaration that starts with a number |
+| `int f(1 x) { return 0; }` | a parameter whose type is a number |
+| `int main() { return 0; } }` | a stray `}` at file scope |
+| `typedef return T;` | `typedef` of a keyword that is not a type |
+| `typedef 1 T;` | `typedef` of a number |
+| `1;` | an expression statement at file scope |
+
+They were die fixtures 91, 94, 104, 105, 146, 147, 150, 151, 182, 186,
+193, 196 and 202 of the M2-Planet subset this compiler once also had
+(`tests/cc/gates/` at tag `experiments-2026-11-21`); that mode's parser
+refused them and this one never did.
+
+## Checks
+
+The `test-0N0-*.fth` files here run in `./test.sh`.
 `tests/cc/gates/run-gates.sh` compiles and runs the gate fixtures, and
 expects each `die-N-*` fixture to be refused with code N on a given line;
 `tests/cc/gates/check-coverage.sh` counts which error codes those cover.
