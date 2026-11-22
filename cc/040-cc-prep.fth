@@ -51,9 +51,7 @@ cc-pp-sink [lit] 24 +  constant cc-pp-out-code     \ die code when it fills
 \ The selected sink's shadow bytes are derived from its existing buffer.
 variable cc-prep-direct                         \ explicit headers; no shim macros
 variable cc-pp-out-flags
-: cc-pp-select-flags-default ;
 defer cc-pp-select-flags-fwd
-' cc-pp-select-flags-default is cc-pp-select-flags-fwd
 
 \ cc-prep-emit-byte ( b -- )  Append b to the sink; die with the sink's
 \ code if it is full.  Counts lines as it goes, so a failure during the
@@ -65,9 +63,7 @@ defer cc-pp-select-flags-fwd
   [lit] 1 cc-pp-out-pos +!
   nl = if, [lit] 1 cc-src-line +! then, ;
 
-: cc-pp-copy-byte-default c@ cc-prep-emit-byte ;
 defer cc-pp-copy-byte-fwd
-' cc-pp-copy-byte-default is cc-pp-copy-byte-fwd
 
 \ cc-pp-emit-bytes ( a u -- )  Append u bytes from a.
 : cc-pp-emit-bytes
@@ -802,10 +798,6 @@ create cc-pp-file-name-len cc-prep-direct-depth 1+ [lit] 8 * allot
   nip cc-pp-file-cursor cc-pp-location-cell !
   cc-pp-file-line cc-pp-location-cell @
   cc-pp-file-offset cc-pp-location-cell @ + cc-pp-location-line ! ;
-
-: cc-prep-config-reset
-  [lit] 0 cc-prep-direct !  [lit] 0 cc-prep-include-count !
-  [lit] 0 cc-prep-source-len ! ;
 
 \ cc-prep-copy-path ( a u dst -- )  Copy a path including a new terminator.
 : cc-prep-copy-path

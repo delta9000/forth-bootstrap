@@ -6,7 +6,6 @@
 : cc-npick ( x_n ... x_0 n -- x_n ... x_0 x_n )
   dup 0= if, drop dup exit, then,
   1- swap >r cc-npick r> swap ;
-: cc-nminus-rot rot rot ;
 : cc-nmax 2dup < if, swap then, drop ;
 : cc-ncopy ( src dst n -- )
   begin, dup while,
@@ -514,43 +513,11 @@ defer cc-native-function-fwd
   nc-inner @ over cc-sym-set-array-inner
   nc-qualified @ over cc-sym-qualified cell[] ! ;
 
-: cc-ngstore ( value offset bytes -- )
-  >r cc-globals-buf + r>
-  begin, dup while,
-    >r over [lit] 255 and over c!
-    1+ swap [lit] 256 / swap r> 1-
-  repeat, drop 2drop ;
-: cc-nmove-tentative
-  nc-slot @ cc-bss-flag >= if,
-    cc-globals-pos @ nc-ty @ nc-desc @ cc-nalignment cc-nalign cc-globals-pos !
-    cc-nobject-size cc-globals-alloc
-    [lit] 0
-    begin, dup cc-gfixup-count @ < while,
-      dup cc-gfixup-slot cell[] @ nc-slot @ = if,
-        over over cc-gfixup-slot cell[] !
-      then, 1+
-    repeat, drop
-    dup nc-id @ cc-sym-val cell[] ! nc-slot !
-  then, ;
-
-: cc-native-init-noop ;
+\ Initializers are 118-cc-native-init.fth's; it fills these four in.
 defer cc-native-init-prepare-fwd
 defer cc-native-init-fwd
 defer cc-native-init-entry-fwd
 defer cc-native-init-finish-fwd
-' cc-native-init-noop is cc-native-init-prepare-fwd
-' cc-native-init-noop is cc-native-init-entry-fwd
-' cc-native-init-noop is cc-native-init-finish-fwd
-: cc-native-scalar-init
-  nc-top @ nc-static @ or if,
-    cc-nmove-tentative
-    cc-parse-const nc-slot @ nc-ty @ ty-size cc-ngstore
-  else,
-    cc-parse-assign cc-emit-materialize
-    nc-slot @ nc-ty @ cc-emit-store-local-typed
-  then,
-  cc-next-token-keep ;
-' cc-native-scalar-init is cc-native-init-fwd
 
 : cc-native-local-layout-default ( -- slots slot )
   cc-nobject-size [lit] 7 + [lit] 8 / dup cc-fn-local-count @ + 1- ;

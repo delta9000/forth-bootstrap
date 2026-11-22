@@ -659,14 +659,6 @@ cc-label-default-switch-depth cc-label-switch-depth-buffer !
 \ Five disjoint, page-sized arrays support the fixed 1,024-label direct bound.
 [lit] 1024 constant cc-label-direct-cap
 variable cc-label-direct-base
-: cc-label-default-workspace ( -- )
-  cc-label-default-cap cc-label-limit !
-  cc-label-default-name-addr cc-label-name-addr-buffer !
-  cc-label-default-name-len cc-label-name-len-buffer !
-  cc-label-default-vaddr cc-label-vaddr-buffer !
-  cc-label-default-fixup cc-label-fixup-buffer !
-  cc-label-default-switch-depth cc-label-switch-depth-buffer !
-;
 : cc-label-direct-workspace ( -- )
   cc-label-direct-base @ 0= if,
     cc-label-direct-cap [lit] 40 * [lit] 171 cc-workspace-map

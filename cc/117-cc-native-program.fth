@@ -84,9 +84,7 @@ variable cc-native-frame-patch
   [lit] 184 cc-emit-byte [lit] 60 cc-emit-4le
   [lit] 15 cc-emit-byte [lit] 5 cc-emit-byte ;
 
-: cc-native-runtime-noop ;
 defer cc-native-runtime-fwd
-' cc-native-runtime-noop is cc-native-runtime-fwd
 
 : cc-native-program
   cc-native-entry

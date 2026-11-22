@@ -37,9 +37,9 @@
 \ ===========================================================================
 \ Encoders with no i386 form
 \ ===========================================================================
-\ The legacy model's in-place increments, the System V argument registers
-\ and the libc shims are never reached in native mode.  If one is, the
-\ compile stops with error 130 rather than emit x86-64 bytes.
+\ The legacy model's in-place increments and the System V argument
+\ registers are never reached in native mode.  If one is, the compile
+\ stops with error 130 rather than emit x86-64 bytes.
 : cc-emit-x86-64-only  [lit] 130 cc-die ;
 
 : cc-emit-pop-rsi               cc-emit-x86-64-only ;
@@ -57,22 +57,6 @@
 : cc-emit-inc-via-rcx           cc-emit-x86-64-only ;
 : cc-emit-dec-via-rcx           cc-emit-x86-64-only ;
 : cc-emit-load-via-rcx          cc-emit-x86-64-only ;
-: cc-emit-putchar-shim          cc-emit-x86-64-only ;
-: cc-emit-exit-shim             cc-emit-x86-64-only ;
-: cc-emit-getchar-shim          cc-emit-x86-64-only ;
-: cc-emit-fputs-shim            cc-emit-x86-64-only ;
-: cc-emit-fputc-shim            cc-emit-x86-64-only ;
-: cc-emit-fopen-shim            cc-emit-x86-64-only ;
-: cc-emit-fclose-shim           cc-emit-x86-64-only ;
-: cc-emit-fwrite-shim           cc-emit-x86-64-only ;
-: cc-emit-fread-shim            cc-emit-x86-64-only ;
-: cc-emit-calloc-shim           cc-emit-x86-64-only ;
-: cc-emit-free-shim             cc-emit-x86-64-only ;
-: cc-emit-syscall-shim          cc-emit-x86-64-only ;
-: cc-emit-malloc-shim           cc-emit-x86-64-only ;
-: cc-emit-strlen-shim           cc-emit-x86-64-only ;
-: cc-emit-memcpy-shim           cc-emit-x86-64-only ;
-: cc-emit-strrchr-shim          cc-emit-x86-64-only ;
 
 \ ===========================================================================
 \ Extending the low half
@@ -257,19 +241,6 @@
 : cc-emit-load-local-typed
   swap cc-emit-lea-rdi-local cc-emit-load-typed-via-rdi ;
 
-\ cc-emit-store-local-typed ( slot ty -- )  The pair is preserved.
-: cc-emit-store-local-typed
-  ty-size
-  dup [lit] 1 = if,
-    drop x{ 88 } [lit] 0 $45 cc-emit-half-ea exit,  \ mov byte [ebp+disp], al
-  then,
-  dup [lit] 2 = if,
-    drop x{ 66 89 } [lit] 0 $45 cc-emit-half-ea exit,  \ mov word [ebp+disp], ax
-  then,
-  [lit] 4 = if,
-    x{ 89 } [lit] 0 $45 cc-emit-half-ea           \ mov dword [ebp+disp], eax
-  else, cc-emit-store-local then, ;
-
 \ ===========================================================================
 \ Conversions
 \ ===========================================================================
@@ -419,11 +390,6 @@
   dup [lit] 8 = if, drop cc-emit-shl-rdi-3 exit, then,
   x{ 69 c0 } cc-emit-4le                          \ imul eax, eax, imm32
   x{ 99 } ;                                       \ cdq
-
-: cc-emit-scale-rcx                               ( bytes -- )
-  dup [lit] 1 = if, drop exit, then,
-  x{ 69 c9 } cc-emit-4le                          \ imul ecx, ecx, imm32
-  [lit] 0 cc-emit-extend-rcx ;                   \ signed, as cdq above
 
 \ ===========================================================================
 \ Shifts of the pair by cl

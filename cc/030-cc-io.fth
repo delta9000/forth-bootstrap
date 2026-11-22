@@ -278,10 +278,6 @@ defer cc-workspace-syscall-fwd
 : cc-workspace-map ( bytes code -- address )
   >r r@ cc-workspace-round cc-workspace-syscall-fwd
   dup [lit] 0 <= if, r@ cc-die then, r> drop ;
-: cc-io-default-workspace ( -- )
-  cc-in-default-buf cc-in-buffer ! cc-in-default-cap cc-in-limit !
-  cc-src-default-buf cc-src-buffer ! cc-src-default-cap cc-src-limit !
-  cc-out-default-buf cc-out-buffer ! cc-out-default-cap cc-out-limit ! ;
 : cc-io-direct-workspace ( -- )
   cc-io-direct-base @ 0= if,
     cc-in-direct-cap cc-src-direct-cap + cc-out-direct-cap + 20 cc-workspace-map

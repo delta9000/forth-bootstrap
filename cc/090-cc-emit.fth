@@ -570,10 +570,6 @@ cc-gfixup-default-slot cc-gfixup-slot-buffer !
 \ Both columns select one fixed, disjoint pair of mapped arrays.
 [lit] 17920 constant cc-gfixup-direct-cap
 variable cc-gfixup-direct-base
-: cc-gfixup-default-workspace ( -- )
-  cc-gfixup-default-cap cc-gfixup-limit !
-  cc-gfixup-default-out-pos cc-gfixup-out-pos-buffer !
-  cc-gfixup-default-slot cc-gfixup-slot-buffer ! ;
 : cc-gfixup-direct-workspace ( -- )
   cc-gfixup-direct-base @ 0= if,
     cc-gfixup-direct-cap [lit] 16 * [lit] 81 cc-workspace-map
@@ -756,21 +752,6 @@ defer cc-emit-convert-right
     swap cc-emit-lea-rdi-local cc-emit-load-typed-via-rdi
   else, drop cc-emit-load-local then, ;
 
-\ cc-emit-store-local-typed ( slot ty -- )  rdi is preserved.
-: cc-emit-store-local-typed
-  cc-emit-type-check-fwd
-  cc-target-lp64 @ 0= if, drop cc-emit-store-local exit, then,
-  ty-size
-  dup [lit] 1 = if,
-    drop x{ 40 88 } $7d cc-emit-local-ea exit,    \ mov byte [rbp+disp], dil
-  then,
-  dup [lit] 2 = if,
-    drop x{ 66 89 } $7d cc-emit-local-ea exit,    \ mov word [rbp+disp], di
-  then,
-  [lit] 4 = if,
-    x{ 89 } $7d cc-emit-local-ea                  \ mov dword [rbp+disp], edi
-  else, cc-emit-store-local then, ;
-
 \ Unsigned division clears rdx, then DIV rcx uses the full rdx:rax dividend.
 \ Both operands must already have been converted to the common C type.
 : cc-emit-udiv-quotient
@@ -806,11 +787,6 @@ defer cc-emit-convert-right
   dup [lit] 1 = if, drop exit, then,
   dup [lit] 8 = if, drop cc-emit-shl-rdi-3 exit, then,
   x{ 48 69 ff } cc-emit-4le ;                     \ imul rdi, rdi, imm32
-
-\ cc-emit-scale-rcx ( bytes -- )  The same for the right operand.
-: cc-emit-scale-rcx
-  dup [lit] 1 = if, drop exit, then,
-  x{ 48 69 c9 } cc-emit-4le ;                     \ imul rcx, rcx, imm32
 
 \ The native bootstrap image uses an internal all-stack call ABI.
 \ Arguments occupy eight-byte slots; arg 0 is nearest the return address.
