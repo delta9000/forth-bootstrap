@@ -1,9 +1,9 @@
-;; seed/i386/000-seed.hex0 -- the Forth seed for builder-hex0 and Linux/i386.
+;; seed/000-seed.hex0 -- the Forth seed for builder-hex0 and Linux/i386.
 ;;
 ;; A static ELF32 executable, written by hand as commented hex0.  It is a
-;; minimal Forth, specified by seed/i386/SPEC.md:
+;; minimal Forth, specified by seed/SPEC.md:
 ;;
-;;     seed-forth-i386 FILE [ARG ...]
+;;     seed-forth FILE [ARG ...]
 ;;
 ;; reads whitespace-separated tokens from FILE, executes or compiles the
 ;; words they name, and accepts unsigned decimal numbers.  It has 21 words:
@@ -11,11 +11,11 @@
 ;;     dup drop swap >r r>   @ ! c@ c!   + * / nand 0=
 ;;     key token find   syscall6   state : ;
 ;;
-;; Everything else is Forth text, loaded on top (forth/i386/CONTRACT.md).
+;; Everything else is Forth text, loaded on top (forth/CONTRACT.md).
 ;;
 ;; How to read this file.  Every line with bytes is one ELF field, one
 ;; dictionary header field or one instruction, and the comment after the
-;; first ';' says which, in Intel syntax.  tests/seed/i386/asm-check.py
+;; first ';' says which, in Intel syntax.  tests/seed/asm-check.py
 ;; assembles the comments with GNU as and llvm-mc and compares the bytes.
 ;; A branch carries "(rel8 = TARGET - NEXT)": both are file offsets, and the
 ;; difference is the displacement in the line's last bytes.  Headings give

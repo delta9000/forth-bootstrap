@@ -937,13 +937,10 @@ rules:
 13. **The image.** If `./seed-forth` exists it must equal the bytes
     as the script reads them.
 
-**The file is frozen, comments included.** `seed/000-seed.hex0` was
-moved to its present path without an edit. Five lines of its header
-comment (lines 1, 4, 6, 14 and 18) therefore still name
-`seed/i386/000-seed.hex0`, `seed/i386/SPEC.md`, `seed-forth-i386`,
-`forth/i386/CONTRACT.md` and `tests/seed/i386/asm-check.py`: the paths
-of this file, this document, the assembled program, `forth/CONTRACT.md`
-and the checker before `i386` was taken out of the repository's paths.
+**The file's bytes are frozen.** Its comments change only to keep a
+path or a cross-reference true: every comment is stripped before the
+bytes are read, so such an edit leaves the image as it is, and check 13
+above holds it to that.
 
 ## 13. Acceptance
 

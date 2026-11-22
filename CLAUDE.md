@@ -32,9 +32,9 @@ What the steps hold fixed:
   tools and what the boot builds first.  A refactor of `cc/`, `forth/` or
   `tinycc/` leaves every hash as it is; a hash that moves is a changed
   compiler, and the commit that means it updates the line and says why.
-- The seed: `seed/000-seed.hex0` is frozen, bytes and comments.  Its
-  header comment still names the paths from before the rename
-  (`seed/i386/…`); `seed/SPEC.md`, section 12, records that.
+- The seed: the bytes of `seed/000-seed.hex0` are frozen (`seed-forth`
+  is `b5f70ffb…`).  Its comments change only to keep a path or a
+  reference true; `seed/build.sh` strips them, so the image cannot move.
 - The gates: `tests/cc/gates/run-gates.sh`, 130 cases.  A die gate pins
   an error code and a line; a refusal is removed only with its gate and a
   reason.
