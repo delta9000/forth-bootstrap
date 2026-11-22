@@ -9,7 +9,9 @@
 #   01  seed/i386/build.sh: hex0-seed assembles seed/i386/000-seed.hex0
 #       into the 1191-byte seed-forth-i386; tests/seed/i386/asm-check.py:
 #       its comments equal GNU as, and llvm-mc where installed (needs as)
-#   02  tests/seed/i386/test.sh: the seed's own cases
+#   02  tests/seed/i386/test.sh: the seed's own cases; tests/reference.py
+#       computes the expected status and output again, in Python, for the
+#       cases that are arithmetic, stack or memory (46 of 76)
 #   03  the same cases under strace, each run's system calls checked
 #       (needs strace)
 # The Forth library and the compiler
@@ -17,7 +19,8 @@
 #   05  the host's machine code: tests/forth/i386/asm-check.py (the bytes of
 #       forth/i386/*.fth equal GNU as on their comments; needs as) and
 #       tests/forth/i386/high-halves-check.sh (its primitives on cells
-#       whose two halves both matter)
+#       whose two halves both matter; tests/reference.py computes 150 of
+#       the 153 expected values again)
 #   06  tests/cc/i386/asm-check.py: the bytes of the compiler's encoders
 #       equal GNU as on their comments (needs as and objcopy)
 #   07  tests/cc/gates/run-gates.sh: the gate fixtures compile and exit as

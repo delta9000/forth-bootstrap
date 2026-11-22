@@ -5,7 +5,10 @@
 > branch.  The x86-64 seed and its `seed/SPEC.md`, K0, K1 and the GCC
 > route, which this document mentions, are at tag
 > `experiments-2026-11-21`; so is the differential oracle of 13.1 (the
-> cases run on both seeds).  `./check-all.sh` runs the checks of section
+> cases run on both seeds).  In its place `tests/reference.py` computes
+> the expected status and output of 46 of the 76 cases in Python, among
+> them every case of section 7.1's arithmetic and Appendix B's vectors.
+> `./check-all.sh` runs the checks of section
 > 13 as steps 01 to 03, 09, 14 and 15, by default.
 
 Specification for a seed that does not exist yet. It is written for an

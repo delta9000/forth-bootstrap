@@ -14,6 +14,15 @@
 # with two lines that define emit and die on syscall6 (write is call 4,
 # exit is call 1).
 #
+# The expected status and output of each case are also compared with what
+# tests/reference.py computes for the case's text in Python, where it can:
+# it knows the arithmetic, stack and memory words, numbers and the fatal
+# error, and declines the cases that need token, find, key, syscall6, the
+# system variables or a return address.  A case where the two disagree
+# fails; the last line says how many cases had this second opinion.  (Until
+# tag experiments-2026-11-21 the second opinion was the x86-64 seed, run on
+# the same text.)
+#
 # The strace run checks, for every case: the only calls are brk, open, read,
 # write and exit; no read of descriptor 0; every read has count 1; no brk
 # below the current break; and the number of open calls.  That number is 1
@@ -36,6 +45,7 @@ trap 'rm -rf "$W"' EXIT
 
 PASSED=0
 FAILED=0
+REFERENCED=0
 pass() { echo "  PASS: $*"; PASSED=$((PASSED + 1)); }
 fail() { echo "  FAIL: $*"; FAILED=$((FAILED + 1)); }
 hex() { od -An -v -tx1 "$1" | tr -d ' \n'; }
@@ -88,8 +98,23 @@ check() {
         printf '%s%s' "$PRE" "$body" > "$W/case.fth"
     fi
     run "$opens" case.fth "$@"
-    verdict "$name" "$want_ec" "$want" && pass "$name"
+    verdict "$name" "$want_ec" "$want" && reference "$name" "$want_ec" "$kind" "$body" && pass "$name"
     return 0
+}
+
+# reference NAME WANT_EC KIND BODY: what tests/reference.py computes for
+# the case against what is expected ($W/want, written by verdict).  Status
+# 125 from it means it does not compute this case.
+reference() {
+    local name=$1 want_ec=$2 ref_ec=0
+    printf '%s' "$4" > "$W/body.fth"
+    python3 -I "$ROOT/tests/reference.py" seed "$3" "$W/body.fth" > "$W/ref" 2> /dev/null || ref_ec=$?
+    [ "$ref_ec" != 125 ] || return 0
+    if [ "$ref_ec" != "$want_ec" ] || ! cmp -s "$W/ref" "$W/want"; then
+        fail "$name: tests/reference.py computes exit $ref_ec, output $(hex "$W/ref") (expected $want_ec, $(hex "$W/want"))"
+        return 1
+    fi
+    REFERENCED=$((REFERENCED + 1))
 }
 
 # Forth used by several cases.
@@ -343,4 +368,5 @@ if [ "$STRACE" = 1 ]; then
 else
     echo "tests/seed/i386/test.sh: $PASSED passed, $FAILED failed"
 fi
+echo "  $REFERENCED cases' expected values agree with tests/reference.py"
 [ "$FAILED" = 0 ]

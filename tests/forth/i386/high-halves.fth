@@ -10,7 +10,9 @@
 \ Loaded after the library, high-halves-judge.fth and 020
 \ (tests/forth/i386/high-halves-check.sh).  The expected values were first
 \ checked on a host where a cell is one register (the x86-64 seed of tag
-\ experiments-2026-11-21, with its library alone).
+\ experiments-2026-11-21, with its library alone); now tests/reference.py
+\ computes them again in Python on every run, all but the three cases
+\ under "if, while, until,".
 \
 \ Each case computes a value, then `EXPECTED same tally`.  A true flag is
 \ expected as 18446744073709551615, spelt out: the library's `true` is `0 0=`,

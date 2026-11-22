@@ -83,7 +83,7 @@ Each directory has a README that says where to start.
 | `forth/` | `test-010-lib.fth`, the library's test |
 | `cc/` | the C compiler in Forth, loaded in numeric order (`030-cc-io.fth` to `119-cc-runtime.fth`), and the tests of its first layers |
 | `tinycc/` | what the seed is asked to build and how: the two build scripts, the jobs and drivers, the C shims, the boot's disk writer, the replay of live-bootstrap's step (`tinycc/README.md`) |
-| `tests/` | `seed/i386/`, `forth/i386/`, `cc/` (gates, run-time corpus, encoder check), `tinycc/` (the junction on the host, the boots), `pins/`, and `builder-hex0/`, a measurement of the kernel's behaviour that two boot checks borrow their disk writer from |
+| `tests/` | `seed/i386/`, `forth/i386/`, `cc/` (gates, run-time corpus, encoder check), `tinycc/` (the junction on the host, the boots), `pins/`, `reference.py` (the seed's and the host primitives' expected values, computed again in Python), and `builder-hex0/`, a measurement of the kernel's behaviour that two boot checks borrow their disk writer from |
 | `tools/` | `fetch-archives.py` |
 | `vendor/` | stage0-posix and mescc-tools, as submodules |
 

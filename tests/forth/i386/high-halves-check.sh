@@ -9,6 +9,11 @@
 # ./seed-forth-i386 (seed/i386/build.sh) or the program SEED_I386 names.
 # The run passes when it prints "high-halves: done" and exits 0; the exit
 # status is the number of failed cases.
+#
+# First, tests/reference.py computes each case in Python and compares the
+# value the file expects with its own, so that the expected values do not
+# rest on the seed they judge.  It does not compute the three cases with
+# control flow.
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 
@@ -22,6 +27,8 @@ passed() {    # WHAT STATUS OUTPUT
 
 [ -x "$SEED" ] || { echo "high-halves-check: cannot run: no i386 seed: $SEED" >&2; exit 1; }
 cases=$(grep -v '^\\' $D/high-halves.fth | grep -o 'same tally' | wc -l)
+python3 -I tests/reference.py high-halves $D/high-halves.fth \
+    || fail "an expected value differs from what tests/reference.py computes"
 rc=0; out=$("$SEED" forth/i386/010-lib.fth $D/high-halves-job.fth) || rc=$?
 passed "the seed with forth/i386/020-cc-arena.fth" "$rc" "$out"
 echo "high-halves-check: OK, $cases cases"
