@@ -20,8 +20,6 @@ defer cc-native-decl-fwd
 \ Native declarations use dynamically sized frames, patched after the body.
 variable cc-native-return-type
 variable cc-native-return-desc
-variable cc-type-name-array
-variable cc-type-name-inner
 variable cc-native-frame-limit
 [lit] 131072 cc-native-frame-limit !
 
@@ -333,7 +331,6 @@ defer cc-cast-null-fwd
     cc-putback-token [lit] 0 exit,
   then,
   cc-parse-type-name >r                            ( ; R: ty )
-  cc-type-name-array @ if, [lit] 238 cc-die then,
   [char] ) cc-expect-punct-c
   cc-type-name-qualified @ >r
   cc-cast-desc @ >r                                ( ; R: ty qualification desc )

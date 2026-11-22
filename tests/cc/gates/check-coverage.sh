@@ -77,7 +77,6 @@ unreachable=(
 # Untested, to do.  Grouped by the first file that raises each code; -v
 # prints them all.
 todo=(
-  49                                            # 040-cc-prep.fth
   213 240                                       # 060-cc-types.fth
   210                                           # 115-cc-native.fth
   222 226                                       # 118-cc-native-init.fth

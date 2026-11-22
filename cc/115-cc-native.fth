@@ -490,7 +490,6 @@ defer cc-native-type-shape-fwd
   cc-nctx @ 0= if, cc-ncontext then,
   nc-base-qualified @ >r nc-qualified @ >r
   nc-base-array @ >r nc-base-inner @ >r
-  [lit] 0 cc-type-name-array ! [lit] 0 cc-type-name-inner !
   cc-nbase cc-cast-desc ! cc-skip-qualifiers cc-count-stars
   cc-native-type-shape-fwd
   nc-qualified @ cc-type-name-qualified !
