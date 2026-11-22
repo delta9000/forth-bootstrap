@@ -1,6 +1,6 @@
 #!/bin/sh
 # boot.sh LIST LOG [TIMEOUT]: build the disk from LIST and boot it the way
-# tests/tinycc/hex0-handoff-check.sh boots boot 2 (live-bootstrap's rootfs.py
+# tests/tinycc/i386-one-boot-check.sh boots its disk (live-bootstrap's rootfs.py
 # flags), serial on stdout, each line timestamped by the host.
 # Extra QEMU flags: QEMU_EXTRA (e.g. a monitor socket).  LIST is a name in
 # tests/builder-hex0/; the disk, the log and the probe binary (build.sh)

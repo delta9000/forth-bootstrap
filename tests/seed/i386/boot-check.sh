@@ -33,7 +33,7 @@ probe() {
     [ -x vendor/stage0-posix/bootstrap-seeds/POSIX/AMD64/hex0-seed ] \
         || { echo "missing: the vendor/stage0-posix submodule"; return 1; }
     [ -f build-out/tinycc-inputs/builder-hex0-a2781242d19e6be891b453d8fa827137ab5db31a/builder-hex0-x86-stage2.hex0 ] \
-        || { echo "missing: the builder-hex0 archive of tinycc/hex0-handoff.SOURCES, unpacked"; return 1; }
+        || { echo "missing: the builder-hex0 archive of tinycc/builder-hex0.SOURCES, unpacked"; return 1; }
 }
 if [ "${1:-}" = --probe ]; then
     probe

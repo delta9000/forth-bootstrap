@@ -5,9 +5,6 @@
 # meant to alter one of them, update its line in the same commit and say why.
 #   seed-cc/seed-cc, seed-cc/seed-ar   check 04 (seed Forth builds the driver)
 #   stage-a/cc-out-v1                  check 07 (M2-Planet compiled by the Forth compiler)
-#   amd64-runner, k1-direct/k1         check 08 (the K1 recipe runner and K1)
 9baf3b7db508f41defe5acb9f0b34bf0708d3af68f392f0b31c184228bfa8459  seed-cc/seed-cc
 459d1fd0d06cfa3bb90ee51a597f8c9fcfbca79dba23196440fc4f28a3e768c6  seed-cc/seed-ar
 025208db31342c4070dbcd3b72f56ddfdde7d38c582c96ea9fdc59bcc6ef7d1e  stage-a/cc-out-v1
-363bbcd4654c41354fd952e57afc861d6b11bca7833bf4e99af6c34dd4c918e6  amd64-runner
-f90229b116c5a3b5335f17409dc7ea2bde6b25ae54c3af389a9b8e56e5951e4c  k1-direct/k1

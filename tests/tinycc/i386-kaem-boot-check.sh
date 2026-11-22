@@ -63,8 +63,8 @@ mkdir -p "$W"
 
 # builder-hex0's two stages, checked and unpacked by the seed-built tools
 BIN=build-out/tinycc/bin-i386
-"$BIN/sha256sum" --check tinycc/hex0-handoff.SOURCES > /dev/null \
-    || fail "$IN/$BH.tar.gz: sha256 differs from tinycc/hex0-handoff.SOURCES"
+"$BIN/sha256sum" --check tinycc/builder-hex0.SOURCES > /dev/null \
+    || fail "$IN/$BH.tar.gz: sha256 differs from tinycc/builder-hex0.SOURCES"
 rm -rf "$IN/$BH"
 "$BIN/ungz" --file "$IN/$BH.tar.gz" --output "$W/builder-hex0.tar" 2> /dev/null \
     || fail "ungz failed on $BH.tar.gz"

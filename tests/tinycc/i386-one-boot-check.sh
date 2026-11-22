@@ -80,8 +80,8 @@ mkdir -p "$OUT"
 tinycc/build-tools-i386.sh | tail -1
 seed/i386/build.sh > /dev/null
 BIN=build-out/tinycc/bin-i386
-"$BIN/sha256sum" --check tinycc/hex0-handoff.SOURCES > /dev/null \
-    || fail "$IN/$BH.tar.gz: sha256 differs from tinycc/hex0-handoff.SOURCES"
+"$BIN/sha256sum" --check tinycc/builder-hex0.SOURCES > /dev/null \
+    || fail "$IN/$BH.tar.gz: sha256 differs from tinycc/builder-hex0.SOURCES"
 rm -rf "$IN/$BH"
 "$BIN/ungz" --file "$IN/$BH.tar.gz" --output "$OUT/builder-hex0.tar" 2> /dev/null \
     || fail "ungz failed on $BH.tar.gz"
@@ -153,9 +153,9 @@ while read -r want path; do
 done < "build-out/tinycc/lb/$LB/steps/tcc-0.9.26/tcc-0.9.26.x86.checksums"
 echo "i386-one-boot-check: what tcc-mes made in the boot, against tests/pins/tinycc.sha256"
 for f in crt1.o crti.o crtn.o libc.a tcc/libtcc1.a libgetopt.a; do
-    check /first/${f##*/} "$(pin tinycc/hex0-handoff/boot1/usr/lib/mes/$f)" "pin "
+    check /first/${f##*/} "$(pin tinycc/first/usr/lib/mes/$f)" "pin "
 done
-check /usr/bin/hex0-export "$(pin tinycc/hex0-handoff/boot1/usr/bin/hex0-export)" "pin "
+check /usr/bin/hex0-export "$(pin tinycc/first/usr/bin/hex0-export)" "pin "
 [ "$checked" = "$(wc -l < "$OUT/export.list")" ] || fail "$checked files compared, $(wc -l < "$OUT/export.list") exported"
 [ "$bad" = 0 ] || fail "$bad file(s) differ (log: $OUT/boot.log)"
 echo "i386-one-boot-check: OK, $checked files; live-bootstrap's published tcc-0.9.26 reached on builder-hex0"

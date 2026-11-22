@@ -1,12 +1,12 @@
-/* tinycc/hex0-export.c -- boot 2's last program: OUT FILE... writes each
+/* tinycc/hex0-export.c -- the boot's last program: OUT FILE... writes each
  * FILE to OUT as "src SIZE PATH\n" and its bytes, the record format of
- * builder-hex0's own input stream, then "end\n".  Boot 2 runs it with OUT
+ * builder-hex0's own input stream, then "end\n".  The boot runs it with OUT
  * /dev/hda, which builder-hex0 writes to the drive's first sectors when
- * its stream ends; tests/tinycc/hex0-handoff-check.sh reads the records
- * back and hashes the files on the host.
+ * its stream ends; tests/tinycc/i386-one-boot-check.sh reads the records
+ * back (tinycc/hex0-records.py) and hashes the files on the host.
  *
- * Compiled for i386 in boot 1 by the first tcc against the mes libc that
- * tcc made (tinycc/hex0-handoff.recipe).  Only open, read, write, lseek
+ * Compiled in the boot by the first tcc against the mes libc that tcc
+ * made (tinycc/i386-one-boot-disk.py).  Only open, read, write, lseek
  * and close. */
 #include <fcntl.h>
 #include <stdlib.h>

@@ -33,7 +33,7 @@ i386-one-boot.kaem  /kaem.run, in this order:
       ours: copies of what tcc-mes made, the exporter, and the export.
 
 i386-one-boot.list  what follows builder-hex0's two stages on the disk,
-    one item per line, as tinycc/hex0-disk.c reads them:
+    one item per line:
         d PATH        a directory: "src 0 PATH"
         f PATH NAME   the host's file PATH as "src SIZE NAME" and its bytes
         x LINE        LINE itself, a command for builder-hex0's shell

@@ -1,5 +1,0 @@
-# tests/pins/k0.sha256 -- sha256 of kernel/k0/k0.hex0 as hex0-seed builds it.
-# kernel/k0/check.sh compares.  When a change to k0.hex0 is meant to alter
-# it, update this line in the same commit and say why.
-# 1,276 bytes: K0 as written from kernel/k0/SPEC.md.
-7134d88e312e9e30396a802523deb1984bd7f3ea789d9be1bd01e11fee528c6e  k0.bin

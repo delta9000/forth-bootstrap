@@ -105,19 +105,15 @@ done
     cut_kaem "$K" '# Make directories' 'cd ../..' | grep -v '^cp ${LIBDIR}/'
 } | pkg=mes-0.28 run_kaem mes-0.28 /steps/mes-0.28
 
-# tcc-0.9.26: everything but MesCC and the checksums.  With --prepare, only
-# the lines before MesCC (unpack, simple-patches, config.h): the tree the
-# hex0 hand-off copies into K0's image (tests/tinycc/hex0-handoff-check.sh).
+# tcc-0.9.26: everything but MesCC and the checksums.
 K=/steps/tcc-0.9.26/pass1.kaem
 {
     echo 'set -ex'
     cut_kaem "$K" '# Vars' '${MES} --no-auto-compile -e main ${BINDIR}/mescc.scm -- \'
-    if [ "${1:-}" != --prepare ]; then
-        echo "cp $FIRST tcc-mes"
-        end='# Checksums'
-        [ "${1:-}" = --first-only ] && end='# Install'
-        cut_kaem "$K" 'cp tcc-mes ${BINDIR}/' "$end"
-    fi
+    echo "cp $FIRST tcc-mes"
+    end='# Checksums'
+    [ "${1:-}" = --first-only ] && end='# Install'
+    cut_kaem "$K" 'cp tcc-mes ${BINDIR}/' "$end"
 } | pkg=tcc-0.9.26 run_kaem tcc-0.9.26 /steps/tcc-0.9.26
 
 echo "==== lb-replay: done"

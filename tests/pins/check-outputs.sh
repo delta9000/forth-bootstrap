@@ -1,5 +1,5 @@
 #!/bin/sh
-# check-outputs.sh -- compare what checks 04, 07 and 08 built with
+# check-outputs.sh -- compare what checks 04 and 07 built with
 # tests/pins/outputs.sha256.  A file those checks did not build (a SKIP) is
 # reported and not compared.  Run from the repository root after them.
 set -eu

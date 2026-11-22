@@ -6,7 +6,7 @@ chain/plumbing/SOURCES and chain/plumbing/lexers.SOURCES (sha256sum --check in k
 chain/plumbing/chain.SOURCES (chain/gcc-direct/chain.sh), chain/plumbing/late.SOURCES
 (chain/gcc-direct/late-tools.sh), chain/gcc64/SOURCES (chain/gcc64/run-gcc64.sh, which also
 holds the download URLs), tinycc/SOURCES (tinycc/build-first-tcc.sh and
-tests/tinycc/junction-check.sh) and tinycc/hex0-handoff.SOURCES
+tests/tinycc/junction-check.sh) and tinycc/builder-hex0.SOURCES
 (tests/tinycc/hex0-handoff-check.sh); chain/ladder/stage12.sh reads MANIFEST.sha256 itself.
 This proves each of those pins is in MANIFEST.sha256 with the same sha256
 and that every MANIFEST entry is pinned by some stage.
@@ -31,7 +31,7 @@ def main():
     manifest = {path: sha for sha, path in rows("MANIFEST.sha256")}
     pins = []                                   # (file, path, sha)
     for f in ("chain/plumbing/SOURCES", "chain/plumbing/lexers.SOURCES", "tinycc/SOURCES",
-              "tinycc/hex0-handoff.SOURCES"):
+              "tinycc/builder-hex0.SOURCES"):
         pins += [(f, path, sha) for sha, path, *_ in rows(f) if path.startswith("build-out/")]
     pins += [("chain/plumbing/chain.SOURCES", CHAIN_DIRS[n] + n, sha) for n, sha, *_ in rows("chain/plumbing/chain.SOURCES")]
     for f in ("chain/plumbing/late.SOURCES", "chain/gcc64/SOURCES"):

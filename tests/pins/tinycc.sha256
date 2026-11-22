@@ -32,22 +32,13 @@
 #                      live-bootstrap's archive with them once
 #   tinycc/kaem-i386   build-out/tinycc/kaem-i386, vendor/mescc-tools/Kaem
 #                      compiled like those tools, with the process calls
-#                      of tinycc/m2libc-kaem-i386.c (99,008 bytes).  Not
-#                      the Mes-libc kaem of hex0-handoff/boot1 below,
-#                      which the first tcc compiles.
-#   tinycc/hex0-handoff/boot1/...
-#                      what boot 1 of tests/tinycc/hex0-handoff-check.sh
-#                      hands to boot 2 besides tcc-mes and tcc-boot0: the
-#                      mes libc tcc-mes makes (all but libc.a equal what
-#                      live-bootstrap publishes after tcc-boot2) and the i386
-#                      kaem, cp, chmod, match, rm and hex0-export the first
-#                      tcc builds against it.  The old first tcc (7b2efd95,
-#                      pnut's libc) gave the same bytes in the host
-#                      junction (tinycc/lb-replay.sh stopped before
-#                      "# Install") and under K0; the first tcc with Mes
-#                      libc (d9e97270) gives them under K0.  The i386 first
-#                      tcc (92d11438) gives the same libc, kaem and
-#                      hex0-export on Linux and on builder-hex0
+#                      of tinycc/m2libc-kaem-i386.c (99,008 bytes).
+#   tinycc/first/...
+#                      what tcc-mes makes in the one boot before the later
+#                      stages overwrite it (the boot keeps copies under
+#                      /first): the mes libc (all but libc.a equal what
+#                      live-bootstrap publishes after tcc-boot2) and
+#                      hex0-export, which it builds against that libc
 #                      (tests/tinycc/i386-one-boot-check.sh).
 # When a change is meant to alter one, update its line in the same commit
 # and say why.
@@ -67,18 +58,13 @@ a343a053c2e14688d8de8e673d07a154d969a9b51bb12fccedb4c409c68ad10b  tinycc/bin/chm
 ecaa91caf41baec5a83433fd3119569e01aaa7971c0a32f9f1cde85b9d4145d8  tinycc/bin/simple-patch
 ba8a06172889a3e59c94cd50810db2513c78cf38445b7616efa5fd7f1fb71d25  tinycc/bin/ungz
 8d405aadcdce3ade00b9016bee8867d1ea9e89af551a051ceb8985d63bca7e21  tinycc/bin/untar
-76d280e0733f2c84aad180968167d789a825ac56526bddba4f100d6d74851027  tinycc/hex0-handoff/boot1/usr/lib/mes/crt1.o
-09d4f9821a2566f7e56381a19259c41bd97f3c5ed83f490705acbfd1139a7736  tinycc/hex0-handoff/boot1/usr/lib/mes/crti.o
-461ca1494737fab86fe1c1d3addeaf9d0ece413e353abcdea8674db3f700cda3  tinycc/hex0-handoff/boot1/usr/lib/mes/crtn.o
-84d12efe0d114d1c41eeeb4d3d73bc1a6f1ac551eee5acf933c055aaafafdbc7  tinycc/hex0-handoff/boot1/usr/lib/mes/libc.a
-12c07ae103e7e3b390150a79e5c600d88de14e9bb73a066f6342582729ef5a3f  tinycc/hex0-handoff/boot1/usr/lib/mes/libgetopt.a
-136f97c356445ef95c35ae1b6fb2f7a0546e3cf47b45cb4ee79d0a8f29cd04b4  tinycc/hex0-handoff/boot1/usr/lib/mes/tcc/libtcc1.a
-3b1ce3100e780e51e1d68b25a451e363b9aaf78f982194426cd7be37f4e8c4db  tinycc/hex0-handoff/boot1/usr/bin/kaem
-1b0c4cda107805d4f5ecd4b108874a5a4f1a512d9344e07141061e3fccf2360a  tinycc/hex0-handoff/boot1/usr/bin/cp
-04371ba28e47b13c0a835a18e58ded4f211516bfba98c518cf36a31d0c00528e  tinycc/hex0-handoff/boot1/usr/bin/chmod
-73dcfc1038ef762320d00a716e3a82f24cc79e38567a0a5161b65b1c4dffcd06  tinycc/hex0-handoff/boot1/usr/bin/match
-0bbaa390cf9d536da80f16d6748cca48b26cb70a7facef1f518135241ea7746f  tinycc/hex0-handoff/boot1/usr/bin/rm
-498dea62744eed530314e87c4864d0b84d7d676f0bfba6b9f52ceb3fe9bb851a  tinycc/hex0-handoff/boot1/usr/bin/hex0-export
+76d280e0733f2c84aad180968167d789a825ac56526bddba4f100d6d74851027  tinycc/first/usr/lib/mes/crt1.o
+09d4f9821a2566f7e56381a19259c41bd97f3c5ed83f490705acbfd1139a7736  tinycc/first/usr/lib/mes/crti.o
+461ca1494737fab86fe1c1d3addeaf9d0ece413e353abcdea8674db3f700cda3  tinycc/first/usr/lib/mes/crtn.o
+84d12efe0d114d1c41eeeb4d3d73bc1a6f1ac551eee5acf933c055aaafafdbc7  tinycc/first/usr/lib/mes/libc.a
+12c07ae103e7e3b390150a79e5c600d88de14e9bb73a066f6342582729ef5a3f  tinycc/first/usr/lib/mes/libgetopt.a
+136f97c356445ef95c35ae1b6fb2f7a0546e3cf47b45cb4ee79d0a8f29cd04b4  tinycc/first/usr/lib/mes/tcc/libtcc1.a
+498dea62744eed530314e87c4864d0b84d7d676f0bfba6b9f52ceb3fe9bb851a  tinycc/first/usr/bin/hex0-export
 a7ceff1e1eab52d5eb4fe5618bfdd6e95e4dff0c50b30af6c4c8ceb067fede9f  tinycc/bin-i386/catm
 3ebb67d5e3a8128afca1ff8567b3b683e9d8ba905aa23d125787694f86832c7c  tinycc/bin-i386/checksum-transcriber
 fba7585f86a374e6f00c805ea18c25b8c41b14423a3476f4cef7cdb719a6eaed  tinycc/bin-i386/chmod

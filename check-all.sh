@@ -20,28 +20,20 @@
 #   06  tools/check-pins.py: every archive pin agrees with MANIFEST.sha256
 #   07  Stage A (tests/cc/stage-a-check.sh): the Forth compiler's M1 for
 #       M2-Planet equals a GCC-built M2-Planet's (needs gcc; SKIP without)
-#   08  kernel/k1/tests/direct-build-check.sh: seed Forth builds K1 with no
-#       other program running, its objects equal seed-cc's, and
-#       k1-asm.fth's bytes equal GNU as on its comments (needs strace and
-#       as; SKIP without)
-#   09  tests/seed/asm-check.py and kernel/k0/check.sh: the two hex0
-#       sources, seed/000-seed.hex0 and kernel/k0/k0.hex0, equal GNU as on
-#       their comments (with llvm-mc installed, LLVM's assembler must write
-#       the same bytes too), their branch notes and addresses add up, the
-#       seed's ELF and dictionary fields equal what their comments state,
-#       and K0's build has its pinned sha256 (needs as; SKIP without)
-#   10  tests/pins/check-outputs.sh: seed-cc, seed-ar, Stage A's cc-out-v1,
-#       the K1 recipe runner and K1 equal tests/pins/outputs.sha256 (files a
-#       skipped step did not build are reported, not compared)
+#   09  tests/seed/asm-check.py: seed/000-seed.hex0 equals GNU as on its
+#       comments (with llvm-mc installed, LLVM's assembler must write the
+#       same bytes too), its branch notes and addresses add up, and the
+#       seed's ELF and dictionary fields equal what their comments state
+#       (needs as; SKIP without)
+#   10  tests/pins/check-outputs.sh: seed-cc, seed-ar and Stage A's
+#       cc-out-v1 equal tests/pins/outputs.sha256 (files a skipped step
+#       did not build are reported, not compared)
 #
 # Long steps, opt in:
 #   CHECK_CHAIN=1   chain/plumbing-root.sh: hex0-seed to the GCC 4.0.4 fixed
 #                   point in a root whose only executable is hex0-seed
 #                   (18 minutes on 24 threads; needs bwrap, strace and the
 #                   archives of MANIFEST.sha256 in build-out/)
-#   CHECK_K1=smoke  kernel/k1/run-chain.sh --direct-smoke under QEMU (under a minute)
-#   CHECK_K1=linux  kernel/k1/run-chain.sh --direct-linux: hex0 to Linux under
-#                   K1 (1 h 38 min with KVM; 24 GiB guest RAM)
 #   CHECK_TINYCC=1  tests/tinycc/junction-check.sh: seed Forth builds the
 #                   first tcc, and live-bootstrap's tcc-0.9.26 pass1.kaem
 #                   from it reaches their published tcc and libraries
@@ -64,7 +56,7 @@
 #                   strace (about a minute; needs what CHECK_TINYCC needs,
 #                   gcc -m32, as, objcopy, strace and python3, and for the
 #                   two builder-hex0 boots QEMU, KVM and the archive of
-#                   tinycc/hex0-handoff.SOURCES; SKIP without)
+#                   tinycc/builder-hex0.SOURCES; SKIP without)
 #   CHECK_I386_BOOT=1  tests/tinycc/i386-one-boot-check.sh: builder-hex0
 #                   boots a disk of sources with no program on it.  Its
 #                   built-in hex0 assembles the i386 seed and
@@ -75,7 +67,7 @@
 #                   pins and the host's seed (under half a minute with
 #                   KVM; needs QEMU, KVM, python3, the vendor/stage0-posix
 #                   submodule and the archives of tinycc/SOURCES and
-#                   tinycc/hex0-handoff.SOURCES; SKIP without them)
+#                   tinycc/builder-hex0.SOURCES; SKIP without them)
 #   CHECK_I386_SEED=1  the i386 seed alone (seed/i386/SPEC.md 13.1):
 #                   seed/i386/build.sh assembles seed/i386/000-seed.hex0
 #                   into the 1191-byte seed-forth-i386; its comments equal
@@ -87,16 +79,7 @@
 #                   assembles the seed in a boot and the result equals the
 #                   host's (seconds; needs the host kernel's i386 support,
 #                   as and python3; strace for the strace run; QEMU, KVM and
-#                   the archive of tinycc/hex0-handoff.SOURCES for the boot;
-#                   SKIP without them)
-#   CHECK_HEX0_HANDOFF=1  tests/tinycc/hex0-handoff-check.sh: K0 runs seed
-#                   Forth, which builds the first tcc; the first tcc makes
-#                   tcc-boot0 and mes libc and writes live-bootstrap's
-#                   builder-hex0 disk through K0; builder-hex0 boots it and
-#                   runs pass1.kaem from tcc-boot0 to their published tcc and
-#                   libraries (under a minute with KVM; needs QEMU, KVM,
-#                   bwrap, the vendor/stage0-posix submodule and the
-#                   archives of tinycc/SOURCES and tinycc/hex0-handoff.SOURCES;
+#                   the archive of tinycc/builder-hex0.SOURCES for the boot;
 #                   SKIP without them)
 #
 # Each step's output goes to $TMPDIR/check-all-NAME.log (default /tmp); the
@@ -146,13 +129,8 @@ if have gcc; then
 else
     skip "07-stage-a" "missing: gcc"
 fi
-if have strace && have as && have python3; then
-    run "08-k1-build" sh kernel/k1/tests/direct-build-check.sh
-else
-    skip "08-k1-build" "missing: strace, as or python3"
-fi
 if have as && have python3; then
-    run "09-hex0-asm" sh -c 'python3 tests/seed/asm-check.py && sh kernel/k0/check.sh'
+    run "09-hex0-asm" python3 tests/seed/asm-check.py
 else
     skip "09-hex0-asm" "missing: as or python3"
 fi
@@ -221,19 +199,6 @@ if [ "${CHECK_I386_SEED:-0}" = 1 ]; then
         skip "27-i386-seed-boot" "$why"
     fi
 fi
-if [ "${CHECK_HEX0_HANDOFF:-0}" = 1 ]; then
-    if why=$(tests/tinycc/hex0-handoff-check.sh --probe); then
-        run "14-hex0-handoff" tests/tinycc/hex0-handoff-check.sh
-    else
-        skip "14-hex0-handoff" "$why"
-    fi
-fi
-case ${CHECK_K1:-} in
-    smoke) run "12-k1-smoke" kernel/k1/run-chain.sh --direct-smoke ;;
-    linux) run "12-k1-linux" kernel/k1/run-chain.sh --direct-linux ;;
-    '') ;;
-    *) echo "check-all: CHECK_K1 is smoke or linux" >&2; exit 2 ;;
-esac
 
 echo
 echo "check-all: $PASS OK, $SKIP SKIP, $FAIL FAIL"

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Host-side builder-hex0 disk, laid out as tinycc/hex0-disk.c (and
+"""Host-side builder-hex0 disk, laid out as tinycc/i386-one-boot-disk.py (and
 live-bootstrap's lib/generator.py) does it:
 
     python3 -I mkdisk.py OUT STAGE1 STAGE2 LIST
