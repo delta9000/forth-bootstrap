@@ -250,6 +250,4 @@ and `main` was reduced to the last of those routes, the i386 one boot:
 The pins of the route did not move at any commit: the first tcc is
 `92d11438...` before and after.  The paths in the table below that name
 `kernel/`, `chain/`, `cc/driver/`, `forth/130-asm.fth` and
-`MANIFEST.sha256` are the experiments tag's.  This paragraph, like the
-work it describes, was written with an AI model under the owner's
-direction.
+`MANIFEST.sha256` are the experiments tag's.
