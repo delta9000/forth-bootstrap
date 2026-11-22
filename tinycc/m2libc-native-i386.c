@@ -1,8 +1,7 @@
 /* tinycc/m2libc-native-i386.c -- M2libc's x86/linux layer for the Forth
-   compiler's i386 native mode, in plain C.  It is tinycc/m2libc-native.c
-   with i386 system-call numbers and types.
+   compiler, in plain C.
 
-   tinycc/build-tools-i386.sh puts this ahead of each tool's C source on the
+   The seed's job tinycc/i386-seed/tool.fth puts this ahead of each tool's C source on the
    compiler's stdin.  M2libc (vendor/stage0-posix/M2libc) is compiled in
    its own M2 mode, as M2-Mesoplanet builds stage0's tools: __M2__ makes
    its headers include its .c files.  This file stands in for what

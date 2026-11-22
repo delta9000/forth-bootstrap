@@ -1,14 +1,31 @@
 /* tinycc/direct-input-i386.c -- the one translation unit the Forth
-   compiler compiles into the i386 first tcc
-   (tinycc/build-first-tcc-i386.sh copies it to
-   build-out/tcc-sources-i386/direct-input.c).
+   compiler compiles into the first tcc (tinycc/build-first-tcc-i386.sh
+   copies it to build-out/tcc-sources-i386/direct-input.c, the boot to
+   /direct-input.c).
 
-   tinycc/direct-input.c with __i386__ for __x86_64__: the same tcc
-   defines, live-bootstrap's for tcc-mes on x86, and the same Mes libc in
-   the same image, here with Mes's i386 headers and
-   tinycc/mes-libc-native-i386.c for its assembly.  Host and target are
-   both i386, so tcc.h also compiles its -run support (TCC_IS_NATIVE);
-   nothing in the route uses it. */
+   The tcc defines are live-bootstrap's for tcc-mes on x86 in
+   steps/tcc-0.9.26/pass1.kaem: BOOTSTRAP, HAVE_LONG_LONG 0, TCC_TARGET_I386
+   and the same CONFIG_* strings, so this tcc looks for headers, crt files
+   and libraries where tcc-mes does.  (pass1.kaem's -D inline= is left out;
+   it does not change the output.)
+
+   Host and target are both i386.  Mes 0.28's libc is compiled into the
+   same image (tinycc/mes-libc.c, which includes it from the unpacked
+   mes-0.28 tarball, with Mes's i386 headers and
+   tinycc/mes-libc-native-i386.c for its assembly), and the Forth
+   compiler's runtime supplies one system-call primitive.  Because host
+   and target are the same, tcc.h also compiles its -run support
+   (TCC_IS_NATIVE); nothing in the route uses it.
+
+   getcwd: with -g, tcc records the directory of tcc.c, through Mes's
+   getcwd, so this tcc records
+   /steps/tcc-0.9.26/build/tcc-0.9.26-1147-gee75a10c/ as tcc-mes does.
+
+   Floating point: HAVE_FLOAT is not defined, as for tcc-mes, so tcc.c's
+   strtod and strtold calls for float literals are compiled out; only an
+   F-suffixed literal calls strtof, which traps
+   (mes-libc-native-i386.c), and a hex float calls Mes's ldexp stub,
+   which returns 0, as in tcc-mes. */
 #define __linux__ 1
 #define __i386__ 1
 #define BOOTSTRAP 1

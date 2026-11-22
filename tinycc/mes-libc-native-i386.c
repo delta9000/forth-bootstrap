@@ -1,11 +1,12 @@
 /* tinycc/mes-libc-native-i386.c -- Mes libc's system-call and startup
-   layer for the Forth compiler's i386 native mode, in plain C.
+   layer for the Forth compiler, in plain C.
 
    tinycc/build-first-tcc-i386.sh copies this to
    build-out/tcc-sources-i386/mes-libc-native.c, the name tinycc/mes-libc.c
    includes first; then come the Mes libc files that live-bootstrap's
    steps/tcc-0.9.26/pass1.kaem compiles into libc.a, then the program.  It
-   is tinycc/mes-libc-native.c for i386, and stands in for the same files:
+   stands in for the files of that list that are assembly or that need
+   floating-point arithmetic:
      lib/linux/x86-mes-gcc/syscall.c, _exit.c, _write.c  inline asm
      lib/x86-mes-gcc/setjmp.c                            inline asm
      lib/linux/x86-mes-gcc/crt1.c (_start)               inline asm

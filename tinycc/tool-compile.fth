@@ -1,16 +1,15 @@
-\ tinycc/tool-compile.fth -- the native-mode driver that compiles one source
-\ preparation tool against M2libc (tinycc/build-tools.sh).
+\ tinycc/tool-compile.fth -- the driver that compiles one program against
+\ M2libc: a source-preparation tool, kaem, or a test.
 \
-\ Loaded after forth/010-lib.fth, the compiler layers 020 to 119 (without
-\ 081, 114 and 116) and two definitions that name the tool:
-\     create tool-output s, build-out/tinycc/bin/NAME [lit] 0 c,
-\     create tool-source s, PATH  tool-source [lit] LENGTH cc-prep-source-name
-\ (build-tools.sh prints them with bash's printf; tinycc/tools/catm.fth has
-\ catm's).  The bytes after this file on stdin are tinycc/m2libc-native.c
-\ followed by the tool's C source; PATH is that source's, so its quoted
-\ includes resolve beside it.  Like tinycc/tcc-compile.fth, but with
-\ M2libc's include paths, and the output is written executable (0755),
-\ so that no chmod is needed before chmod itself is built.
+\ Loaded by the seed's job (tinycc/i386-seed/tool.fth, or
+\ tests/cc/i386/job.fth for a test) after the compiler
+\ (forth/i386/layers.fth) and after the job has defined tool-output, a
+\ word that pushes the output file's name with its NUL, has given the
+\ unit's name to cc-prep-source-name, so that quoted includes resolve
+\ beside it, and has listed the C files to read with cc-input-file.  Like
+\ tinycc/tcc-compile-i386.fth, but with M2libc's include paths, and the
+\ output is written executable (0755), so that no chmod is needed before
+\ chmod itself is built.
 true cc-target-lp64 !
 true cc-prep-direct !
 [lit] 1 cc-bootstrap-floatbits !

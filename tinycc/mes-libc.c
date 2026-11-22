@@ -1,16 +1,17 @@
 /* tinycc/mes-libc.c -- the C library compiled into the first tcc: Mes
    0.28's libc, from tinycc-inputs/mes-0.28.tar.gz, as live-bootstrap's
    steps/tcc-0.9.26/pass1.kaem lists it for its unified-libc.c (the libc.a
-   that tcc-mes builds), with x86_64 for ${MES_ARCH}.  The list is that
-   catm line in its order, without:
-     linux/x86_64-mes-gcc/_exit.c, syscall.c, _write.c and
-     x86_64-mes-gcc/setjmp.c  inline assembly; tinycc/mes-libc-native.c
-       stands in for them, and for crt1.c;
-     mes/abtod.c, mes/dtoab.c  double arithmetic, which native mode does
-       not have; mes-libc-native.c traps them;
+   that tcc-mes builds).  The list is that catm line in its order,
+   without:
+     linux/${MES_ARCH}-mes-gcc/_exit.c, syscall.c, _write.c and
+     ${MES_ARCH}-mes-gcc/setjmp.c  inline assembly;
+       tinycc/mes-libc-native-i386.c stands in for them, and for crt1.c;
+     mes/abtod.c, mes/dtoab.c  double arithmetic, which the Forth compiler
+       does not have; mes-libc-native-i386.c traps them;
      math/ceil.c  double arithmetic; nothing here calls it.
-   build-first-tcc.sh copies this to build-out/tcc-sources/, beside the
-   unpacked mes-0.28/. */
+   build-first-tcc-i386.sh copies this to build-out/tcc-sources-i386/,
+   beside the unpacked mes-0.28/ and beside mes-libc-native-i386.c under
+   the name mes-libc-native.c. */
 #define HAVE_CONFIG_H 1
 #include "mes-libc-native.c"
 #include "mes-0.28/lib/ctype/isalnum.c"

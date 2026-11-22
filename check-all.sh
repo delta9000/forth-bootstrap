@@ -20,12 +20,6 @@
 #       (needs as; SKIP without)
 #
 # Long steps, opt in:
-#   CHECK_TINYCC=1  tests/tinycc/junction-check.sh: seed Forth builds the
-#                   first tcc, and live-bootstrap's tcc-0.9.26 pass1.kaem
-#                   from it reaches their published tcc and libraries
-#                   (seconds; needs bwrap, the host kernel's i386 support,
-#                   the vendor/stage0-posix submodule and the archives of
-#                   tinycc/SOURCES; SKIP without the first two)
 #   CHECK_I386=1    the i386 back end (cc/i386/) and what it builds
 #                   (tinycc/README.md): its encoders against GNU as, no
 #                   x86-64 encoder reached, the run-time corpus against
@@ -107,13 +101,6 @@ if have as && have python3; then
     run "09-hex0-asm" python3 tests/seed/asm-check.py
 else
     skip "09-hex0-asm" "missing: as or python3"
-fi
-if [ "${CHECK_TINYCC:-0}" = 1 ]; then
-    if why=$(tests/tinycc/junction-check.sh --probe); then
-        run "13-tinycc-junction" tests/tinycc/junction-check.sh
-    else
-        skip "13-tinycc-junction" "$why"
-    fi
 fi
 if [ "${CHECK_I386:-0}" = 1 ]; then
     if ! why=$(tests/tinycc/junction-check.sh --probe); then
