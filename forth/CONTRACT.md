@@ -283,7 +283,7 @@ File rules the host keeps on builder-hex0 (P§5):
   write the output in one loop at the end;
 - every file opened is closed: a process has 448 descriptor slots and
   the kernel does not check the bound (B2:98, 1077-1085). A first-tcc
-  compile makes 960 `open` calls **[measured]**.
+  compile makes 980 `open` calls **[measured]**.
 
 ### 5.2 `brk-alloc` ( bytes -- addr | 0 )
 
@@ -367,8 +367,8 @@ needs exist (after the outer interpreter has taken over, where control
 flow is available). The library therefore defines `native!` itself, and
 `forth/020-cc-arena.fth` uses the library's.
 
-Reading is one `read` per byte. A first-tcc run reads 554 KB of Forth:
-about 35 ms on builder-hex0 at 242 cycles a call (P§7) and a few tenths
+Reading is one `read` per byte. A first-tcc run reads 367 KB of Forth:
+about 23 ms on builder-hex0 at 242 cycles a call (P§7) and a few tenths
 of a second on Linux. No buffer is kept.
 
 ### 6.3 The library's last line
