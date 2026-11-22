@@ -1,9 +1,8 @@
-/* A function's parameters and locals share one frame of 32 eight-byte
-   slots (cc-frame-slots).  Two parameters and int[30] fill it exactly;
-   the next local would sit below the frame, where pushes overwrite it.
-   The compiler dies on its declaration instead. */
+/* Error 162: a function's locals share one frame of 131,072 eight-byte
+   slots (cc-native-frame-limit, 1 MiB).  int[262144] fills it exactly;
+   the compiler dies on the next local's declaration. */
 int f(int a, int b) {
-  int full[30];
+  int full[262144];
   int one_too_many;
   full[0] = a;
   one_too_many = b;

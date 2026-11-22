@@ -4,9 +4,9 @@
 #
 # A compiler failure ends in cc-die (cc/020-cc-arena.fth), which prints
 # "cc: line N: error C" and exits with C, or in the library's `die` with a
-# message of its own.  This script finds every code C that cc/NNN-*.fth
-# (the compiler layers and cc/141-archive.fth) can die with, and puts each
-# in exactly one of three lists:
+# message of its own.  This script finds every code C that the compiler's
+# files (the ones forth/i386/layers.fth includes) can die with, and puts
+# each in exactly one of three lists:
 #
 #   tested       a die gate in tests/cc/gates/run-gates.sh expects it (read
 #                from that script's die_gates, not kept here)
@@ -24,9 +24,8 @@
 #   1. `C W` (or `[lit] C W`, before the library interpreter took over),
 #      where W is a word that dies with its last argument:
 #      cc-die and cc-check-cap themselves, the wrappers that hand their code
-#      to one of them (cc-va-die, cc-obj-bound, cc-workspace-map,
-#      cc-read-all), and the library's `die`, which cc-f64-fail in
-#      cc/128-cc-float-literal.fth calls with 248 after its own message.
+#      to one of them (cc-workspace-map, cc-read-all), and the library's
+#      `die`.
 #   2. The hand-kept list `indirect` below: codes stored as the
 #      preprocessor sink's die code and raised later by cc-prep-emit-byte.
 #      The script checks each entry against the source, and fails on a
@@ -45,22 +44,20 @@ cd "$(dirname "$0")/../../.."
 verbose=0
 [ "${1:-}" = -v ] && verbose=1
 
-die_words="cc-die cc-check-cap cc-va-die cc-obj-bound cc-workspace-map cc-read-all die"
+die_words="cc-die cc-check-cap cc-workspace-map cc-read-all die"
+files=$(sed -n 's/^include //p' forth/i386/layers.fth)
 
 # "<file>|<line text, trimmed>": the calls of a die word whose code is not a
 # literal right before it.
 forwarding=(
-  "cc/020-cc-arena.fth|die ;"                                   # cc-die: the exit itself
-  "cc/020-cc-arena.fth|>r > if, r> cc-die then,"                # cc-check-cap
+  "forth/i386/020-cc-arena.fth|die ;"                           # cc-die: the exit itself
+  "forth/i386/020-cc-arena.fth|>r > if, r> cc-die then,"        # cc-check-cap
   "cc/030-cc-io.fth|cc-ra-n @ 1+ cc-ra-cap @ cc-ra-code @ cc-check-cap"   # cc-read-all, stdin
   "cc/030-cc-io.fth|cc-ra-n @ 1+ cc-ra-cap @ cc-ra-code @ cc-check-cap   \\ full: die"
   "cc/030-cc-io.fth|>r dup [lit] 0 <= if, r@ cc-die then,"      # cc-workspace-round
   "cc/030-cc-io.fth|dup [lit] 9223372036854771712 > if, r@ cc-die then,"
   "cc/030-cc-io.fth|dup [lit] 0 <= if, r@ cc-die then, r> drop ;"   # cc-workspace-map
   "cc/040-cc-prep.fth|cc-pp-out-pos @ 1+ cc-pp-out-cap @ cc-pp-out-code @ cc-check-cap"  # cc-prep-emit-byte
-  "cc/081-cc-object.fth|>r over 0< if, r@ cc-die then,"         # cc-obj-bound
-  "cc/081-cc-object.fth|> if, r@ cc-die then, r> drop ;"
-  "cc/126-cc-varargs.fth|: cc-va-die cc-va-error-prefix [lit] 9 cc-err-write cc-die ;"
 )
 
 # "<code>|<file>|<word>|<how it reaches cc-die>": codes that become the
@@ -78,25 +75,18 @@ unreachable=(
   "62|cc-scope-pop (cc/070-cc-sym.fth) with no push; every pop is paired with a push in the parser, so it is a parser bug (a stray '}' dies 202 or 186)"
 )
 
-# Untested, to do.  Grouped by the first layer that raises each code; -v
-# prints them all.  The layers from 115 up are the native, SysV, object,
-# link and archive code that cc/driver/seed-cc.c and seed-ar.c drive; which
-# of their codes cc-main (what run-gates.sh feeds) can reach has not been
-# checked, and the link and archive codes (250-255) fail on object and
-# archive inputs, not on C, so they need fixtures of that kind.
+# Untested, to do.  Grouped by the first file that raises each code; -v
+# prints them all.
 todo=(
   49                                            # 040-cc-prep.fth
   213 240                                       # 060-cc-types.fth
-  244 245 246 247 248                           # 081-cc-object.fth
-  118 123 212 219                               # 100-cc-expr.fth
-  214 238                                       # 110-cc-decl.fth
-  174                                           # 112-cc-stmt.fth
-  58 210                                        # 115-cc-native.fth
-  211                                           # 117-cc-native-program.fth
-  220 221 222 223 224 225 226 227               # 118-cc-native-init.fth
-  228 230 231 232 233 234 235 236 237 239 249   # 121-cc-sysv.fth
-  241 242                                       # 125-cc-consteval.fth
-  250 251 252 253 254 255                       # 140-cc-link.fth, 141-archive.fth
+  118 123                                       # 100-cc-expr.fth
+  214                                           # 110-cc-decl.fth
+  210                                           # 115-cc-native.fth
+  222 226                                       # 118-cc-native-init.fth
+  130                                           # i386/090-emit.fth
+  # raised only by the M2 subset's arms of 100 and 110
+  91 92 94 98 102 103 104 105 106 107 108 109 114 115 122 148
 )
 
 # ---------------------------------------------------------------------------
@@ -133,7 +123,7 @@ scan() {
                 print "IND", prev2, FILENAME ":" FNR, word
             pl2 = prev2; prev2 = prev1; prev1 = tok
         }
-    }' cc/[0-9][0-9][0-9]-*.fth
+    }' $files
 }
 
 scan_out=$(scan)

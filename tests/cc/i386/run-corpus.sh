@@ -11,9 +11,6 @@
 # a wrong high half of a long long shows, which the TinyCC junction's pins
 # cannot see.
 #
-# A die-N-*.c must instead be refused by the Forth compiler with exit
-# status N.
-#
 # Needs gcc with -m32 support, and a kernel that runs i386 programs (the
 # seed is one: ./seed-forth-i386, or the program SEED_I386 names).
 set -euo pipefail
@@ -41,19 +38,6 @@ for c in "$T"/*.c; do
     name=$(basename "$c" .c)
     rc=0
     forth "$name" || rc=$?
-    case $name in
-        die-*)
-            want=${name#die-}
-            want=${want%%-*}
-            if [ "$rc" = "$want" ]; then
-                echo "  refused  $name (error $rc)"
-                pass=$((pass + 1))
-            else
-                echo "  FAIL     $name: the seed exited $rc, expected $want"
-                bad=$((bad + 1))
-            fi
-            continue ;;
-    esac
     if [ "$rc" != 0 ] || [ -s "$B/$name.stdout" ] || [ ! -s "$B/$name.forth" ]; then
         echo "  FAIL     $name: the seed exited $rc: $(head -c 200 "$B/$name.stdout" "$B/$name.stderr" | tr '\n' ' ')"
         bad=$((bad + 1))

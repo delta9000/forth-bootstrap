@@ -10,10 +10,11 @@
 #       M1 program; it prints "hi", exits 42 and is 160 bytes
 #   04  tests/cc/seed-cc-rebuild-check.sh: seed Forth builds seed-cc and
 #       seed-ar; that seed-cc rebuilds both, byte for byte the same
-#   05  tests/cc/gates/run-gates.sh: the Forth compiler compiles the gate
-#       fixtures G0.c to M1b.c, each program exits as expected, and it
-#       rejects the die-* fixtures with the expected error code; then
-#       tests/cc/gates/check-coverage.sh puts every error code in cc/ in
+#   05  tests/cc/gates/run-gates.sh: the i386 seed compiles the gate
+#       fixtures in native mode, each program exits as expected, and the
+#       compiler rejects the die-* fixtures with the expected error code
+#       and line; then
+#       tests/cc/gates/check-coverage.sh puts every error code of the compiler in
 #       one list (tested, unreachable from C, or to do) and prints "N of M
 #       codes tested"
 #   06  tools/check-pins.py: every archive pin agrees with MANIFEST.sha256
