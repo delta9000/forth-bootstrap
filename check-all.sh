@@ -2,10 +2,9 @@
 # check-all.sh -- the repository's checks in one run.
 #
 # Quick steps (under a minute):
-#   01  seed/build.sh: hex0-seed assembles seed/000-seed.hex0 into the
-#       930-byte seed-forth
-#   02  ./test.sh: the seed primitives, forth/010-lib.fth and the first
-#       compiler layers
+#   02  ./test.sh: forth/test-010-lib.fth and the cc/test-NNN-*.fth files,
+#       the library's and the first compiler layers' own tests, on the
+#       i386 seed
 #   05  tests/cc/gates/run-gates.sh: the i386 seed compiles the gate
 #       fixtures in native mode, each program exits as expected, and the
 #       compiler rejects the die-* fixtures with the expected error code
@@ -13,11 +12,6 @@
 #       tests/cc/gates/check-coverage.sh puts every error code of the compiler in
 #       one list (tested, unreachable from C, or to do) and prints "N of M
 #       codes tested"
-#   09  tests/seed/asm-check.py: seed/000-seed.hex0 equals GNU as on its
-#       comments (with llvm-mc installed, LLVM's assembler must write the
-#       same bytes too), its branch notes and addresses add up, and the
-#       seed's ELF and dictionary fields equal what their comments state
-#       (needs as; SKIP without)
 #
 # Long steps, opt in:
 #   CHECK_I386=1    the i386 back end (cc/i386/) and what it builds
@@ -94,14 +88,8 @@ skip() {
 
 have() { command -v "$1" >/dev/null 2>&1; }
 
-run "01-seed" bash -c 'seed/build.sh && [ "$(wc -c < seed-forth)" -eq 930 ]'
 run "02-test" ./test.sh
 run "05-cc-gates" tests/cc/gates/run-gates.sh
-if have as && have python3; then
-    run "09-hex0-asm" python3 tests/seed/asm-check.py
-else
-    skip "09-hex0-asm" "missing: as or python3"
-fi
 if [ "${CHECK_I386:-0}" = 1 ]; then
     if ! why=$(tests/tinycc/junction-check.sh --probe); then
         skip "15-i386" "$why"
@@ -114,7 +102,7 @@ if [ "${CHECK_I386:-0}" = 1 ]; then
         run "16-i386-corpus" tests/cc/i386/run-corpus.sh
         run "17-i386-junction" tests/tinycc/i386-syscall-check.sh
         run "18-i386-standin" tests/tinycc/i386-standin-check.sh
-        run "20-i386-host" sh -c 'tests/forth/i386/standin-check.sh && python3 tests/forth/i386/asm-check.py && tests/forth/i386/high-halves-check.sh'
+        run "20-i386-host" sh -c 'python3 tests/forth/i386/asm-check.py && tests/forth/i386/high-halves-check.sh'
         run "21-i386-kaem" tests/tinycc/i386-kaem-check.sh
         if why=$(tests/tinycc/i386-kaem-boot-check.sh --probe); then
             run "22-i386-kaem-boot" tests/tinycc/i386-kaem-boot-check.sh

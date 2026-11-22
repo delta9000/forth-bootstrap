@@ -1,6 +1,5 @@
 \ test-020-cc-arena.fth — smoke test for cc-alloc + bytes-eq.
-\ Run via: cat 010-lib.fth 020-cc-arena.fth test-020-cc-arena.fth | ./seed-forth
-\          echo $?    # 0 = pass, 255 = fail
+\ Run by ./test.sh after the library and 020: 0 = pass, 255 = fail.
 \
 \ Pattern matches test-010-lib.fth: the first test seeds an accumulator, every
 \ subsequent test ANDs its boolean in.  The trailing `0= die` turns

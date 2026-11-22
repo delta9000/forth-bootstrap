@@ -8,7 +8,8 @@
 \   all-pass: acc = -1, 0= -> 0, exit code 0.
 \   any-fail: acc =  0, 0= -> -1 (low byte 0xFF = 255), exit code 255.
 \
-\ Run via:  cat 010-lib.fth test-010-lib.fth | ./seed-forth
+\ Run by ./test.sh, as the seed's job:
+\           seed-forth-i386 forth/i386/010-lib.fth forth/test-010-lib.fth
 \           echo $?    # 0 = pass, nonzero = fail
 
 \ ----- = and <> -----

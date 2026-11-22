@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Build seed-forth-i386 from seed/i386/000-seed.hex0 with stage0-posix's
-# hex0-seed, the 229-byte assembler that also builds the x86-64 seed
-# (seed/build.sh).  The AMD64 hex0-seed runs on the host; the file it writes
-# is an i386 ELF, which needs the host kernel's IA32 support to run.
+# hex0-seed, a 229-byte assembler.  The AMD64 hex0-seed runs on the host;
+# the file it writes is an i386 ELF, which needs the host kernel's IA32
+# support to run.
 #
 # In the boot the same source is assembled by builder-hex0's built-in hex0
 # command; the two results must be equal byte for byte.  Any hex0 assembler

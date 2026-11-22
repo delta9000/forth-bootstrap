@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # tests/seed/i386/test.sh -- the i386 seed alone (seed/i386/SPEC.md 13.1).
 #
-#   tests/seed/i386/test.sh            every case, and the differential oracle
+#   tests/seed/i386/test.sh            every case
 #   tests/seed/i386/test.sh --strace   the same cases, each run under
 #                                      strace -f, with its system calls
 #                                      checked by strace-check.py
@@ -10,21 +10,9 @@
 # Every case runs; a failing one prints FAIL with what it got, and the script
 # exits 1 at the end with the count.
 #
-# The differential oracle.  The x86-64 seed defines the arithmetic this seed
-# has to reproduce.  A case of kind "same" or "prelude" is also fed to the
-# x86-64 seed on standard input, and must print the same bytes and exit with
-# the same status there:
-#   same     the file is the same for both seeds: it makes no system call;
-#   prelude  the file starts with two lines that differ, the definitions of
-#            emit and die (call numbers 4 and 1 here, 1 and 60 there), and
-#            the rest is the same text;
-#   i386     no comparison.  The case's own text names a call number or
-#            reads something only this seed has: the bytes ; and a compiled
-#            call lay down, INPUT, ARGV, the command line, or a dictionary
-#            larger than the x86-64 seed's 64 KiB below its data stack.
-# The x86-64 seed is ./seed-forth, built by seed/build.sh when its source is
-# in the tree; otherwise oracle/seed-forth-x86-64, a prebuilt copy; or the
-# file named by ORACLE.
+# A case of kind "same" is its text alone.  A case of kind "prelude" starts
+# with two lines that define emit and die on syscall6 (write is call 4,
+# exit is call 1).
 #
 # The strace run checks, for every case: the only calls are brk, open, read,
 # write and exit; no read of descriptor 0; every read has count 1; no brk
@@ -43,27 +31,11 @@ STRACE=0
 seed/i386/build.sh
 SEED=$ROOT/seed-forth-i386
 
-if [ -n "${ORACLE:-}" ]; then
-    :
-elif [ -f seed/000-seed.hex0 ]; then
-    seed/build.sh
-    ORACLE=$ROOT/seed-forth
-elif [ -x oracle/seed-forth-x86-64 ]; then
-    ORACLE=$ROOT/oracle/seed-forth-x86-64
-else
-    echo "tests/seed/i386/test.sh: no x86-64 seed for the differential oracle" >&2
-    echo "  (seed/000-seed.hex0, oracle/seed-forth-x86-64 or ORACLE=...)" >&2
-    exit 1
-fi
-case $ORACLE in /*) ;; *) ORACLE=$ROOT/$ORACLE ;; esac
-echo "differential oracle: ${ORACLE#"$ROOT"/}"
-
 W=$(mktemp -d)
 trap 'rm -rf "$W"' EXIT
 
 PASSED=0
 FAILED=0
-COMPARED=0
 pass() { echo "  PASS: $*"; PASSED=$((PASSED + 1)); }
 fail() { echo "  FAIL: $*"; FAILED=$((FAILED + 1)); }
 hex() { od -An -v -tx1 "$1" | tr -d ' \n'; }
@@ -71,13 +43,9 @@ hex() { od -An -v -tx1 "$1" | tr -d ' \n'; }
 # The two-line prelude.  The seed has no emit, so the tests define one: the
 # byte goes to a free address 400 bytes into the sysvar page and is written
 # from there with syscall6.  die exits with the status on the stack.
-PRE32=': emit state 400 + c! 1 state 400 + 1 0 0 0 4 syscall6 drop ;
+PRE=': emit state 400 + c! 1 state 400 + 1 0 0 0 4 syscall6 drop ;
 : die 0 0 0 0 0 1 syscall6 ;
 '
-PRE64=': emit state 400 + c! 1 state 400 + 1 0 0 0 1 syscall6 drop ;
-: die 0 0 0 0 0 60 syscall6 ;
-'
-
 # run OPENS ARG...: run the seed in $W with the arguments; sets ec and out
 # (stdout in hex).  Under --strace, also sets trace_error if the calls break
 # a rule.
@@ -117,29 +85,11 @@ check() {
     if [ "$kind" = same ]; then
         printf '%s' "$body" > "$W/case.fth"
     else
-        printf '%s%s' "$PRE32" "$body" > "$W/case.fth"
+        printf '%s%s' "$PRE" "$body" > "$W/case.fth"
     fi
     run "$opens" case.fth "$@"
-    verdict "$name" "$want_ec" "$want" || return 0
-    if [ "$kind" = i386 ]; then
-        pass "$name"
-        return 0
-    fi
-    # The same text through the x86-64 seed, on standard input.
-    if [ "$kind" = same ]; then
-        cp "$W/case.fth" "$W/case64.fth"
-    else
-        printf '%s%s' "$PRE64" "$body" > "$W/case64.fth"
-    fi
-    local ec64=0 out64
-    timeout 60 "$ORACLE" < "$W/case64.fth" > "$W/out64" || ec64=$?
-    out64=$(hex "$W/out64")
-    COMPARED=$((COMPARED + 1))
-    if [ "$ec64" = "$ec" ] && [ "$out64" = "$out" ]; then
-        pass "$name (and the x86-64 seed agrees)"
-    else
-        fail "$name: the x86-64 seed exits $ec64 and prints $out64; this seed exits $ec and prints $out"
-    fi
+    verdict "$name" "$want_ec" "$want" && pass "$name"
+    return 0
 }
 
 # Forth used by several cases.
@@ -183,8 +133,7 @@ echo "----- the outer loop -----"
 check "an empty file exits 0" 0 '' same ''
 check "end of file in the middle of a definition exits 0" 0 '' same ': t dup'
 
-# No FILE argument and a missing FILE: status 1 and no output.  The x86-64
-# seed takes no argument, so there is nothing to compare.
+# No FILE argument and a missing FILE: status 1 and no output.
 run 0
 verdict "no argument exits 1 and prints nothing" 1 '' && pass "no argument exits 1 and prints nothing"
 run 1 no-such-file.fth
@@ -334,11 +283,10 @@ check ": is not immediate, sets STATE to 1 and links to the header before" 0 'BA
 check "; is immediate and sets STATE to 0" 0 'BA' prelude "${TICK}"$': f tick drop state 24 + @ 8 + c@ 65 + emit ; f ; : t ; state @ 65 + emit\n'
 # The bytes laid down: ; lays C2 04 00, a compiled word lays 6A 00 E8 and a
 # rel32 counted from the end of those seven bytes.  w's body is a call to
-# nop, 21 bytes back from the call's end; rec's is a call to itself.  The
-# x86-64 seed lays other bytes, so there is nothing to compare.
-check "; lays C2 04 00 and a compiled word lays 6A 00 E8 rel32" 0 '\x6a\x00\xe8\xeb\xff\xff\xff\xc2\x04\x00\x6a\x00\xe8\xf9\xff\xff\xff\xc2\x04\x00' i386 \
+# nop, 21 bytes back from the call's end; rec's is a call to itself.
+check "; lays C2 04 00 and a compiled word lays 6A 00 E8 rel32" 0 '\x6a\x00\xe8\xeb\xff\xff\xff\xc2\x04\x00\x6a\x00\xe8\xf9\xff\xff\xff\xc2\x04\x00' prelude \
     "${TICK}"$': nop ; : w nop ; : rec rec ;\n: b dup c@ emit 1 + ; : dump b b b b b b b b b b drop ;\ntick w dump tick rec dump\n'
-check "a compiled literal takes at most 18 bytes and : lays no prologue" 0 'AA' i386 \
+check "a compiled literal takes at most 18 bytes and : lays no prologue" 0 'AA' prelude \
     "${MINUS}${TICK}"$': here state 16 + @ ;\n: lit 12345678901234567890 ;\nhere tick lit - 3 - 19 / 0= 66 + emit\n: e ; here tick e - 3 - 0= 66 + emit\n'
 
 echo "----- the five traces of section 5.2 -----"
@@ -368,31 +316,31 @@ echo "----- INPUT, ARGV, syscall6 and a large dictionary -----"
 # makes key read it from the next byte on, and the old descriptor stored
 # back continues the first file after the point where it was left.
 printf '68 emit old @ state 32 + ! 69 emit\n' > "$W/f2"
-check "INPUT: a second file, and back to the first where it left off" 0 'ADBC' i386 \
+check "INPUT: a second file, and back to the first where it left off" 0 'ADBC' prelude \
     $': old state 608 + ; state 32 + @ old !\n102 state 600 + c! 50 state 601 + c! 0 state 602 + c!\n65 emit state 600 + 0 0 0 0 0 5 syscall6 state 32 + ! 66 emit\n67 emit\n' 2
 # ARGV holds the address of the argv[0] pointer; the pointers are 4 bytes.
-check "ARGV: the bytes of argv[1] and argv[2]" 0 'case.fthXYZ' i386 \
+check "ARGV: the bytes of argv[1] and argv[2]" 0 'case.fthXYZ' prelude \
     "${MINUS}"$': low dup 4294967296 / 4294967296 * - ;\n: arg 4 * state 40 + @ + @ low ;\n: b dup c@ emit 1 + ;\n1 arg b b b b b b b b drop 2 arg b b b drop\n' 1 XYZ second
-check "ARGV: its high half is 0, and argv[argc] is a null pointer" 0 "$F8$F8" i386 \
+check "ARGV: its high half is 0, and argv[argc] is a null pointer" 0 "$F8$F8" prelude \
     "${DOT8}${MINUS}"$': low dup 4294967296 / 4294967296 * - ;\nstate 40 + @ 4294967296 / 0= .8 state 40 + @ 12 + @ low 0= .8\n' 1 XYZ
-check "INPUT, LATEST and HERE are clean cells" 0 "$F8$F8$F8" i386 \
+check "INPUT, LATEST and HERE are clean cells" 0 "$F8$F8$F8" prelude \
     "${DOT8}"$'state 32 + @ 4294967296 / 0= .8 state 8 + @ 4294967296 / 0= .8 state 16 + @ 4294967296 / 0= .8\n'
 # 0< as forth/010-lib.fth:131 builds it.  A failed open (no such file: the
 # path is the two bytes "f3") is negative as a cell.
-check "syscall6: a failed open is negative as a cell" 0 'A' i386 \
+check "syscall6: a failed open is negative as a cell" 0 'A' prelude \
     $': 0< 9223372036854775808 / 0= 0= ;\n102 state 600 + c! 51 state 601 + c! 0 state 602 + c!\nstate 600 + 0 0 0 0 0 5 syscall6 0< 66 + emit\n' 2
-check "syscall6: write returns its count, and the seven cells are popped" 0 'f3\nDC' i386 \
+check "syscall6: write returns its count, and the seven cells are popped" 0 'f3\nDC' prelude \
     $'102 state 600 + c! 51 state 601 + c! 10 state 602 + c!\n67 1 state 600 + 3 0 0 0 4 syscall6 65 + emit emit\n'
 check "syscall6: exit with a status" 7 'A' prelude $'65 emit 7 die 66 emit\n'
 # 150,000 bytes laid with c, (more than 0x20000), read back and summed; then
 # a word defined after them.
-check "a dictionary of more than 0x20000 bytes, read back" 0 'AAB' i386 \
+check "a dictionary of more than 0x20000 bytes, read back" 0 'AAB' prelude \
     "${FLOW}"$': fill begin dup c, 1 + dup 150000 - 0= 0branch back drop ;\n: sum begin swap dup c@ state 600 + @ + state 600 + ! 1 + swap 1 + dup 150000 - 0= 0branch back drop drop ;\nhere state 608 + ! 0 fill here state 608 + @ - 150000 - 0= 66 + emit\n0 state 600 + ! state 608 + @ 0 sum state 600 + @ 19123080 - 0= 66 + emit\n: far 66 emit ; far\n'
 
 echo
 if [ "$STRACE" = 1 ]; then
     echo "tests/seed/i386/test.sh --strace: $PASSED passed, $FAILED failed; every run's system calls checked"
 else
-    echo "tests/seed/i386/test.sh: $PASSED passed, $FAILED failed; $COMPARED cases compared with the x86-64 seed"
+    echo "tests/seed/i386/test.sh: $PASSED passed, $FAILED failed"
 fi
 [ "$FAILED" = 0 ]

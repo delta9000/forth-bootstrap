@@ -16,8 +16,7 @@ llvm-mc; skipped when not installed) with -triple=i386-unknown-linux-gnu;
 
 How the bytes are read: hex0's own rules (text after ';' or '#' is dropped,
 the rest is pairs of hex digits), one line at a time, so each line has a
-file offset and a length.  This is a sibling of tests/seed/asm-check.py,
-which checks the x86-64 seed, and keeps its structure and messages.
+file offset and a length.
 
 Verified, for the file (rules 1 and 2):
   - ASCII only, LF line ends, no CR, and the last byte is LF: builder-hex0's

@@ -1,8 +1,6 @@
 \ test-050-cc-lex.fth — smoke test for 050-cc-lex.fth.
-\ Run via:
-\   cat 010-lib.fth 020-cc-arena.fth 030-cc-io.fth 040-cc-prep.fth 050-cc-lex.fth \
-\       test-050-cc-lex.fth | ./seed-forth ; echo $?
-\     # 0 = pass, 255 = fail
+\ Run by ./test.sh after the library and the layers up to 050:
+\ 0 = pass, 255 = fail.
 \
 \ Pattern: first test seeds the AND-accumulator, every subsequent test ANDs
 \ its boolean in.  Final `0= die` turns acc=-1 into exit 0, acc=0 into 255.

@@ -7,9 +7,10 @@
 \ carry only if some compiled program's bytes happened to depend on it, so
 \ these cases ask directly.
 \
-\ Loaded after the library, high-halves-judge.fth and 020; the text is the
-\ same for both hosts, and the x86-64 host, where a cell is one register,
-\ says what the answers are (tests/forth/i386/high-halves-check.sh).
+\ Loaded after the library, high-halves-judge.fth and 020
+\ (tests/forth/i386/high-halves-check.sh).  The expected values were first
+\ checked on a host where a cell is one register (the x86-64 seed of tag
+\ experiments-2026-11-21, with its library alone).
 \
 \ Each case computes a value, then `EXPECTED same tally`.  A true flag is
 \ expected as 18446744073709551615, spelt out: the library's `true` is `0 0=`,
