@@ -1,60 +1,63 @@
 #!/usr/bin/env bash
-# check-all.sh -- the repository's checks in one run.
+# check-all.sh -- the repository's checks in one run (about two minutes).
 #
-# Quick steps (under a minute):
-#   02  ./test.sh: forth/test-010-lib.fth and the cc/test-NNN-*.fth files,
-#       the library's and the first compiler layers' own tests, on the
-#       i386 seed
-#   05  tests/cc/gates/run-gates.sh: the i386 seed compiles the gate
-#       fixtures in native mode, each program exits as expected, and the
-#       compiler rejects the die-* fixtures with the expected error code
-#       and line; then
-#       tests/cc/gates/check-coverage.sh puts every error code of the compiler in
-#       one list (tested, unreachable from C, or to do) and prints "N of M
-#       codes tested"
+# The route: builder-hex0's built-in hex0 assembles seed/i386/000-seed.hex0
+# and kaem-optional-seed; the seed compiles kaem, the tools and the first
+# tcc; live-bootstrap's pass1.kaem reaches its published tcc from there.
 #
-# Long steps, opt in:
-#   CHECK_I386=1    the i386 back end (cc/i386/) and what it builds
-#                   (tinycc/README.md): its encoders against GNU as, no
-#                   x86-64 encoder reached, the run-time corpus against
-#                   gcc -m32, the junction with the i386 first tcc and
-#                   tools under strace, and the gcc -m32 stand-in.  Then
-#                   the i386 host (forth/i386/CONTRACT.md): its stand-ins
-#                   against the x86-64 files and its bytes against GNU as,
-#                   and the high-half vectors; the i386 kaem seed Forth
-#                   builds from vendor/mescc-tools/Kaem, with its own
-#                   tests on Linux and, on builder-hex0, the exit statuses
-#                   of the programs it starts; and, with an i386 seed
-#                   (./seed-forth-i386), the first tcc, the tools and kaem
-#                   built by it, byte for byte the x86-64 seed's, under
-#                   strace (about a minute; needs what CHECK_TINYCC needs,
-#                   gcc -m32, as, objcopy, strace and python3, and for the
-#                   two builder-hex0 boots QEMU, KVM and the archive of
-#                   tinycc/builder-hex0.SOURCES; SKIP without)
-#   CHECK_I386_BOOT=1  tests/tinycc/i386-one-boot-check.sh: builder-hex0
-#                   boots a disk of sources with no program on it.  Its
-#                   built-in hex0 assembles the i386 seed and
-#                   kaem-optional-seed; the seed compiles kaem, the tools
-#                   and the first tcc; the tools unpack the archives; and
-#                   pass1.kaem runs to live-bootstrap's published tcc and
-#                   libraries.  The 33 files the boot exports equal the
-#                   pins and the host's seed (under half a minute with
-#                   KVM; needs QEMU, KVM, python3, the vendor/stage0-posix
-#                   submodule and the archives of tinycc/SOURCES and
-#                   tinycc/builder-hex0.SOURCES; SKIP without them)
-#   CHECK_I386_SEED=1  the i386 seed alone (seed/i386/SPEC.md 13.1):
-#                   seed/i386/build.sh assembles seed/i386/000-seed.hex0
-#                   into the 1191-byte seed-forth-i386; its comments equal
-#                   GNU as and llvm-mc in 32-bit mode
-#                   (tests/seed/i386/asm-check.py); tests/seed/i386/test.sh,
-#                   every case also against the x86-64 seed where the text
-#                   allows; the same cases under strace; and
-#                   tests/seed/i386/boot-check.sh, where builder-hex0's hex0
-#                   assembles the seed in a boot and the result equals the
-#                   host's (seconds; needs the host kernel's i386 support,
-#                   as and python3; strace for the strace run; QEMU, KVM and
-#                   the archive of tinycc/builder-hex0.SOURCES for the boot;
-#                   SKIP without them)
+# The seed (seed/i386/SPEC.md 13.1)
+#   01  seed/i386/build.sh: hex0-seed assembles seed/i386/000-seed.hex0
+#       into the 1191-byte seed-forth-i386; tests/seed/i386/asm-check.py:
+#       its comments equal GNU as, and llvm-mc where installed (needs as)
+#   02  tests/seed/i386/test.sh: the seed's own cases
+#   03  the same cases under strace, each run's system calls checked
+#       (needs strace)
+# The Forth library and the compiler
+#   04  ./test.sh: forth/test-010-lib.fth and the cc/test-NNN-*.fth files
+#   05  the host's machine code: tests/forth/i386/asm-check.py (the bytes of
+#       forth/i386/*.fth equal GNU as on their comments; needs as) and
+#       tests/forth/i386/high-halves-check.sh (its primitives on cells
+#       whose two halves both matter)
+#   06  tests/cc/i386/asm-check.py: the bytes of the compiler's encoders
+#       equal GNU as on their comments (needs as and objcopy)
+#   07  tests/cc/gates/run-gates.sh: the gate fixtures compile and exit as
+#       expected, the die-* fixtures are refused with the expected error
+#       code and line, and tests/cc/gates/check-coverage.sh puts every
+#       error code of the compiler in one list (tested, unreachable from
+#       C, or to do) and prints "N of M codes tested"
+#   08  tests/cc/i386/run-corpus.sh: the run-time corpus prints and exits
+#       as the same programs built by gcc -m32 do (needs gcc -m32)
+# What the seed builds, on the host
+#   09  tests/tinycc/i386-seed-check.sh: tinycc/build-tools-i386.sh and
+#       build-first-tcc-i386.sh build kaem, the tools and the first tcc
+#       with the bytes of tests/pins/tinycc.sha256, every seed run under
+#       strace with builder-hex0's system calls only (needs strace)
+#   10  tests/tinycc/i386-syscall-check.sh: the junction.  From the first
+#       tcc, live-bootstrap's tcc-0.9.26 pass1.kaem reaches their
+#       published tcc and libraries (tests/tinycc/junction-check.sh), and
+#       under strace the first tcc and the tools keep to what builder-hex0
+#       can do (needs bwrap and strace)
+#   11  tests/tinycc/i386-standin-check.sh: a gcc -m32 build of the first
+#       tcc leaves the same bytes in every file of the junction's first
+#       stage (needs bwrap and gcc -m32)
+#   12  tests/tinycc/i386-kaem-check.sh: the seed-built kaem passes
+#       mescc-tools' own kaem tests and stops on a failing command (needs
+#       strace)
+# On builder-hex0, under QEMU with KVM
+#   13  tests/tinycc/i386-kaem-boot-check.sh: that kaem starts programs
+#       and reads their exit statuses on builder-hex0
+#   14  tests/seed/i386/boot-check.sh: builder-hex0's hex0 assembles the
+#       seed in a boot, and the result equals the host's
+#   15  tests/tinycc/i386-one-boot-check.sh: the route itself.  A disk of
+#       sources with no program on it boots to live-bootstrap's published
+#       tcc; the 33 files the boot exports equal the pins, live-bootstrap's
+#       checksums and the host's seed
+#
+# Every step needs the host kernel's i386 (IA32) support, the
+# vendor/stage0-posix and vendor/mescc-tools submodules and python3; steps
+# 09 to 15 need the four archives of tinycc/SOURCES and
+# tinycc/builder-hex0.SOURCES (python3 tools/fetch-archives.py).  A step
+# whose other needs are missing is reported as SKIP with the reason.
 #
 # Each step's output goes to $TMPDIR/check-all-NAME.log (default /tmp); the
 # console shows one OK, SKIP or FAIL line per step and the verdict.
@@ -69,7 +72,7 @@ FAIL=0
 run() {
     local name=$1; shift
     local log=$LOGDIR/check-all-$name.log
-    printf '%-28s' "$name ..."
+    printf '%-24s' "$name ..."
     if "$@" > "$log" 2>&1; then
         echo " OK"
         PASS=$((PASS + 1))
@@ -81,69 +84,52 @@ run() {
 }
 
 skip() {
-    printf '%-28s' "$1 ..."
+    printf '%-24s' "$1 ..."
     echo " SKIP ($2)"
     SKIP=$((SKIP + 1))
 }
 
-have() { command -v "$1" >/dev/null 2>&1; }
+# need NAME TOOL...: true when every TOOL is there; otherwise SKIP NAME.
+need() {
+    local name=$1 t; shift
+    for t in "$@"; do
+        if [ "$t" = gcc-m32 ]; then
+            echo 'int main (void) { return 0; }' | gcc -m32 -x c - -o /dev/null 2> /dev/null \
+                || { skip "$name" "gcc -m32 does not build a program here"; return 1; }
+        else
+            command -v "$t" > /dev/null 2>&1 || { skip "$name" "missing: $t"; return 1; }
+        fi
+    done
+}
 
-run "02-test" ./test.sh
-run "05-cc-gates" tests/cc/gates/run-gates.sh
-if [ "${CHECK_I386:-0}" = 1 ]; then
-    if ! why=$(tests/tinycc/junction-check.sh --probe); then
-        skip "15-i386" "$why"
-    elif ! { have as && have objcopy && have strace && have python3; }; then
-        skip "15-i386" "missing: as, objcopy, strace or python3"
-    elif ! echo 'int main (void) { return 0; }' | gcc -m32 -x c - -o /dev/null 2> /dev/null; then
-        skip "15-i386" "gcc -m32 does not build a program here"
-    else
-        run "15-i386-encoders" python3 tests/cc/i386/asm-check.py
-        run "16-i386-corpus" tests/cc/i386/run-corpus.sh
-        run "17-i386-junction" tests/tinycc/i386-syscall-check.sh
-        run "18-i386-standin" tests/tinycc/i386-standin-check.sh
-        run "20-i386-host" sh -c 'python3 tests/forth/i386/asm-check.py && tests/forth/i386/high-halves-check.sh'
-        run "21-i386-kaem" tests/tinycc/i386-kaem-check.sh
-        if why=$(tests/tinycc/i386-kaem-boot-check.sh --probe); then
-            run "22-i386-kaem-boot" tests/tinycc/i386-kaem-boot-check.sh
-        else
-            skip "22-i386-kaem-boot" "$why"
-        fi
-        # The i386 seed is built from its source here, so this step does
-        # not depend on CHECK_I386_SEED having run first.
-        [ -n "${SEED_I386:-}" ] || seed/i386/build.sh > /dev/null 2>&1 || true
-        if why=$(tests/tinycc/i386-seed-check.sh --probe); then
-            run "23-i386-seed" tests/tinycc/i386-seed-check.sh
-        else
-            skip "23-i386-seed" "$why"
-        fi
-    fi
+# probed NAME SCRIPT: run SCRIPT when its own --probe says it can run.
+probed() {
+    local why
+    if why=$("$2" --probe); then run "$1" "$2"; else skip "$1" "$why"; fi
+}
+
+need 01-seed as python3 && run "01-seed" sh -c \
+    'seed/i386/build.sh && [ "$(wc -c < seed-forth-i386)" -eq 1191 ] && python3 tests/seed/i386/asm-check.py'
+run "02-seed-tests" tests/seed/i386/test.sh
+need 03-seed-strace strace python3 && run "03-seed-strace" tests/seed/i386/test.sh --strace
+run "04-library-layers" ./test.sh
+need 05-host-code as python3 && run "05-host-code" sh -c \
+    'python3 tests/forth/i386/asm-check.py && tests/forth/i386/high-halves-check.sh'
+need 06-encoders as objcopy python3 && run "06-encoders" python3 tests/cc/i386/asm-check.py
+run "07-gates" tests/cc/gates/run-gates.sh
+need 08-corpus gcc-m32 && run "08-corpus" tests/cc/i386/run-corpus.sh
+probed "09-seed-builds" tests/tinycc/i386-seed-check.sh
+if why=$(tests/tinycc/junction-check.sh --probe); then
+    need 10-junction strace python3 && run "10-junction" tests/tinycc/i386-syscall-check.sh
+    need 11-standin gcc-m32 && run "11-standin" tests/tinycc/i386-standin-check.sh
+else
+    skip "10-junction" "$why"
+    skip "11-standin" "$why"
 fi
-if [ "${CHECK_I386_BOOT:-0}" = 1 ]; then
-    if why=$(tests/tinycc/i386-one-boot-check.sh --probe); then
-        run "19-i386-one-boot" tests/tinycc/i386-one-boot-check.sh
-    else
-        skip "19-i386-one-boot" "$why"
-    fi
-fi
-if [ "${CHECK_I386_SEED:-0}" = 1 ]; then
-    if have as && have python3; then
-        run "24-i386-seed" sh -c 'seed/i386/build.sh && [ "$(wc -c < seed-forth-i386)" -eq 1191 ] && python3 tests/seed/i386/asm-check.py'
-    else
-        skip "24-i386-seed" "missing: as or python3"
-    fi
-    run "25-i386-seed-test" tests/seed/i386/test.sh
-    if have strace && have python3; then
-        run "26-i386-seed-strace" tests/seed/i386/test.sh --strace
-    else
-        skip "26-i386-seed-strace" "missing: strace or python3"
-    fi
-    if why=$(tests/seed/i386/boot-check.sh --probe); then
-        run "27-i386-seed-boot" tests/seed/i386/boot-check.sh
-    else
-        skip "27-i386-seed-boot" "$why"
-    fi
-fi
+need 12-kaem strace && run "12-kaem" tests/tinycc/i386-kaem-check.sh
+probed "13-kaem-boot" tests/tinycc/i386-kaem-boot-check.sh
+probed "14-seed-boot" tests/seed/i386/boot-check.sh
+probed "15-one-boot" tests/tinycc/i386-one-boot-check.sh
 
 echo
 echo "check-all: $PASS OK, $SKIP SKIP, $FAIL FAIL"

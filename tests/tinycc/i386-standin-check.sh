@@ -19,6 +19,15 @@
 # nothing, which is what the Forth build's system-call layer does for a
 # call builder-hex0 lacks.
 #
+# The stand-in's own output is not always the same.  Measured on
+# 2026-11-21: of 12 runs of the stand-in, 10 made the tcc-boot0 the Forth
+# build makes (c1696e57...) and 2 made 9cb082b3...; under setarch -R (no
+# address randomization) all 12 made 9cb082b3....  So what the gcc build
+# of this tcc writes depends on where the kernel loads it, and this check
+# then fails on tcc-boot0 alone; run it again.  The Forth-built first tcc
+# is loaded at a fixed address with a zeroed stack and always makes the
+# pinned file.  Why the gcc build varies has not been found.
+#
 # The stand-in is a test reference built by a host compiler, never part of
 # the route.  Needs gcc with -m32 support and its 32-bit libgcc, and what
 # junction-check.sh needs.
