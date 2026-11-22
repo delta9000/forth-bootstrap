@@ -13,5 +13,5 @@ __pycache__/
 # Scratch dir (throwaway experiments)
 tmp/
 
-# Build output: seed-cc, the K1 images, plumbing-root.sh's root, the archive cache
+# Build output and the archive cache
 build-out/

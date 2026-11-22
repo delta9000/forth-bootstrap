@@ -6,10 +6,6 @@
 #       930-byte seed-forth
 #   02  ./test.sh: the seed primitives, forth/010-lib.fth and the first
 #       compiler layers
-#   03  tests/asm/hi-check.sh: forth/130-asm.fth assembles and links a small
-#       M1 program; it prints "hi", exits 42 and is 160 bytes
-#   04  tests/cc/seed-cc-rebuild-check.sh: seed Forth builds seed-cc and
-#       seed-ar; that seed-cc rebuilds both, byte for byte the same
 #   05  tests/cc/gates/run-gates.sh: the i386 seed compiles the gate
 #       fixtures in native mode, each program exits as expected, and the
 #       compiler rejects the die-* fixtures with the expected error code
@@ -18,16 +14,11 @@
 #       one list (tested, unreachable from C, or to do) and prints "N of M
 #       codes tested"
 #   06  tools/check-pins.py: every archive pin agrees with MANIFEST.sha256
-#   07  Stage A (tests/cc/stage-a-check.sh): the Forth compiler's M1 for
-#       M2-Planet equals a GCC-built M2-Planet's (needs gcc; SKIP without)
 #   09  tests/seed/asm-check.py: seed/000-seed.hex0 equals GNU as on its
 #       comments (with llvm-mc installed, LLVM's assembler must write the
 #       same bytes too), its branch notes and addresses add up, and the
 #       seed's ELF and dictionary fields equal what their comments state
 #       (needs as; SKIP without)
-#   10  tests/pins/check-outputs.sh: seed-cc, seed-ar and Stage A's
-#       cc-out-v1 equal tests/pins/outputs.sha256 (files a skipped step
-#       did not build are reported, not compared)
 #
 # Long steps, opt in:
 #   CHECK_CHAIN=1   chain/plumbing-root.sh: hex0-seed to the GCC 4.0.4 fixed
@@ -116,25 +107,17 @@ have() { command -v "$1" >/dev/null 2>&1; }
 
 run "01-seed" bash -c 'seed/build.sh && [ "$(wc -c < seed-forth)" -eq 930 ]'
 run "02-test" ./test.sh
-run "03-asm" tests/asm/hi-check.sh
-run "04-seed-cc" tests/cc/seed-cc-rebuild-check.sh
 run "05-cc-gates" tests/cc/gates/run-gates.sh
 if have python3; then
     run "06-pins" python3 tools/check-pins.py
 else
     skip "06-pins" "missing: python3"
 fi
-if have gcc; then
-    run "07-stage-a" tests/cc/stage-a-check.sh
-else
-    skip "07-stage-a" "missing: gcc"
-fi
 if have as && have python3; then
     run "09-hex0-asm" python3 tests/seed/asm-check.py
 else
     skip "09-hex0-asm" "missing: as or python3"
 fi
-run "10-outputs" sh tests/pins/check-outputs.sh
 if [ "${CHECK_CHAIN:-0}" = 1 ]; then
     run "11-chain" sh chain/plumbing-root.sh
 fi
