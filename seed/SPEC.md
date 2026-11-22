@@ -1241,14 +1241,17 @@ seed the text exits 0, and with one expectation made wrong it exits 1
 
 ## Appendix C. Measurements
 
-Two kinds. The count of the 21 words was taken on this tree. Everything
-after it was measured before the seed existed, to size it and to find
-out what its `*` and `/` have to handle: on the host, with the x86-64
-seed and library of tag `experiments-2026-11-21` and the i386 back end
-loaded over that tree's compiler, in a scratch copy at commit 47d0d5b.
-The compiler's files have been folded and renamed since, so those
-numbers describe that tree, and none of them has been repeated on this
-seed. What was measured again on this seed and this tree is in
+Two kinds. The count of the 21 words at the start and the two
+paragraphs at the end (independence of paths and addresses, the
+assemblers) were taken on this tree. The paragraphs between them, from
+"The first tcc built as pinned" to "HERE", were measured before the
+seed existed, to size it and to find out what its `*` and `/` have to
+handle: on the host, with the x86-64 seed and library of tag
+`experiments-2026-11-21` and the i386 back end loaded over that tree's
+compiler, in a scratch copy at commit 47d0d5b. The compiler's files
+have been folded and renamed since, so those numbers describe that
+tree, and none of them has been repeated on this seed. HERE and the
+system calls were measured again on this seed and this tree:
 `forth/CONTRACT.md`, section 9.
 
 **Uses of the 21 words** **[measured]** on this tree: tokens equal to
@@ -1284,7 +1287,7 @@ word, which is built on the seed's.
 | `:` | 102 | 96 | 584 |
 | `;` | 99 | 92 | 633 |
 
-The rest is the tag's tree.
+The next three paragraphs are the tag's tree.
 
 **The first tcc built as pinned** there: `92d11438…`, 975,624 bytes, in
 0.46 s.
@@ -1317,19 +1320,20 @@ MiB above 0x400000, that seed's load address, of which the megabyte buffers are 
 The arena held 1,247,376 bytes, the preprocessed source 1,762,051, the
 output 975,624.
 
-**The first tcc's bytes do not depend on where its sources are.** The
-same sources under `build-out/other-dir/`, with the driver's four paths
-changed to match, gave the same 975,624 bytes.
+**The compiler's output does not depend on paths or dictionary
+addresses** **[measured]** on this tree, with this seed. Each of these
+gave the pinned bytes of `tests/pins/tinycc.sha256`:
 
-**Nor on the path strings of a tool.** `sha256sum` compiled with its
-source named by an absolute path of 142 bytes has the pinned bytes.
+- the first tcc with its sources copied to another directory and named
+  by absolute paths;
+- `sha256sum` with its source named by an absolute path of 85 bytes;
+- the first tcc with one extra word defined after the library and
+  12,347 bytes allotted after `cc/030-cc-io.fth` (a scratch copy of
+  `forth/layers.fth`), so that every later dictionary address moves by
+  an odd amount.
 
-**Nor on dictionary addresses.** With one extra word defined after the
-library and 12,347 bytes allotted after `cc/030-cc-io.fth`, so that
-every later dictionary address moves by an odd amount, the first tcc
-keeps its hash. This seed's dictionary differs from that one's in every
-address and size, and it reproduced the pins of section 13.2, which
-confirms it.
+The boot is the first two again: it gives the seed other paths than the
+host does, and step 15 compares the results with the same pins.
 
 **Assemblers** **[measured]** on this tree. GNU as 2.47 and llvm-mc
 23.1.5 in 32-bit mode write the same bytes for every instruction line of

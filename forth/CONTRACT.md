@@ -312,7 +312,7 @@ File rules the host keeps on builder-hex0 (P§5):
   (three in a compile) stay open. A process has 448 descriptor slots and
   the kernel does not check the bound (B2:98, 1077-1085). A first-tcc
   compile makes 980 `open` calls **[measured]** (section 9) and has at
-  most 6 files open at once.
+  most 4 files open at once (the highest descriptor it is given is 6).
 
 ### 5.2 `brk-alloc` ( bytes -- addr | 0 )
 
@@ -447,9 +447,10 @@ three files, which M2-Planet also compiles as one unit
 (`vendor/stage0-posix/x86/mescc-tools-mini-kaem.kaem:254-273`).
 
 The compiler's output does not depend on these strings **[measured]**
-(SPEC Appendix C): the first tcc has the same bytes with its sources in
-another directory, and a tool has the same bytes when its source is
-named by an absolute path of 142 bytes.
+on this tree: the first tcc has its pinned bytes with its sources copied
+to another directory and named by absolute paths, and `sha256sum` has
+its pinned bytes when its source is named by an absolute path of 85
+bytes. The boot (section 7.3) is the same test on every run of step 15.
 
 ## 7. The boot
 
@@ -657,9 +658,10 @@ compiled with Mes's libc.
 - Buffered input: one `read` per byte is enough (section 6.2).
 - Inline `*` and `/`, or any speed-up that is not in section 4.
 - Particular dictionary addresses, sizes or a particular HERE. The
-  output does not depend on them **[measured]** (SPEC Appendix C): with
-  an extra word in the library and 12,347 extra bytes allotted after
-  `cc/030-cc-io.fth`, the first tcc keeps its hash.
+  output does not depend on them **[measured]** on this tree: with an
+  extra word defined after the library and 12,347 extra bytes allotted
+  after `cc/030-cc-io.fth` (a scratch copy of `forth/layers.fth`), the
+  first tcc keeps its hash.
 - A general `mmap` replacement: three requests, all served by
   `brk-alloc`.
 - Freeing memory, closing the top-level file, or reclaiming the include
