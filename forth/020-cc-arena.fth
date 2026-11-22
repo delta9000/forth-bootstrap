@@ -6,15 +6,12 @@
 \ in fixed-size buffers (parallel arrays declared with `create NAME N
 \ allot`); this arena handles the rest.
 \
-\ This is cc/020-cc-arena.fth for a host processor in 32-bit mode
-\ (forth/CONTRACT.md): the same words with the same answers, laid as
-\ i386 instructions on cells that are register pairs.  Three things the
-\ x86-64 file has are not here.  native! is in forth/010-lib.fth,
-\ which needs it first.  There is no buffered key: the library reads files
-\ by name, one byte a call.  And * and / stay calls to the seed's words,
-\ which do the 64-bit work in 32-bit steps.  tests/forth/standin-check.sh
-\ holds the difference between the two files to
-\ tests/forth/020-cc-arena.diff.
+\ forth/CONTRACT.md specifies this file.  Its machine code is i386
+\ instructions on cells that are register pairs.  native!, which puts
+\ that code in place of the library's definitions, is in
+\ forth/010-lib.fth, which needs it first.  key is not buffered here:
+\ the library reads files by name, one byte a call.  And * and / stay
+\ calls to the seed's words, which do the 64-bit work in 32-bit steps.
 \
 \ Depends on forth/010-lib.fth: constant, variable, create, allot, s,,
 \ char, [lit], if,/then,, begin,/until,, swap, dup, over, nip, drop, >r, r>,

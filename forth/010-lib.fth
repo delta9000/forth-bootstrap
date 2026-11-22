@@ -4,16 +4,13 @@
 \   key token find   syscall6   state : ;
 \ Loaded before any Forth-level vocabulary.
 \
-\ This is forth/010-lib.fth for a host processor in 32-bit mode
-\ (seed/SPEC.md, forth/CONTRACT.md).  The text is the same
-\ except where it lays machine code or names a system call, and the last
-\ section, which the x86-64 library does not have: memory from brk and
-\ input from files named on the command line.  A cell is still 8 bytes.
-\ The top of the data stack is the register pair edx:eax (eax the low
-\ half), esi is the data-stack pointer, and a call pushes a zero before
-\ its return address, so that a return address is a cell as well.
-\ tests/forth/standin-check.sh holds the difference between the two
-\ files to tests/forth/010-lib.diff.
+\ The seed is a program for a processor in 32-bit mode whose cells are
+\ 8 bytes (seed/SPEC.md); forth/CONTRACT.md specifies this file.  The top
+\ of the data stack is the register pair edx:eax (eax the low half), esi
+\ is the data-stack pointer, and a call pushes a zero before its return
+\ address, so that a return address is a cell as well.  The last section
+\ gets memory from brk and reads input from files named on the command
+\ line.
 \
 \ Conventions:
 \   - Up to the outer interpreter (interpret, further down) this file is
@@ -662,13 +659,13 @@ immediate
 ' c, constant c,-xt
 : c{  c,-xt hex{ ; immediate
 
-\ ===== The i386 host: patching a word, memory, input by file name =====
-\ Nothing below has a counterpart in forth/010-lib.fth.  The x86-64 seed
-\ reads standard input and gets memory with mmap.  This one runs on
-\ builder-hex0 as well as Linux (tests/builder-hex0/README.md): there
-\ descriptor 0 is the boot disk's command stream, and mmap answers 0.  So
-\ the seed reads the file its first argument names, which is this one, and
-\ leaves the rest to these words.  The command line of every run is
+\ ===== Patching a word, memory, input by file name =====
+\ The seed runs on builder-hex0 as well as Linux
+\ (tests/builder-hex0/README.md).  There descriptor 0 is the boot disk's
+\ command stream, and mmap answers 0.  So the seed reads the file its
+\ first argument names, which is this one, and leaves the rest to these
+\ words: memory comes from brk, and further input from files opened by
+\ name.  The command line of every run is
 \     seed-forth forth/010-lib.fth JOB [ARG ...]
 
 \ native! ( old new -- )  Make the word whose code is at old run new's code
