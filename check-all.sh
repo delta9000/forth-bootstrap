@@ -174,7 +174,7 @@ if [ "${CHECK_I386:-0}" = 1 ]; then
     elif ! echo 'int main (void) { return 0; }' | gcc -m32 -x c - -o /dev/null 2> /dev/null; then
         skip "15-i386" "gcc -m32 does not build a program here"
     else
-        run "15-i386-encoders" sh -c 'python3 tests/cc/i386/asm-check.py && tests/cc/i386/x86-64-bytes-check.sh'
+        run "15-i386-encoders" python3 tests/cc/i386/asm-check.py
         run "16-i386-corpus" tests/cc/i386/run-corpus.sh
         run "17-i386-junction" tests/tinycc/i386-syscall-check.sh
         run "18-i386-standin" tests/tinycc/i386-standin-check.sh

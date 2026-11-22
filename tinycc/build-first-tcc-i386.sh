@@ -1,25 +1,29 @@
 #!/usr/bin/env bash
-# tinycc/build-first-tcc-i386.sh -- the i386 first tcc, by seed Forth.
+# tinycc/build-first-tcc-i386.sh -- the first tcc, built by the i386 seed.
 #
 #     tinycc/build-first-tcc-i386.sh    (from anywhere; works in the repo root)
 #
-# Writes build-out/tinycc/tcc-first-i386: the program
-# tinycc/build-first-tcc.sh builds (janneke's tcc-0.9.26-1147-gee75a10c
-# with Mes 0.28's libc in one translation unit), compiled by the i386 back
-# end (cc/i386/, in the order cc/i386/layers.sh prints) into a static ELF32
-# that runs on Linux through int 0x80 and is written for builder-hex0.
-# seed-forth, the x86-64 one, is still the only program that compiles
-# anything.
+# Writes build-out/tinycc/tcc-first-i386: janneke's
+# tcc-0.9.26-1147-gee75a10c with Mes 0.28's libc in one translation unit,
+# compiled by one run of the seed,
+#     seed-forth-i386 forth/i386/010-lib.fth tinycc/i386-seed/tcc-first.fth \
+#         OUT SOURCE INCLUDE INCLUDE-LINUX
+# into a static ELF32 program for Linux's int 0x80 and for builder-hex0.
+# It takes the place of live-bootstrap's MesCC-built tcc-mes.
 #
-# What differs from build-first-tcc.sh:
-#   the sources are prepared in build-out/tcc-sources-i386/, the same way,
-#       but include/arch/ gets Mes's include/linux/x86 headers, as
-#       live-bootstrap's steps/mes-0.28 gives it on x86;
-#   tinycc/direct-input-i386.c defines __i386__;
-#   tinycc/mes-libc-native-i386.c is the system-call layer;
-#   tinycc/tcc-compile-i386.fth is the driver, and tinycc/tcc-names-i386.fth
-#       gives it its four paths.
-# The source-preparation tools are build-tools.sh's, which this runs first.
+# The sources are prepared in build-out/tcc-sources-i386/ by the seed-built
+# tools (tinycc/build-tools-i386.sh, which this runs first), with the
+# commands the one boot runs (tinycc/i386-one-boot-disk.py):
+#   tcc is unpacked and gets what steps/tcc-0.9.26/pass1.kaem does before
+#       MesCC runs: two simple-patches of tcctools.c and an empty config.h;
+#   Mes is unpacked; include/arch/ gets Mes's include/linux/x86 headers,
+#       as live-bootstrap's steps/mes-0.28 gives it on x86;
+#   tinycc/direct-input-i386.c is the one file the compiler is given: it
+#       defines __i386__ and includes tinycc/mes-libc.c, whose system-call
+#       layer is tinycc/mes-libc-native-i386.c, and tcc.c.
+#
+# With SEED_TRACE=DIR in the environment the seed runs under strace and
+# leaves DIR/tcc-first-i386.strace.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -32,8 +36,9 @@ MES=mes-0.28
 
 fail() { echo "build-first-tcc-i386: $*" >&2; exit 1; }
 
-tinycc/build-tools.sh
-BIN=build-out/tinycc/bin
+tinycc/build-tools-i386.sh
+BIN=build-out/tinycc/bin-i386
+SEED=${SEED_I386:-./seed-forth-i386}
 
 rm -rf "$SRC"
 mkdir -p "$SRC"
@@ -41,7 +46,7 @@ mkdir -p "$SRC"
 # tcc: unpack, then what pass1.kaem does before MesCC runs
 "$BIN/ungz" --file "$IN/tcc-0.9.26.tar.gz" --output "$SRC/tcc.tar" 2> /dev/null \
     || fail "ungz failed on tcc-0.9.26.tar.gz"
-(cd "$SRC" && ../tinycc/bin/untar --non-strict --file tcc.tar > /dev/null 2>&1) \
+(cd "$SRC" && ../tinycc/bin-i386/untar --non-strict --file tcc.tar > /dev/null 2>&1) \
     || fail "untar failed on tcc.tar"
 SP=$OUT/lb/$LB/steps/tcc-0.9.26/simple-patches
 for p in remove-fileopen addback-fileopen; do
@@ -53,7 +58,7 @@ done
 # Mes libc, with the x86 headers in include/arch
 "$BIN/ungz" --file "$IN/$MES.tar.gz" --output "$SRC/mes.tar" 2> /dev/null \
     || fail "ungz failed on $MES.tar.gz"
-(cd "$SRC" && ../tinycc/bin/untar --non-strict --file mes.tar > /dev/null 2>&1) \
+(cd "$SRC" && ../tinycc/bin-i386/untar --non-strict --file mes.tar > /dev/null 2>&1) \
     || fail "untar failed on mes.tar"
 "$BIN/catm" "$SRC/$MES/include/mes/config.h"
 "$BIN/mkdir" "$SRC/$MES/include/arch"
@@ -67,19 +72,18 @@ done
 "$BIN/catm" "$SRC/mes-libc.c" tinycc/mes-libc.c
 "$BIN/catm" "$SRC/mes-libc-native.c" tinycc/mes-libc-native-i386.c
 
-# Compile, with the i386 layers.
-[ -x seed-forth ] || seed/build.sh > /dev/null
-mapfile -t layers < <(cc/i386/layers.sh)
-rm -f "$OUT/tcc-first-i386" "$OUT/compile-i386.input"
+# Compile.  Anything the seed prints is a failure: the Forth outer
+# interpreter reports an unknown word on stdout and goes on, and the
+# compiler reports an error on stderr.
+rm -f "$OUT/tcc-first-i386"
 rc=0
-"$BIN/catm" "$OUT/compile-i386.input" "${layers[@]}" tinycc/tcc-names-i386.fth \
-    tinycc/tcc-compile-i386.fth "$SRC/direct-input.c"
-./seed-forth < "$OUT/compile-i386.input" > "$OUT/compile-i386.stdout" 2>&1 || rc=$?
-# The Forth outer interpreter reports an unknown word on stdout and goes on,
-# so anything on stdout is a failure even when the exit status is 0.
-if [ "$rc" != 0 ] || [ -s "$OUT/compile-i386.stdout" ] || [ ! -s "$OUT/tcc-first-i386" ]; then
-    head -c 2000 "$OUT/compile-i386.stdout" >&2
-    fail "seed-forth exited $rc (cc/ error codes are the exit status)"
+${SEED_TRACE:+strace -o "$SEED_TRACE/tcc-first-i386.strace"} \
+    "$SEED" forth/i386/010-lib.fth tinycc/i386-seed/tcc-first.fth "$OUT/tcc-first-i386" \
+    "$SRC/direct-input.c" "$SRC/$MES/include" "$SRC/$MES/include/linux/x86" \
+    > "$OUT/compile-i386.log" 2>&1 || rc=$?
+if [ "$rc" != 0 ] || [ -s "$OUT/compile-i386.log" ] || [ ! -s "$OUT/tcc-first-i386" ]; then
+    head -c 2000 "$OUT/compile-i386.log" >&2
+    fail "$SEED exited $rc (cc/ error codes are the exit status)"
 fi
 "$BIN/chmod" 755 "$OUT/tcc-first-i386"
 

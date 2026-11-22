@@ -46,7 +46,7 @@ sums() {
 }
 
 # The Forth-built i386 first tcc, and its replay
-JUNCTION_FIRST_ONLY=1 tests/tinycc/junction-check.sh --i386 > "$OUT/standin-forth.out" 2>&1 \
+JUNCTION_FIRST_ONLY=1 tests/tinycc/junction-check.sh > "$OUT/standin-forth.out" 2>&1 \
     || { tail -20 "$OUT/standin-forth.out" >&2; fail "the junction failed with the i386 first tcc"; }
 sums > "$OUT/standin-forth.sums"
 

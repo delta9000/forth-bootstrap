@@ -62,13 +62,13 @@ rm -rf "$W"
 mkdir -p "$W"
 
 # builder-hex0's two stages, checked and unpacked by the seed-built tools
-BIN=$OUT/bin
+BIN=build-out/tinycc/bin-i386
 "$BIN/sha256sum" --check tinycc/hex0-handoff.SOURCES > /dev/null \
     || fail "$IN/$BH.tar.gz: sha256 differs from tinycc/hex0-handoff.SOURCES"
 rm -rf "$IN/$BH"
 "$BIN/ungz" --file "$IN/$BH.tar.gz" --output "$W/builder-hex0.tar" 2> /dev/null \
     || fail "ungz failed on $BH.tar.gz"
-(cd "$IN" && ../tinycc/bin/untar --non-strict --file ../tinycc/kaem-boot/builder-hex0.tar > /dev/null 2>&1) \
+(cd "$IN" && ../tinycc/bin-i386/untar --non-strict --file ../tinycc/kaem-boot/builder-hex0.tar > /dev/null 2>&1) \
     || fail "untar failed on $BH.tar"
 "$HEX0" "$IN/$BH/builder-hex0-x86-stage1.hex0" "$W/stage1.bin"
 

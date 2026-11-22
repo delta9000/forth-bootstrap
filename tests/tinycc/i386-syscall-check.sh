@@ -4,7 +4,7 @@
 #
 #     tests/tinycc/i386-syscall-check.sh        (from anywhere)
 #
-# Runs tests/tinycc/junction-check.sh --i386 under strace -f and reads
+# Runs tests/tinycc/junction-check.sh under strace -f and reads
 # every system call of every process whose program is tcc-mes, the name the
 # replay gives build-out/tinycc/tcc-first-i386, or one of the i386 tools
 # (build-out/tinycc/bin-i386, /forth-bootstrap/bin in the chroot).  It
@@ -32,7 +32,7 @@ cd "$(dirname "$0")/../.."
 command -v strace > /dev/null || { echo "i386-syscall-check: cannot run: missing strace" >&2; exit 1; }
 trace=build-out/tinycc/junction-i386.strace
 rm -f "$trace"
-JUNCTION_STRACE=$trace tests/tinycc/junction-check.sh --i386 > build-out/tinycc/junction-i386.out 2>&1 \
+JUNCTION_STRACE=$trace tests/tinycc/junction-check.sh > build-out/tinycc/junction-i386.out 2>&1 \
     || { tail -20 build-out/tinycc/junction-i386.out >&2; echo "i386-syscall-check: FAIL: the junction failed" >&2; exit 1; }
 tail -1 build-out/tinycc/junction-i386.out
 python3 tests/tinycc/i386-syscall-check.py "$trace"

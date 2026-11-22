@@ -4,9 +4,8 @@
 #
 #     tests/cc/i386/run-corpus.sh               (from anywhere)
 #
-# Each tests/cc/i386/*.c is compiled twice, after prelude.h: by seed Forth
-# with the i386 layers (cc/i386/layers.sh) and tinycc/tool-compile.fth, and
-# by gcc -m32 -O0.  Both programs run on the host through its IA32 support
+# Each tests/cc/i386/*.c is compiled twice, after prelude.h: by the seed
+# (tests/cc/i386/job.fth) and by gcc -m32 -O0.  Both programs run on the host through its IA32 support
 # with the arguments "a b", and must print the same lines and exit with
 # the same status.  The programs print each value as two 32-bit halves, so
 # a wrong high half of a long long shows, which the TinyCC junction's pins
@@ -15,27 +14,25 @@
 # A die-N-*.c must instead be refused by the Forth compiler with exit
 # status N.
 #
-# Needs ./seed-forth (seed/build.sh), gcc with -m32 support, and a kernel
-# that runs i386 programs.
+# Needs gcc with -m32 support, and a kernel that runs i386 programs (the
+# seed is one: ./seed-forth-i386, or the program SEED_I386 names).
 set -euo pipefail
 cd "$(dirname "$0")/../../.."
 
 T=tests/cc/i386
 B=build-out/i386-corpus
-[ -x seed-forth ] || seed/build.sh > /dev/null
+[ -n "${SEED_I386:-}" ] || seed/i386/build.sh > /dev/null
+SEED=${SEED_I386:-./seed-forth-i386}
 echo 'int main (void) { return 0; }' | gcc -m32 -x c - -o /dev/null 2> /dev/null \
     || { echo "run-corpus: cannot run: gcc -m32 does not build a program here" >&2; exit 1; }
 rm -rf "$B"
 mkdir -p "$B"
-mapfile -t layers < <(cc/i386/layers.sh)
 
-# forth NAME: compile $T/NAME.c to $B/NAME.forth; the status is seed-forth's
+# forth NAME: compile $T/NAME.c to $B/NAME.forth; the status is the seed's
 forth() {
-    local out=$B/$1.forth src=$B/$1.c
+    local src=$B/$1.c
     cat "$T/prelude.h" "$T/$1.c" > "$src"
-    printf 'create tool-output s, %s [lit] 0 c,\ncreate tool-source s, %s\ntool-source [lit] %d cc-prep-source-name\n' \
-        "$out" "$src" "${#src}" > "$B/$1.names.fth"
-    cat "${layers[@]}" "$B/$1.names.fth" tinycc/tool-compile.fth "$src" | ./seed-forth > "$B/$1.stdout" 2> "$B/$1.stderr"
+    "$SEED" forth/i386/010-lib.fth "$T/job.fth" "$B/$1.forth" "$src" > "$B/$1.stdout" 2> "$B/$1.stderr"
 }
 
 pass=0
@@ -52,13 +49,13 @@ for c in "$T"/*.c; do
                 echo "  refused  $name (error $rc)"
                 pass=$((pass + 1))
             else
-                echo "  FAIL     $name: seed-forth exited $rc, expected $want"
+                echo "  FAIL     $name: the seed exited $rc, expected $want"
                 bad=$((bad + 1))
             fi
             continue ;;
     esac
     if [ "$rc" != 0 ] || [ -s "$B/$name.stdout" ] || [ ! -s "$B/$name.forth" ]; then
-        echo "  FAIL     $name: seed-forth exited $rc: $(head -c 200 "$B/$name.stdout" "$B/$name.stderr" | tr '\n' ' ')"
+        echo "  FAIL     $name: the seed exited $rc: $(head -c 200 "$B/$name.stdout" "$B/$name.stderr" | tr '\n' ' ')"
         bad=$((bad + 1))
         continue
     fi

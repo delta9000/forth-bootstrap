@@ -32,16 +32,17 @@
 #     and tcc-boot0 with this route's pins);
 #   - with tests/pins/tinycc.sha256: what tcc-mes made before the later
 #     stages overwrote it (kept under /first), hex0-export, kaem, the eleven
-#     tools and the stock ungz and untar.  Those pins are what the x86-64
-#     seed builds on the host, so the seed in the boot and the x86-64 seed
-#     on Linux compile the same bytes;
+#     tools and the stock ungz and untar.  Those pins are what the seed
+#     builds on the host (tinycc/build-tools-i386.sh,
+#     build-first-tcc-i386.sh), so the seed on builder-hex0 and the seed on
+#     Linux compile the same bytes;
 #   - /seed-forth-i386 with ./seed-forth-i386, which hex0-seed assembles on
 #     the host from the same source, and /kaem-optional-seed with the
 #     binary stage0-posix publishes.
 #
 # What the host does: it cuts /kaem.run from the pinned kaem files
 # (python3) of live-bootstrap's tree, which the seed-built tools of
-# tinycc/build-tools.sh unpacked; checks and unpacks builder-hex0's archive
+# tinycc/build-tools-i386.sh unpacked; checks and unpacks builder-hex0's archive
 # with those tools; runs hex0-seed for stage 1 and for the reference seed;
 # writes the disk; starts QEMU; reads the drive and compares hashes.  It
 # builds nothing that goes on the disk.
@@ -76,15 +77,15 @@ rm -rf "$OUT"
 mkdir -p "$OUT"
 
 # ---- on the host: live-bootstrap's tree, builder-hex0's stages, the disk ----
-tinycc/build-tools.sh | tail -1
+tinycc/build-tools-i386.sh | tail -1
 seed/i386/build.sh > /dev/null
-BIN=build-out/tinycc/bin
+BIN=build-out/tinycc/bin-i386
 "$BIN/sha256sum" --check tinycc/hex0-handoff.SOURCES > /dev/null \
     || fail "$IN/$BH.tar.gz: sha256 differs from tinycc/hex0-handoff.SOURCES"
 rm -rf "$IN/$BH"
 "$BIN/ungz" --file "$IN/$BH.tar.gz" --output "$OUT/builder-hex0.tar" 2> /dev/null \
     || fail "ungz failed on $BH.tar.gz"
-(cd "$IN" && ../tinycc/bin/untar --non-strict --file ../tinycc/i386-one-boot/builder-hex0.tar \
+(cd "$IN" && ../tinycc/bin-i386/untar --non-strict --file ../tinycc/i386-one-boot/builder-hex0.tar \
     > /dev/null 2>&1) \
     || fail "untar failed on $BH.tar"
 "$HEX0" "$IN/$BH/builder-hex0-x86-stage1.hex0" "$OUT/stage1.bin"

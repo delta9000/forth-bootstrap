@@ -5,7 +5,7 @@
 #     tests/tinycc/i386-kaem-check.sh        (from anywhere)
 #
 # tinycc/build-tools-i386.sh builds build-out/tinycc/kaem-i386 from
-# vendor/mescc-tools/Kaem with seed-forth and compares it with its pin.
+# vendor/mescc-tools/Kaem with the seed and compares it with its pin.
 # This runs it on the host's kernel through its IA32 support:
 #   - kaem's own tests, vendor/mescc-tools/Kaem/test.sh, unchanged, in a
 #     copy of that directory: eighteen scripts whose output must have the

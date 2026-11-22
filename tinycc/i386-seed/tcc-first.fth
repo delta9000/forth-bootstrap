@@ -5,13 +5,12 @@
 \         OUT SOURCE INCLUDE INCLUDE-LINUX
 \
 \ The library reads this file because it is the second argument, and the
-\ four after it are arguments 3 to 6.  They are the paths
-\ tinycc/tcc-names-i386.fth types in for the x86-64 seed: the file to
-\ write, direct-input.c, and Mes libc's include and include/linux/x86.  On
-\ the host they are those same paths; in the boot the sources are
-\ elsewhere.  SOURCE is also the one file of C the compiler reads, where
-\ the x86-64 seed reads it from its standard input after the Forth text.
-\ The driver is the x86-64 seed's.
+\ four after it are arguments 3 to 6: the file to write, direct-input.c,
+\ and Mes libc's include and include/linux/x86, which are pass1.kaem's
+\ include paths for Mes libc on x86.  SOURCE is the one file of C the
+\ compiler reads, and quoted includes are looked for beside it.  The host
+\ (tinycc/build-first-tcc-i386.sh) and the boot
+\ (tinycc/i386-one-boot-disk.py) run this job with their own paths.
 include forth/i386/layers.fth
 : tcc-output  [lit] 3 arg ;
 [lit] 4 arg dup zlen cc-prep-source-name

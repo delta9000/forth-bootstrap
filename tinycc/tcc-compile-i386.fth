@@ -1,18 +1,16 @@
 \ tinycc/tcc-compile-i386.fth -- the native-mode driver that compiles the
 \ i386 first tcc.
 \
-\ tinycc/tcc-compile.fth for the i386 back end: loaded after the files
-\ cc/i386/layers.sh lists and after four paths: tcc-output, a word that
-\ pushes the output file's name with its NUL, and the source's name and
-\ the two include paths, given to cc-prep-source-name and
-\ cc-prep-add-include.  tinycc/build-first-tcc-i386.sh takes them from
-\ tinycc/tcc-names-i386.fth; the i386 seed's job,
-\ tinycc/i386-seed/tcc-first.fth, from its command line.  The C the
+\ Loaded by the seed's job, tinycc/i386-seed/tcc-first.fth, after the
+\ compiler (forth/i386/layers.fth) and after the job has taken four paths
+\ from its command line: tcc-output, a word that pushes the output file's
+\ name with its NUL, and the source's name and the two include paths,
+\ given to cc-prep-source-name and cc-prep-add-include.  The C the
 \ compiler then reads is exactly direct-input.c.  Forth does all the
 \ preprocessing and emits one complete static i386 ELF: no assembler,
 \ linker or host C compiler takes part.
 \
-\ Native mode as there, under the ILP32 types of
+\ Native mode, under the ILP32 types of
 \ cc/i386/065-ilp32-types.fth (cc-target-lp64 selects the typed model,
 \ not its sizes): a private all-stack call ABI, float and double as
 \ 8-byte bit patterns only, and the one system call primitive of

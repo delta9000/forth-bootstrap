@@ -18,7 +18,7 @@ i386-one-boot.kaem  /kaem.run, in this order:
       ours: every seed run, which must come before the first cd because
           the Forth files name each other relative to / and builder-hex0
           cannot change directory back to /.  The seed builds the tools as
-          tinycc/build-tools.sh orders them (stock ungz and untar unpack
+          tinycc/build-tools-i386.sh orders them (stock ungz and untar unpack
           live-bootstrap's archive, which holds simple-patch's source; the
           patched ungz and untar unpack it again), then the tools prepare
           the first tcc's sources in / as tinycc/build-first-tcc-i386.sh

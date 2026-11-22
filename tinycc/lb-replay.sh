@@ -12,8 +12,8 @@
 # only: /host/usr (the host's /usr: bash, and grep, awk, sed and cat for
 # this script's own text handling), /forth-bootstrap/tinycc (tinycc/),
 # /forth-bootstrap/tcc-first (the first tcc) and /forth-bootstrap/bin
-# (build-out/tinycc/bin, the tools tinycc/build-tools.sh builds from the
-# seed).
+# (build-out/tinycc/bin-i386, the tools tinycc/build-tools-i386.sh builds
+# from the seed).
 #
 # What runs is live-bootstrap's own kaem text, cut from their files at
 # marker lines that must be present, and executed by bash (the kaem lines
@@ -22,7 +22,7 @@
 # that is not a bash builtin is one of live-bootstrap's programs: stage0's
 # catm, chmod, cp, match, mkdir, rm, sha256sum, ungz and untar, and
 # live-bootstrap's checksum-transcriber and simple-patch, built from their
-# C by seed Forth in native mode against M2libc, or a tcc of the replay.
+# C by seed Forth against M2libc, or a tcc of the replay.
 # It is printed before it runs:
 #   mes-0.28    only the lines that unpack mes-0.28 and install its headers
 #               under /usr/include/mes.  mes-m2, mescc and MesCC's libc are
