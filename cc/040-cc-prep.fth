@@ -146,11 +146,12 @@ variable cc-pp-sink-depth
   cc-pp-sink-depth @ [lit] 32 * cc-pp-sinks +  cc-pp-sink  cc-pp-copy4
   cc-pp-select-flags ;
 
+\ cc-pp-flags-init ( -- )  Get the shadow bytes, once: one for each byte
+\ of the scratch area, then one for each byte of the source buffer.
 : cc-pp-flags-init
   [lit] 0 cc-pp-out-flags !
-  cc-src-cap cc-src-direct-cap > if, [lit] 43 cc-die then,
   cc-pp-flags-base @ 0= if,
-    cc-pp-scratch-cap cc-src-direct-cap + [lit] 43 cc-workspace-map
+    cc-pp-scratch-cap cc-src-cap + [lit] 43 cc-workspace-map
     cc-pp-flags-base !
   then,
   cc-pp-select-flags ;

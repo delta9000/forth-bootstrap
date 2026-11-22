@@ -184,8 +184,6 @@ variable cc-nf-lens
   repeat, 2drop
   r> cc-name-buckets 1- and ;
 
-7340032 constant cc-src-direct-cap
-
 \ Round before mmap only after rejecting zero, negative and overflowing sizes.
 \ Requests are policy constants at callers; this helper never grows a buffer.
 : cc-workspace-round ( bytes code -- page-bytes )
