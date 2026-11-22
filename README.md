@@ -102,11 +102,17 @@ cannot run.
 git clone https://github.com/delta9000/forth-bootstrap.git && cd forth-bootstrap
 git submodule update --init --recursive
 python3 tools/fetch-archives.py    # four archives, 2.2 MB, sha256-pinned
-./check-all.sh                     # fifteen checks, about two minutes
+./check-all.sh                     # fourteen checks, about two minutes
 ```
 
-`check-all.sh`'s header lists the fifteen checks.  The ones to start
-with:
+`check-all.sh`'s header lists the checks.  A fifteenth, step 11, runs
+only when asked (`CHECK_STANDIN=1 ./check-all.sh`) and is otherwise
+reported as SKIP: it compares the route's first tcc with a gcc `-m32`
+build of the same program, and that gcc-built reference does not make the
+same `tcc-boot0` on every run (about one in eight differs;
+`tinycc/README.md`, "What does not reproduce").  The first tcc the seed
+builds makes the pinned `tcc-boot0` every time, and steps 10 and 15 check
+that.  The ones to start with:
 
 ```sh
 seed/i386/build.sh                       # seed-forth-i386, 1,191 bytes

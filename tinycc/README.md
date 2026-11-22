@@ -202,7 +202,8 @@ The checks around it (`./check-all.sh` steps 08 to 12):
   with Mes's own i386 assembly files; every file the two first compilers
   write in the replay (the crt files, `unified-libc.o`, `libc.a`,
   `libtcc1`, getopt and tcc-boot0) has the same bytes.  The stand-in is
-  not deterministic; see "What does not reproduce".
+  not deterministic (see "What does not reproduce"), so `check-all.sh`
+  runs this step only with `CHECK_STANDIN=1`.
 - `tests/tinycc/i386-seed-check.sh`: the two build scripts with every
   seed run under strace: only `brk`, `open`, `read`, `write`, `close` and
   `exit`, and the pinned bytes.

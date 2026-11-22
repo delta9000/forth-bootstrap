@@ -39,7 +39,12 @@
 #       can do (needs bwrap and strace)
 #   11  tests/tinycc/i386-standin-check.sh: a gcc -m32 build of the first
 #       tcc leaves the same bytes in every file of the junction's first
-#       stage (needs bwrap and gcc -m32)
+#       stage (needs bwrap and gcc -m32).  Runs only with CHECK_STANDIN=1:
+#       the gcc-built reference does not always make the same tcc-boot0
+#       (9cb082b3... instead of c1696e57..., about one run in eight;
+#       tinycc/README.md, "What does not reproduce"), so the step can fail
+#       on a tree with nothing wrong.  Steps 10 and 15 pin c1696e57... for
+#       the first tcc the seed builds, which makes it every time
 #   12  tests/tinycc/i386-kaem-check.sh: the seed-built kaem passes
 #       mescc-tools' own kaem tests and stops on a failing command (needs
 #       strace)
@@ -57,7 +62,10 @@
 # vendor/stage0-posix and vendor/mescc-tools submodules and python3; steps
 # 09 to 15 need the four archives of tinycc/SOURCES and
 # tinycc/builder-hex0.SOURCES (python3 tools/fetch-archives.py).  A step
-# whose other needs are missing is reported as SKIP with the reason.
+# whose other needs are missing is reported as SKIP with the reason, and so
+# is step 11 unless it is asked for: a default run on a complete host ends
+# "14 OK, 1 SKIP, 0 FAIL", and CHECK_STANDIN=1 ./check-all.sh runs all
+# fifteen.
 #
 # Each step's output goes to $TMPDIR/check-all-NAME.log (default /tmp); the
 # console shows one OK, SKIP or FAIL line per step and the verdict.
@@ -121,7 +129,11 @@ need 08-corpus gcc-m32 && run "08-corpus" tests/cc/i386/run-corpus.sh
 probed "09-seed-builds" tests/tinycc/i386-seed-check.sh
 if why=$(tests/tinycc/junction-check.sh --probe); then
     need 10-junction strace python3 && run "10-junction" tests/tinycc/i386-syscall-check.sh
-    need 11-standin gcc-m32 && run "11-standin" tests/tinycc/i386-standin-check.sh
+    if [ "${CHECK_STANDIN:-}" = 1 ]; then
+        need 11-standin gcc-m32 && run "11-standin" tests/tinycc/i386-standin-check.sh
+    else
+        skip "11-standin" "set CHECK_STANDIN=1; the gcc-built reference varies, about one run in eight"
+    fi
 else
     skip "10-junction" "$why"
     skip "11-standin" "$why"

@@ -20,7 +20,8 @@
 # call builder-hex0 lacks.
 #
 # The stand-in's own tcc-boot0 is not always the same, so this check fails
-# about one run in eight, on tcc-boot0 alone; run it again.  The outcome
+# about one run in eight, on tcc-boot0 alone; run it again.  For that
+# reason ./check-all.sh runs it only with CHECK_STANDIN=1.  The outcome
 # follows the stand-in's stack address (tinycc/README.md, "What does not
 # reproduce"); the Forth-built first tcc always makes the pinned file.
 #
