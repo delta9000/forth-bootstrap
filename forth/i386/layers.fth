@@ -8,7 +8,6 @@ include forth/i386/030-io.fth
 include cc/040-cc-prep.fth
 include cc/050-cc-lex.fth
 include cc/060-cc-types.fth
-include cc/i386/065-ilp32-types.fth
 include cc/070-cc-sym.fth
 include cc/i386/080-elf32.fth
 include cc/090-cc-emit.fth

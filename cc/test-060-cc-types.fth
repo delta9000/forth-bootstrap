@@ -35,9 +35,13 @@ swap ty-ptr [lit] 0 =                              and
 
 ty-int  [lit] 0 ty-make ty-size [lit] 4 =          and  \ int    -> 4
 ty-char [lit] 0 ty-make ty-size [lit] 1 =          and  \ char   -> 1
-ty-char [lit] 1 ty-make ty-size [lit] 8 =          and  \ char*  -> 8
+ty-char [lit] 1 ty-make ty-size [lit] 4 =          and  \ char*  -> 4
 ty-void [lit] 0 ty-make ty-size [lit] 0 =          and  \ void   -> 0
-ty-int  [lit] 5 ty-make ty-size [lit] 8 =          and  \ T***** -> 8
+ty-int  [lit] 5 ty-make ty-size [lit] 4 =          and  \ T***** -> 4
+ty-long [lit] 0 ty-make ty-size [lit] 4 =          and  \ long   -> 4
+ty-llong [lit] 0 ty-make ty-size [lit] 8 =         and  \ long long -> 8
+ty-llong [lit] 0 ty-make ty-align [lit] 4 =        and  \ aligned to 4
+ty-short [lit] 0 ty-make ty-size [lit] 2 =         and  \ short  -> 2
 
 \ ===========================================================================
 \ Final exit

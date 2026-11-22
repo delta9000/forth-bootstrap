@@ -64,21 +64,17 @@
 
 \ ty-size ( ty -- bytes )  Scalar/pointer storage size, not aggregate size.
 \ The caller resolves struct descriptors before asking their size/alignment.
-\ int is 4 bytes, and long and pointers are 8 here (065 makes them 4).
-\ Both long long kinds take the final eight-byte answer.  A float, double
-\ or long double travels as its bits in an 8-byte cell; there is no
-\ floating-point arithmetic.
+\ The model is ILP32: int, long and pointers are 4 bytes, long long is 8.
+\ A float, double or long double travels as its bits in an 8-byte cell;
+\ there is no floating-point arithmetic.  Every other size, struct layout,
+\ sizeof and pointer step in the compiler comes from here and ty-align.
 : ty-size
-  dup ty-ptr [lit] 0 > if, drop [lit] 8 exit, then,
+  dup ty-ptr if, drop [lit] 4 exit, then,
   ty-base
   dup ty-void = if, drop [lit] 0 exit, then,
-  dup ty-char = over ty-bool = or if, drop [lit] 1 exit, then,
-  dup ty-float = over ty-double = or over ty-ldouble = or if,
-    drop [lit] 8 exit,
-  then,
-  dup ty-uchar = if, drop [lit] 1 exit, then,
+  dup ty-char = over ty-uchar = or over ty-bool = or if, drop [lit] 1 exit, then,
   dup ty-short = over ty-ushort = or if, drop [lit] 2 exit, then,
-  dup ty-int = over ty-uint = or if,
+  dup ty-int = over ty-uint = or over ty-long = or over ty-ulong = or if,
     drop [lit] 4 exit,
   then,
   drop [lit] 8 ;
@@ -97,9 +93,14 @@
   dup ty-ptr if, drop [lit] 0 exit, then,
   ty-base dup ty-llong = swap ty-ullong = or ;
 
-\ ty-align ( ty -- bytes )  Scalar/pointer alignment; void uses 1.
-\ Struct/union alignment is cc-sd-align, not the type word's fallback.
-: ty-align  ty-size dup 0= if, drop [lit] 1 then, ;
+\ ty-align ( ty -- bytes )  The i386 System V alignment inside a struct:
+\ the size, but never more than 4, so long long and double sit on 4-byte
+\ boundaries; void uses 1.  Struct/union alignment is cc-sd-align, not the
+\ type word's fallback.
+: ty-align
+  ty-size
+  dup 0= if, drop [lit] 1 then,
+  dup [lit] 4 > if, drop [lit] 4 then, ;
 
 \ cc-integer-suffix ( addr len -- flag )  The one integer-suffix parser,
 \ shared by literal typing below and the constant evaluator (125).  The
@@ -151,41 +152,35 @@ variable cc-literal-long
   tok-str-addr @ tok-str-len @ cc-integer-suffix-start
   cc-integer-suffix 0= if, [lit] 240 cc-die then, ;
 
-\ cc-integer-literal-type ( -- ty )  Type of the current tk-num token.
-\ The original spelling (050) distinguishes decimal from hex/octal and
-\ preserves U/L/LL suffixes without expanding the lexer's snapshot state.
-\ LP64 long and long long share one 64-bit representation, so only a
-\ two-letter LL suffix selects long long; its value picks the signedness.
-\ As a bootstrap extension, a decimal value beyond signed long uses ulong.
-\ Range tests use unsigned division, so bit-63-set constants stay correct.
+\ cc-integer-literal-type ( -- ty )  Type of the current tk-num token under
+\ ILP32 (C99 6.4.4.1).  The original spelling (050) distinguishes decimal
+\ from hex/octal and keeps the U/L/LL suffixes.  int and long both hold 31
+\ bits, their unsigned kinds 32, and the long long kinds take what is wider:
+\   bit 63 set                        unsigned long long
+\   an LL suffix, or 2^32 and above   long long, unsigned with a U
+\   a U suffix                        unsigned int, unsigned long with an L
+\   below 2^31                        int, long with an L
+\   2^31 to 2^32-1, decimal           long long
+\   2^31 to 2^32-1, hex or octal      unsigned int, unsigned long with an L
+\ A leading 0 marks hex and octal.  Range tests use unsigned division, so
+\ bit-63-set constants stay correct.
 : cc-integer-literal-type
   cc-integer-literal-check
-  cc-literal-long @ [lit] 1 > if,
-    cc-literal-unsigned @ tok-num @ 2^63 / or if,
-      ty-ullong
-    else, ty-llong then,
+  tok-num @ 2^63 / if, ty-ullong [lit] 0 ty-make exit, then,
+  cc-literal-long @ [lit] 1 > tok-num @ [lit] 4294967296 / or if,
+    cc-literal-unsigned @ if, ty-ullong else, ty-llong then,
     [lit] 0 ty-make exit,
   then,
-  cc-literal-long @ if,
-    cc-literal-unsigned @ tok-num @ 2^63 / or if,
-      ty-ulong
-    else, ty-long then,
-  else,
-    cc-literal-unsigned @ if,
-      tok-num @ [lit] 4294967296 / if, ty-ulong else, ty-uint then,
-    else,
-      tok-num @ [lit] 2147483648 / 0= if,
-        ty-int
-      else,
-        tok-str-addr @ c@ [char] 0 =
-        tok-num @ [lit] 4294967296 / 0= and if,
-          ty-uint
-        else,
-          tok-num @ 2^63 / if, ty-ulong else, ty-long then,
-        then,
-      then,
+  cc-literal-unsigned @ 0= if,
+    tok-num @ [lit] 2147483648 / 0= if,
+      cc-literal-long @ if, ty-long else, ty-int then,
+      [lit] 0 ty-make exit,
+    then,
+    tok-str-addr @ c@ [char] 0 <> if,
+      ty-llong [lit] 0 ty-make exit,
     then,
   then,
+  cc-literal-long @ if, ty-ulong else, ty-uint then,
   [lit] 0 ty-make ;
 
 \ ===========================================================================
