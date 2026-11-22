@@ -87,13 +87,14 @@ registers.
 | `forth/010-lib.fth` | the library: the system-call words, the code-laying words (`ret,`, `push-imm64,`, `call,`), `native!`, `brk-alloc` (section 5) and the input words (section 6) |
 | `forth/020-cc-arena.fth` | the library's primitives again as machine code, and inline forms of them for later definitions (section 4.2); the hash-table `find`; the compiler's arena |
 | `forth/layers.fth` | the load list: `include` lines for `forth/020-cc-arena.fth` and then `cc/030-cc-io.fth` to `cc/119-cc-runtime.fth` in numeric order. The library is not in it: the seed has read it already (section 6) |
-| `cc/030-cc-io.fth` | no machine code; the two places the compiler meets the kernel: `cc-workspace-map` gets memory from `brk-alloc`, and `cc-input-file`, `cc-load-file` and `cc-load-files` read the C sources by name (section 6.4) |
+| `cc/030-cc-io.fth` | no machine code; `cc-workspace-map` gets memory from `brk-alloc`, and `cc-input-file`, `cc-load-file` and `cc-load-files` read the C sources by name (section 6.4) |
+| `cc/040-cc-prep.fth` | no machine code; it opens, reads and closes each `#include`d file itself (`cc-prep-try-open`, `cc-read-all`, `close`) |
 
 The two files of machine code are quoted byte for byte by the book.
 
 Nothing above `forth/020-cc-arena.fth` lays host machine code.
-`cc-nzero` in `cc/115-cc-native.fth`, which zeroes 24 to 2,600 bytes at
-a time, is a loop of `c!` in Forth.
+`cc-nzero` in `cc/115-cc-native.fth`, which zeroes 64, 80 or 232 bytes
+at a time (its three callers), is a loop of `c!` in Forth.
 
 ### 3.1 How the two files came to be
 
@@ -112,13 +113,17 @@ GNU as 2.47 and llvm-mc 23.1.5, which agree on all of them
 **[measured]**; `tests/forth/asm-check.py` repeats that on the files' 94
 byte lines.
 
-In `forth/020-cc-arena.fth` each sequence used more than once is a word
-of its own, named with a trailing comma (`push-tos,`, `pop-tos,`,
-`pop-sub,`, `pop-xor,`, `0=,`, `sign-ebx,`, `sign-edx,`, `not,`, `-,`,
-`1+,`, `1-,`, `over,`, `drop-2,`, `and,`, `or,`, `pop-rsub,`), and the
-code word and the inline form of a primitive both call it. On this host
-a sequence is two to five instructions and would otherwise be written
-out up to five times.
+In `forth/020-cc-arena.fth` the sequences that are laid from more than
+one place are words of their own, named with a trailing comma
+(`push-tos,`, `pop-tos,`, `pop-sub,`, `pop-xor,`, `0=,`, `sign-ebx,`,
+`sign-edx,`, `not,`, `-,`, `1+,`, `1-,`, `over,`, `drop-2,`, `and,`,
+`or,`, `pop-rsub,`); where a primitive has a code word and an inline
+form, both call the same word. Such a word lays two to five
+instructions and has up to four callers in the file. Single
+instructions and pairs still recur written out (`add esi, 8`;
+`sbb eax, eax` with `mov edx, eax`), and `push-imm64,` in
+`forth/010-lib.fth` writes `push-tos,`'s bytes in decimal, before `c{`
+exists.
 
 Building blocks used below:
 
@@ -153,7 +158,7 @@ definitions that depend on the machine:
 | `exit,` | | `ret,` |
 | `create` | the data area's address | `here 21 +` |
 | `defer-code-size` | | 35 = 18 + 7 + 7 + 3 |
-| `native!` | a jump over a word's first 5 bytes | `E9 rel32`. Every word it is applied to is at least 10 bytes long (a call and a return) |
+| `native!` | a jump over a word's first 5 bytes | `E9 rel32`. Every library word it is applied to is at least 10 bytes long (a call and a return); the seed's `key` and `find` are 31 and 50 bytes |
 
 Before `c{ }` exists the library lays these bytes with decimal `N c,`;
 each such line carries the hex and the instruction as its comment, and
@@ -166,8 +171,8 @@ why they hold:
   offsets (SPEC 3.3).
 - `execute`, `r@`, `branch`, `0branch`: return addresses are cells (SPEC
   5.2 traces all four).
-- the control-flow words `if,` to `again,`: the cell after a branch call
-  is laid by `,` and read by `@`, 8 bytes.
+- the control-flow words `if,` to `again,`, and `until,`: the cell
+  after a branch call is laid by `,` and read by `@`, 8 bytes.
 - `immediate`, `found-immediate?`: the header layout (SPEC 6.1).
 - `,4`: `256 /` on a 64-bit cell, with the seed's unsigned `/`.
 - `compile-literal`, `hex-lay`: built on `push-imm64,` and `call,`.
@@ -183,7 +188,7 @@ The last section of the file has the words of section 5 (`brk`,
 
 | word | what | bytes |
 |---|---|---|
-| `code:` | a header only; `c,` lays the body | |
+| `code:` | a header only; `c,` lays the body. Each code word below ends with `code-start @ native!`, which redirects the library's definition of the same name: `-`, `0<`, `<`, `=`, `1+`, `1-`, `and`, `or`, `digit?`, `alpha-lower?`, `alpha-upper?`. `over` is the exception (below the table) | |
 | `-` | | `pop-sub,`, `89 C8` `89 DA` (`mov eax, ecx`; `mov edx, ebx`) |
 | `0<` | | `sign-edx,` |
 | `<` | the sign of a - b | `pop-sub,`, `sign-ebx,` |
@@ -207,11 +212,11 @@ The last section of the file has the words of section 5 (`brk`,
 | `>r` inline | | `52` `50` (`push edx`; `push eax`), `pop-tos,` |
 | `r>` inline | | `push-tos,`, `58` `5A` (`pop eax`; `pop edx`) |
 | `r@` inline | | `push-tos,`, `8B 04 24` `8B 54 24 04` (`mov eax, [esp]`; `mov edx, [esp+4]`) |
-| `>r`, `r>`, `r@` interpreted | must add no call frame of their own | a jump (`jmp-xt,`) to the seed's word (SPEC 5.2, the fifth case) |
+| `>r`, `r>`, `r@` interpreted | must add no call frame of their own | a jump (`jmp-xt,`) to the earlier word: the seed's `>r` and `r>` (SPEC 5.2, the fifth case) and the library's `r@`, which the file calls `seed-r@` |
 | `*` and `/` | | none: both stay calls to the seed (section 2) |
 | `0=` inline | | `0=,` |
 | `and`, `or`, `nand` | code words for `and` and `or`, inline forms of all three | `23 06` `23 56 04` `83 C6 08`; `0B 06` `0B 56 04` `83 C6 08`; for `nand` the `and` bytes and `not,` |
-| `in-range,` for `digit?`, `alpha-lower?`, `alpha-upper?` | an unsigned compare of the whole cell | `83 E8 low` `83 DA 00` `83 F8 count` `83 DA 00` `19 C0` `89 C2`: `sub eax, low`; `sbb edx, 0`; `cmp eax, count`; `sbb edx, 0`; `sbb eax, eax`; `mov edx, eax`. The second `sbb` leaves carry set exactly when the 64-bit difference is below count |
+| `in-range,` for `digit?`, `alpha-lower?`, `alpha-upper?` | an unsigned compare of the whole cell | `83 E8 low` `83 DA 00` `83 F8 count` `83 DA 00` `19 C0` `89 C2`: `sub eax, low`; `sbb edx, 0`; `cmp eax, count`; `sbb edx, 0`; `sbb eax, eax`; `mov edx, eax`; then `ret,`. The second `sbb` leaves carry set exactly when the 64-bit difference is below count |
 | `alpha?`, `space?`, `true`, `<>`, `>`, `<=`, `>=`, `nip`, `rot`, `2dup`, `2drop`, `+!`, `-!`, `bytes-eq` | the library's text compiled again with the inline forms, and the old word redirected with `native!` | Forth |
 | `=` inline | | `pop-xor,`, `0=,` |
 | `<>` inline | | `pop-xor,`, then `09 D0` `F7 D8` `19 C0` `89 C2` (`or eax, edx`; `neg eax`; `sbb eax, eax`; `mov edx, eax`) |
@@ -220,7 +225,7 @@ The last section of the file has the words of section 5 (`brk`,
 | `>` inline | the sign of b - a | `pop-rsub,`: `2B 06` `1B 56 04` `83 C6 08` (`sub eax, [esi]`; `sbb edx, [esi+4]`; `add esi, 8`), then `sign-edx,` |
 | `<=` inline | | `>`, then `not,` |
 | `0<` inline | | `sign-edx,` |
-| `constant`, `create` | the push, a call to `push-or-compile`, a return | 28 bytes = 18 + 7 + 3; `here 28 +` |
+| `constant`, `create` (and `variable`, on `create`) | the push, a call to `push-or-compile`, a return | 28 bytes = 18 + 7 + 3; `here 28 +` |
 | the hash table of `fh-find` | 2 MiB | `2097152 brk-alloc` (section 5) |
 | `cc-arena-map` | the arena | `brk-alloc`; dies 10 if the result is 0 |
 
@@ -228,8 +233,20 @@ Comparisons keep the meaning the library's own definitions have: `<` is
 the sign bit of the wrapped 64-bit difference, and so on
 (`forth/010-lib.fth`, `<`).
 
-The hash walk (`fh-insert`, `fh-index`, `fh-find`) is Forth: 8-byte
-links and nodes, header offsets 9 and 10, LAST_FOUND through
+`native!` is applied 28 times in all: to `key` in `forth/010-lib.fth`,
+and in this file to the eleven code words named in the first row, to
+the fourteen recompiled words, to `find`, and once for `over`. The one
+for `over` does not reach the library's `over`: by then the file has
+defined its own immediate `over`, which `'` finds, so the jump is
+written into that wrapper, and the library's `over`
+(`>r dup r> swap`) is left as it was **[measured]** (after the file is
+loaded its first byte is still `6A`; every other target's is `E9`).
+Words compiled in the library that call `over` keep running that
+definition. The comment above the line in the file says otherwise.
+
+The hash walk (`fh-insert`, `fh-index`, `fh-find`) is Forth: 4,096
+8-byte buckets, 16-byte nodes of a link and a header address, header
+offsets 9 and 10, LAST_FOUND through
 `latest 16 +`. `' find ' fh-find native!` puts it in place of the seed's
 `find`. Everything after it in the file (the lexer's state block,
 `cc-die`, `cc-check-cap`, `cc-alloc`) is Forth as well.
@@ -242,14 +259,21 @@ There is no buffered `key`: input is section 6's, in Forth.
 |---|---|
 | `cc/030-cc-io.fth`, `cc-workspace-map` | memory for the preprocessor's workspaces, from `brk-alloc`; dies when the answer is 0 or less. Its one caller is in `cc/040-cc-prep.fth` |
 | `cc/030-cc-io.fth`, `cc-input-file`, `cc-load-file`, `cc-load-files` | the C source read by name (section 6.4): descriptor 0 has no end on builder-hex0 |
+| `cc/040-cc-prep.fth`, `cc-prep-try-open` | `open` of an `#include`d file, read with `cc-read-all` and closed |
 | `cc/115-cc-native.fth`, `cc-nzero` | Forth, a loop of `c!` |
 | `tinycc/tcc-compile.fth`, `tinycc/tool-compile.fth` | no machine code. They call `cc-arena-map` with 8,388,608, `cc-load-files`, and `open`, `write`, `close` with flags 577 and mode 384 or 493 (`O_WRONLY`, `O_CREAT`, `O_TRUNC` as i386 Linux numbers them) |
 
 A search of every `.fth` file in the repository for `c{`, `code:`,
 `native!`, runs of `N c,` and `syscall6` finds host code in
 `forth/010-lib.fth` and `forth/020-cc-arena.fth` and in no other file
-the route loads **[measured]**; `tests/seed/boot.fth` calls `syscall6`
-for its own output.
+the route loads **[measured]** (all 33 tracked `.fth` files; none is
+under `vendor/`). The other hits are these. `c,` lays data, not code, in
+`forth/020-cc-arena.fth` (the text of `cc-die`'s message),
+`cc/050-cc-lex.fth` (the keyword table), `tinycc/jobs/tool.fth` (the NUL
+after a path) and three test files. `cc/030-cc-io.fth` names `c{` and
+`code:` in comments only. `tests/seed/boot.fth`, which is seed-level
+Forth and not on the route, calls `syscall6` itself for `write`, `brk`,
+`open` and `read`.
 
 ## 5. System calls and memory
 
@@ -266,7 +290,8 @@ for its own output.
 
 No other call is made by Forth: no `mmap` (builder-hex0 answers 0, which
 a caller would take for an address, P§1), no `lseek`, no `fork`, no `execve`. All six are implemented by
-builder-hex0 (P§1).
+builder-hex0 (P§1 names five of them among the implemented calls;
+`exit` is read, B2:1855).
 
 What survives a `syscall6`: edx:eax is the result, esi and esp are as
 the stack effect says, and nothing else (SPEC 7.5). Failure is a
@@ -276,14 +301,18 @@ comparing with an errno: builder-hex0 answers -1 where Linux answers -2
 
 File rules the host keeps on builder-hex0 (P§5):
 
-- a path is at most 255 bytes;
+- a path is at most 255 bytes, the limit of an argument (P§4;
+  `tinycc/one-boot-disk.py` refuses a longer name);
 - the output file is created and written after every input has been
   read, and nothing else is created until it is closed: only the newest
   file can grow without overwriting its neighbour. The drivers already
   write the output in one loop at the end;
-- every file opened is closed: a process has 448 descriptor slots and
+- every C file is closed when it has been read, and every included
+  Forth file when it ends; the Forth files still being read at exit
+  (three in a compile) stay open. A process has 448 descriptor slots and
   the kernel does not check the bound (B2:98, 1077-1085). A first-tcc
-  compile makes 980 `open` calls **[measured]**.
+  compile makes 980 `open` calls **[measured]** (section 9) and has at
+  most 6 files open at once.
 
 ### 5.2 `brk-alloc` ( bytes -- addr | 0 )
 
@@ -307,11 +336,13 @@ Properties:
   image's end, 0x0A048000, before any Forth runs (SPEC 3.2).
 - The cap keeps it out of 0x30000000 and above, where builder-hex0 keeps
   this process's argument strings and the saved parents, kaem among
-  them; the break has no bound of its own (P§2). The need is 19 MiB:
-  a compile makes three requests, of 2,097,152 bytes for the hash table
-  (`forth/020-cc-arena.fth`), 8,388,608 for the arena (`cc-arena-map`
-  in the drivers) and 9,437,184 for the preprocessor's workspaces
-  (`cc/040-cc-prep.fth`).
+  them; the break has no bound of its own (P§2). The need is 14 MiB:
+  a compile makes three requests **[measured]** (the traces of section
+  9), of 2,097,152 bytes for the hash table (`forth/020-cc-arena.fth`),
+  8,388,608 for the arena (`cc-arena-map` in the drivers) and 4,194,304
+  for the preprocessor's flag bytes, one for each byte of its scratch
+  area and of the source buffer (`cc/040-cc-prep.fth`:
+  `cc-pp-scratch-cap` plus `cc-src-cap`).
 - On Linux the break of a 32-bit program is below 2^31, so the
   sign-extended result of `brk` is the address.
 
@@ -334,7 +365,7 @@ names (section 6.5). The cost in the seed is two stores at entry and a
 
 | word | effect | behaviour |
 |---|---|---|
-| `arg` | ( i -- zaddr \| 0 ) | the i-th argument's address, 0 past the last. The kernel's pointers are 4 bytes: the cell read at ARGV + 4·i is masked to its low half |
+| `arg` | ( i -- zaddr \| 0 ) | the i-th argument's address, 0 past the last. The kernel's pointers are 4 bytes: the cell read at the address in ARGV plus 4·i is masked to its low half |
 | `included` | ( zaddr -- ) | open the NUL-terminated path read-only. A negative descriptor is fatal: the path, `?` and a newline on descriptor 1, exit 2. Otherwise push the current INPUT on the include stack and make the new descriptor INPUT |
 | `include` | ( "name" -- ) | read a token, put a NUL after it in the token buffer (which has two spare bytes, SPEC 3.3), `included` |
 
@@ -367,9 +398,10 @@ needs exist (after the outer interpreter has taken over, where control
 flow is available). The library therefore defines `native!` itself, and
 `forth/020-cc-arena.fth` uses the library's.
 
-Reading is one `read` per byte. A first-tcc run reads 367 KB of Forth:
-about 23 ms on builder-hex0 at 242 cycles a call (P§7) and a few tenths
-of a second on Linux. No buffer is kept.
+Reading is one `read` per byte. A first-tcc run reads 360,296 bytes of
+Forth in 360,312 calls **[measured]** (section 9): about 23 ms on
+builder-hex0, computed from 242 cycles a call (P§7). On Linux the whole
+run takes 0.74 s, 0.06 s of it system time. No buffer is kept.
 
 ### 6.3 The library's last line
 
@@ -411,8 +443,8 @@ so the boot's paths can differ from the host's (section 7.3).
 `cc-prep-source-name`; list `tinycc/m2libc-native.c` and then each
 SOURCE as input files; `include tinycc/tool-compile.fth`. Several SOURCE
 arguments are for kaem: `tinycc/m2libc-kaem.c` (section 7.4) and its
-three files, which M2-Mesoplanet also compiles as one unit
-(`vendor/stage0-posix/x86/mescc-tools-mini-kaem.kaem:262-274`).
+three files, which M2-Planet also compiles as one unit
+(`vendor/stage0-posix/x86/mescc-tools-mini-kaem.kaem:254-273`).
 
 The compiler's output does not depend on these strings **[measured]**
 (SPEC Appendix C): the first tcc has the same bytes with its sources in
@@ -423,8 +455,10 @@ named by an absolute path of 142 bytes.
 
 `tinycc/one-boot-disk.py` writes this disk and
 `tests/tinycc/one-boot-check.sh` boots it and compares what it exports.
-**[measured]** The boot takes 25 s with KVM and reaches every pinned and
-published hash (section 9). Nothing on the disk is built on the host
+**[measured]** The boot takes 25 s and reaches every pinned and
+published hash (section 9): four runs of the check, each reporting 25 s
+in whole seconds from starting QEMU to its exit, with KVM and `-smp 1`
+on a Ryzen 7 9700X. Nothing on the disk is built on the host
 except builder-hex0's stage 1.
 
 ### 7.1 The disk
@@ -435,23 +469,30 @@ builder-hex0's stage 1, its stage-2 hex0 source, zeros to sector
 
 - `src 0 DIR` for every directory, each level before the ones below it:
   `open` with `O_CREAT` fails when the parent has no entry (P§5).
-- Files, at their repository paths under `/`, so that the relative names
-  in the Forth and C files resolve from the working directory `/`
-  (relative `open` with the working directory `/` works, P§5):
+- Files. Those of the repository are at their repository paths under
+  `/`, so that the relative names in the Forth and C files resolve from
+  the working directory `/`. (The boot A log in
+  `tests/builder-hex0/README.md` has a relative `open` with `O_CREAT`
+  from `/` succeeding; a relative read-only `open` was not probed, and
+  the boot itself is the evidence for it.)
   - `seed/000-seed.hex0` and
     `vendor/stage0-posix/x86/kaem-minimal.hex0`;
   - `forth/010-lib.fth`, `forth/layers.fth` and the files it lists, the
     two drivers and the two jobs;
-  - the C the seed compiles: `vendor/stage0-posix/M2libc/`,
-    `vendor/stage0-posix/mescc-tools-extra/`, `vendor/mescc-tools/Kaem/`
-    and `vendor/mescc-tools/M2libc/bootstrappable.*`,
+  - the C the seed compiles: the trees `vendor/stage0-posix/M2libc/`
+    and `vendor/mescc-tools/Kaem/`, nine files of
+    `vendor/stage0-posix/mescc-tools-extra/` (the seven stock tools,
+    `ungz.c` and `untar.c`),
+    `vendor/mescc-tools/M2libc/bootstrappable.*`,
     `tinycc/m2libc-native.c`, `tinycc/m2libc-kaem.c`,
     `tinycc/direct-input.c`,
-    `tinycc/mes-libc.c`, `tinycc/mes-libc-native.c`, the four files
-    of `tinycc/tools/` that patch `ungz.c` and `untar.c`,
-    `tinycc/hex0-export.c`;
-  - the three archives of `tinycc/SOURCES` and their checksum file;
-  - the two scripts below.
+    `tinycc/mes-libc.c`, `tinycc/mes-libc-native.c`, and the four files
+    of `tinycc/tools/` that patch `ungz.c` and `untar.c`;
+  - `tinycc/hex0-export.c`, which the first tcc compiles;
+  - the three archives of `tinycc/SOURCES` and their checksum file,
+    under `/external/`;
+  - the two scripts below, `/boot/seed.kaem` and `/kaem.run`, which the
+    disk writer generates.
 - Then three commands:
 
       hex0 /seed/000-seed.hex0 /seed-forth
@@ -507,7 +548,7 @@ With variables and a search path, in this order:
    archive again, over the first copy; `checksum-transcriber` is
    compiled.
 2. The stock `untar` reads only a 100-byte name, so it leaves the
-   archive's 146 long-named files in `/` under their last components
+   archive's 200 long-named entries in `/` under their last components
    (`tinycc/README.md`, "Source preparation"). The disk writer checks
    that none of them has the name of a directory in `/`. The second
    unpacking puts them where they belong; builder-hex0 keeps the newer
@@ -521,14 +562,22 @@ With variables and a search path, in this order:
    `mes-libc.c` and `mes-libc-native.c` are written beside them, because
    their quoted includes are relative to their own directory
    (`tinycc/direct-input.c`). The other commands are those of
-   `tinycc/build-first-tcc.sh` with `/` for the source directory.
+   `tinycc/build-first-tcc.sh` with `/` for the source directory and
+   the two tar files in `/tmp`, and without its two `rm` and its
+   `chmod`.
 4. One seed run of `tcc-first.fth`, with `/usr/bin/tcc-mes`,
-   `direct-input.c`, `mes-0.28/include` and `mes-0.28/include/linux/x86`
-   as its arguments, writes the first tcc.
+   `/direct-input.c`, `/mes-0.28/include` and
+   `/mes-0.28/include/linux/x86` as its arguments, writes the first tcc.
+   Five `cp` commands then put the step's own files from the unpacked
+   archive where `pass1.kaem` reads them.
 5. live-bootstrap's text, with its `cd` lines: of
    `steps/mes-0.28/pass1.kaem` the unpacking and the header install, and
    `steps/tcc-0.9.26/pass1.kaem` from "# Vars" to "# Checksums" without
-   the MesCC commands. It unpacks both archives again, at its own paths.
+   the two MesCC commands and the `cp` and `chmod` that install their
+   tcc-mes. It unpacks both archives again, at its own paths. Two things
+   of ours stand in it before "# Install": six `cp` commands that keep
+   what tcc-mes made under `/first`, and the compile of `hex0-export` by
+   tcc-mes.
 6. `hex0-export /dev/hda` with the 33 files the host compares,
    including `/seed-forth`, `/kaem-optional-seed`, `/x86/bin/kaem`,
    the eleven tools and the stock `ungz` and `untar`.
@@ -539,7 +588,7 @@ The outputs are the same bytes all the same **[measured]** (section 6.5).
 
 Process depth is four: the shell, kaem-optional-seed, kaem, and the seed
 or a tool. builder-hex0 has 16 process slots (B2:83). A seed run under
-kaem needs 32 MiB of image and 19 MiB of break, well inside the 670 MB
+kaem needs 32 MiB of image and 14 MiB of break, well inside the 670 MB
 process area, and kaem is saved meanwhile in the area above 0x30000000.
 
 ### 7.4 kaem, compiled by the Forth compiler
@@ -548,7 +597,7 @@ process area, and kaem is saved meanwhile in the area above 0x30000000.
 `tinycc/m2libc-native.c` in place of M2libc's assembly. That file
 lacks three calls kaem makes (`vendor/mescc-tools/Kaem/kaem.c:1070,
 1097, 1106`), which M2libc defines in assembly
-(`vendor/stage0-posix/M2libc/x86/linux/unistd.c:55-85`). They are in a
+(`vendor/stage0-posix/M2libc/x86/linux/unistd.c:55-86`). They are in a
 second file, `tinycc/m2libc-kaem.c`, which goes between
 `tinycc/m2libc-native.c` and kaem's three files and is listed for
 no other program:
@@ -571,8 +620,8 @@ no other program:
 `build-out/tinycc/kaem`, 99,008 bytes, pinned as `tinycc/kaem`.
 
 - On Linux through IA32 (`tests/tinycc/kaem-check.sh`): the
-  eighteen scripts of `vendor/mescc-tools/Kaem/test.sh` give the output
-  of `test/test.answers`; a command that exits 1 stops a script with
+  eighteen scripts of `vendor/mescc-tools/Kaem/test.sh` give outputs
+  with the sha256 sums of `test/test.answers`; a command that exits 1 stops a script with
   "Subprocess error 1"; a command that is not there is refused by
   `access`, and no `execve` is made for it.
 - On builder-hex0 (`tests/tinycc/kaem-boot-check.sh`, two boots):
@@ -587,7 +636,9 @@ Two things follow on builder-hex0:
 
 - When the guard refuses, kaem's child calls `_exit` (`kaem.c:1101`)
   without having run `execve`. builder-hex0 then never resumes the
-  parent; control returns to its shell (P§3). The stream ends there, so
+  parent; control returns to its shell (P§3, measured with the program
+  started by the shell; under kaem-optional-seed, as in the one boot, it
+  was not measured). The stream ends there, so
   the boot stops with "Build finished" and no export, which the check
   reports. It does not hang, as a real `execve` of a missing file would.
 - `fork` saves kaem's memory up to its break (P§3). The entry stub of
@@ -662,28 +713,37 @@ built-in `hex0` assembled (the seed as hex0-seed assembles it on the
 host; kaem-optional-seed as stage0-posix publishes it, `545f8953…`),
 kaem, the eleven tools, the stock `ungz` and `untar` and the first tcc
 as the seed builds them on Linux, and live-bootstrap's `tcc-boot1`,
-`tcc` and libraries. kaem-optional-seed starts the seed with eight
-arguments there, and the seed runs four processes deep.
+`tcc` and libraries. kaem-optional-seed starts the seed there with the
+program's name and seven arguments, and under kaem the seed runs four
+processes deep.
 
-**[measured]** before the seed existed, on a seed written from
-`seed/SPEC.md` alone in GNU as for that purpose and not kept, with the
-host files as they were then (the compiler's files have been folded
-since, and there were 13 runs, not 15):
+**[measured]** on this tree (commit 712024a), on Linux 7.3.4 through its
+IA32 support, on a Ryzen 7 9700X:
 
-- the first tcc (`92d11438…`), the eleven tools and kaem had their
-  pinned bytes, in 13 runs making 7.4 million calls: 7,406,304 reads, of
-  which 7,403,494 were the one-byte reads of Forth text and 2,810 read C
-  files. The first-tcc run took 0.8 s.
-- HERE at the end of the first-tcc compile was 144,025,149
-  (0x0895A63D): 9.00 MiB above the initial HERE, of the image's 31.9
-  MiB.
-- On builder-hex0, under the kaem of section 7.4, the same host files
-  built `catm`, kaem and the first tcc from sources on the disk, and the
-  M2libc-built `sha256sum` printed their pinned hashes.
+- `tests/tinycc/seed-check.sh` keeps its fifteen traces in
+  `build-out/tinycc/seed-check/`, and
+  `tests/tinycc/seed-syscall-check.py` prints the totals: 15 runs,
+  5,416,010 calls, of which 5,412,354 are reads, 1,787 opens, 1,734
+  closes, 105 `brk`, 15 writes and 15 exits. Of the reads, 5,409,398
+  have a count of 1 (the Forth text, and one read of 0 bytes at the end
+  of each Forth file that ends) and 2,956 read C files.
+- The first-tcc run alone: 362,226 reads (360,312 with a count of 1,
+  which bring in 360,296 bytes of Forth; 1,914 of C files), 980 opens
+  (two of them of headers that are not there), 975 closes, 7 `brk`
+  (the seed's one and two for each request of section 5.2), 1 write of
+  975,624 bytes and 1 exit. Without `strace` it takes 0.74 s (three
+  runs).
+- HERE at the end of the first-tcc compile is 143,864,735 (0x0893339F):
+  8.85 MiB above the initial HERE, with 23.08 MiB of the image's 31.93
+  MiB above the initial HERE left. No check prints HERE; this was read
+  from a scratch copy of `tinycc/tcc-compile.fth` whose last line writes
+  the HERE cell to descriptor 1 after the output is closed, run with the
+  arguments `tinycc/build-first-tcc.sh` gives, and it wrote the pinned
+  `92d11438…`.
 
-Those runs said that the host files and the two documents agreed with
-each other before there was a seed to say it. They have not been
-repeated; the checks in the table are what runs now.
+The same measurements on the tree as it was before the seed existed
+(13 runs, 7.4 million calls, HERE 9.00 MiB above the initial HERE) are in
+`forth/i386/CONTRACT.md` at tag `experiments-2026-11-21`.
 
 What no check above exercises:
 
@@ -700,7 +760,7 @@ What no check above exercises:
   kaem-optional-seed has no guard at all: a wrong path in
   `/boot/seed.kaem` stops the machine, and the check's timeout ends it.
 - a dictionary that outgrows the 32 MiB image. Nothing checks HERE
-  against the image's end; the measurement above left 22.9 MiB.
+  against the image's end; the measurement above left 23.08 MiB.
 - `forth/test-010-lib.fth` ends by exiting with its verdict, so a run
   that stops early at a broken primitive, which the interpreter takes
   for the end of input, also exits 0. The vectors print a last line for
@@ -717,5 +777,6 @@ What no check above exercises:
   `forth/020-cc-arena.fth` loads. It is the only place where the
   library, not 020, patches a seed word.
 - **The image size.** 32 MiB is one field of the seed and one constant
-  of its checker. The measured need was 9.00 MiB (section 9).
+  of its checker. The measured need is 8.85 MiB above the initial HERE
+  (section 9).
 - **The book** is a separate project and not part of this contract.
