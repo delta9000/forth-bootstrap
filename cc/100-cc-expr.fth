@@ -177,9 +177,7 @@ variable cc-last-expr-array-inner                  \ row width for a two-dimensi
   cc-last-struct-desc ! cc-last-expr-type ! ;
 
 \ Typed value operations share the historical encoders until a target binds them.
-: cc-value-literal-default [lit] 0 ;
-defer cc-value-literal-fwd
-' cc-value-literal-default is cc-value-literal-fwd
+: cc-value-literal [lit] 0 ;
 defer cc-value-test-fwd
 ' cc-emit-test-rdi is cc-value-test-fwd
 defer cc-value-not-fwd
@@ -188,35 +186,16 @@ defer cc-value-negate-fwd
 ' cc-emit-neg-rdi is cc-value-negate-fwd
 defer cc-value-complement-fwd
 ' cc-emit-not-rdi is cc-value-complement-fwd
-\ Unary plus has no opcode, but its operand still has type constraints.
-: cc-value-plus-default ;
-defer cc-value-plus-fwd
-' cc-value-plus-default is cc-value-plus-fwd
-: cc-value-ternary-noop ;
-defer cc-value-ternary-fwd
-' cc-value-ternary-noop is cc-value-ternary-fwd
-: cc-value-ternary-split-default [lit] 0 ;
-defer cc-value-ternary-split-fwd
-' cc-value-ternary-split-default is cc-value-ternary-split-fwd
+: cc-value-ternary-split [lit] 0 ;
 \ A record conditional consumes saved left metadata and the true-arm fixup,
 \ patches the join and publishes its value. Scalars leave both in place.
-: cc-aggregate-ternary-default [lit] 0 ;
-defer cc-aggregate-ternary-fwd
-' cc-aggregate-ternary-default is cc-aggregate-ternary-fwd
+: cc-aggregate-ternary [lit] 0 ;
 \ Integer-only consumers have a distinct check from scalar load/store support.
-: cc-value-integer-use-default drop ;
-defer cc-value-integer-use-fwd
-' cc-value-integer-use-default is cc-value-integer-use-fwd
-: cc-value-shape-default ( source descriptor destination descriptor -- ) 2drop 2drop ;
-defer cc-value-shape-fwd
-' cc-value-shape-default is cc-value-shape-fwd
-: cc-value-init-default ( source destination -- ) 2drop ;
-defer cc-value-init-fwd
-' cc-value-init-default is cc-value-init-fwd
+: cc-value-integer-use drop ;
+: cc-value-shape ( source descriptor destination descriptor -- ) 2drop 2drop ;
+: cc-value-init ( source destination -- ) 2drop ;
 
-: cc-opaque-scalar-default ( type descriptor -- flag ) 2drop [lit] 0 ;
-defer cc-opaque-scalar-fwd
-' cc-opaque-scalar-default is cc-opaque-scalar-fwd
+: cc-opaque-scalar ( type descriptor -- flag ) 2drop [lit] 0 ;
 
 : cc-mark-typed-deref                             ( ty desc -- )
   over ty-base ty-array = if,
@@ -232,7 +211,7 @@ defer cc-opaque-scalar-fwd
   over ty-base ty-struct = over [lit] 0 <> and
   if,
     over ty-ptr 0= if,
-      2dup cc-opaque-scalar-fwd 0= if, cc-mark-typed-value exit, then,
+      2dup cc-opaque-scalar 0= if, cc-mark-typed-value exit, then,
     then,
   then,
   over ty-size [lit] 1 = cc-mark-deref
@@ -243,28 +222,16 @@ defer cc-opaque-scalar-fwd
 \ value.  The struct descriptor and type describe the value either way, so
 \ they are kept.  A no-op for lv-value and lv-local.
 \ Record members can override scalar storage without changing ordinary lvalues.
-: cc-field-load-default ( ty rec -- ) drop cc-emit-load-typed-via-rdi ;
-: cc-field-store-default ( ty rec -- ) drop cc-emit-store-typed-via-rcx ;
-: cc-field-value-type-default ( ty rec -- ty ) drop ;
-: cc-field-use-default ( rec -- ) drop ;
-defer cc-field-load-fwd
-defer cc-field-store-fwd
-defer cc-field-value-type-fwd
-defer cc-field-use-fwd
-' cc-field-load-default is cc-field-load-fwd
-' cc-field-store-default is cc-field-store-fwd
-' cc-field-value-type-default is cc-field-value-type-fwd
-' cc-field-use-default is cc-field-use-fwd
+: cc-field-load ( ty rec -- ) drop cc-emit-load-typed-via-rdi ;
+: cc-field-store ( ty rec -- ) drop cc-emit-store-typed-via-rcx ;
+: cc-field-value-type ( ty rec -- ty ) drop ;
+: cc-field-use ( rec -- ) drop ;
 
-: cc-array-decay-default ;
-defer cc-array-decay-fwd
-' cc-array-decay-default is cc-array-decay-fwd
 : cc-emit-materialize
-  cc-array-decay-fwd
   cc-deref-pending? if,
     cc-check-static-init
-    cc-last-expr-type @ cc-last-field-rec @ cc-field-load-fwd
-    cc-last-expr-type @ cc-last-field-rec @ cc-field-value-type-fwd cc-last-expr-type !
+    cc-last-expr-type @ cc-last-field-rec @ cc-field-load
+    cc-last-expr-type @ cc-last-field-rec @ cc-field-value-type cc-last-expr-type !
     true cc-last-ident-slot !
     lv-value cc-last-lvalue-kind !
   then, ;
@@ -355,7 +322,7 @@ variable cc-ff-result-record
   [char] ) cc-tok-punct? 0= if, [lit] 121 cc-die then,
   dup cc-native-reverse-args ;
 
-: cc-parse-native-call                           ( id -- )
+: cc-native-call                           ( id -- )
   cc-check-static-init
   dup cc-sym-kind-of sk-func <> if,
     dup cc-sym-kind-of sk-local = if,
@@ -381,7 +348,7 @@ variable cc-ff-result-record
   then,
   cc-emit-mov-rdi-rax ;
 
-: cc-parse-indirect-call                         ( -- )
+: cc-native-indirect                         ( -- )
   cc-check-static-init
   cc-emit-materialize cc-emit-push-rdi
   cc-native-parse-args
@@ -391,23 +358,15 @@ variable cc-ff-result-record
   ty-int [lit] 0 ty-make [lit] 0 cc-mark-typed-value ;
 
 \ Optional ABI hooks preserve the native default until an explicit opt-in.
-defer cc-native-call-fwd
-defer cc-native-indirect-fwd
-' cc-parse-native-call is cc-native-call-fwd
-' cc-parse-indirect-call is cc-native-indirect-fwd
 : cc-native-call-result ( id -- ty desc )
   dup cc-sym-kind-of sk-func = if, dup cc-sym-type-of
   else, ty-int [lit] 0 ty-make then,
   swap cc-expr-symbol-desc ;
-defer cc-native-call-result-fwd
-' cc-native-call-result is cc-native-call-result-fwd
 : cc-native-function-desc drop [lit] 0 ;
-defer cc-native-function-desc-fwd
-' cc-native-function-desc is cc-native-function-desc-fwd
 
 \ cc-parse-call ( id -- )  The '(' has been consumed.  Parse the arguments,
 \ emit the call, and leave the result in rdi.
-: cc-parse-call cc-native-call-fwd ;
+: cc-parse-call cc-native-call ;
 
 \ ===========================================================================
 \ cc-parse-primary: the operand, then its postfix operators
@@ -428,7 +387,7 @@ defer cc-native-function-desc-fwd
 \ Native strings concatenate adjacent tokens after escape decoding. Each
 \ piece's temporary terminator is removed; exactly one final NUL remains.
 \ Output positions count decoded bytes, including any explicit embedded NUL.
-: cc-parse-native-string-literal
+: cc-native-string
   cc-emit-jmp-rel32-placeholder
   cc-here-vaddr swap                              ( str-vaddr fixup-off )
   cc-out-pos @ >r
@@ -444,10 +403,8 @@ defer cc-native-function-desc-fwd
   cc-patch-rel32-to-here
   cc-emit-movabs-rdi-imm64 ;
 
-defer cc-native-string-fwd
-' cc-parse-native-string-literal is cc-native-string-fwd
 
-: cc-parse-string-literal cc-native-string-fwd ;
+: cc-parse-string-literal cc-native-string ;
 
 \ cc-parse-func-ref ( id -- )  A function name as a value — `op = square;`.
 \ Load the function's absolute vaddr into rdi via movabs.  Result is not an
@@ -458,7 +415,7 @@ defer cc-native-string-fwd
 \ `common_recursion(expression)` (where `expression` is forward-declared)
 \ loads 0 into rdi and crashes at the indirect call.
 : cc-parse-func-ref
-  dup cc-native-function-desc-fwd >r
+  dup cc-native-function-desc >r
   dup cc-sym-val-of [lit] 0 = if,
     cc-emit-movabs-rdi-imm64-placeholder          ( id patch-off )
     cc-expr-unevaluated @ if,
@@ -512,7 +469,7 @@ defer cc-native-local-load-fwd
       dup cc-sym-type-of swap cc-expr-symbol-desc
       r@ if, swap [lit] 1 + swap then,
       cc-mark-typed-value
-      cc-last-expr-type @ cc-last-struct-desc @ cc-opaque-scalar-fwd if,
+      cc-last-expr-type @ cc-last-struct-desc @ cc-opaque-scalar if,
         lv-deref cc-last-lvalue-kind !
       then,
       r> cc-last-expr-array-len !
@@ -530,22 +487,16 @@ defer cc-native-local-load-fwd
 \ then peek one token to tell a call, a subscript and a plain reference
 \ apart.
 \ Optional target intrinsics consume the complete call when handled.
-: cc-native-intrinsic-noop [lit] 0 ;
-defer cc-native-intrinsic-fwd
-' cc-native-intrinsic-noop is cc-native-intrinsic-fwd
+: cc-native-intrinsic [lit] 0 ;
 
-: cc-native-unknown-ident-default true ;
-defer cc-native-unknown-ident-fwd
-' cc-native-unknown-ident-default is cc-native-unknown-ident-fwd
+: cc-native-unknown-ident true ;
 
-: cc-native-call-qualified-default drop [lit] 0 ;
-defer cc-native-call-qualified-fwd
-' cc-native-call-qualified-default is cc-native-call-qualified-fwd
+: cc-native-call-qualified drop [lit] 0 ;
 
 : cc-parse-ident
-  cc-native-intrinsic-fwd if, exit, then,
+  cc-native-intrinsic if, exit, then,
   tok-str-addr @ tok-str-len @ cc-sym-find        ( id | -1 )
-  dup 0< if, drop cc-native-unknown-ident-fwd then,
+  dup 0< if, drop cc-native-unknown-ident then,
   dup 0< if,
     drop
     [lit] 93 cc-die
@@ -561,8 +512,8 @@ defer cc-native-call-qualified-fwd
   lparen cc-tok-punct? if,
     \ A call.  cc-parse-call consumes the '(' (already peeked), parses
     \ the arguments, emits the call, and leaves the result in rdi.
-    dup cc-native-call-qualified-fwd >r
-    dup cc-native-call-result-fwd swap >r >r
+    dup cc-native-call-qualified >r
+    dup cc-native-call-result swap >r >r
     cc-parse-call
     r> r> swap cc-mark-typed-value
     r> cc-last-expr-qualified ! exit,
@@ -589,7 +540,7 @@ defer cc-native-call-qualified-fwd
 \ a literal, a name, a cast or a parenthesised expression.
 : cc-parse-operand
   cc-next-token-keep
-  cc-value-literal-fwd if, exit, then,
+  cc-value-literal if, exit, then,
   tok-kind @ tk-num = if,
     cc-integer-literal-type cc-last-expr-type !
     tok-num @ 0= cc-last-expr-null !
@@ -621,12 +572,10 @@ variable cc-change-postfix
 variable cc-change-delta
 
 \ Validate before inspecting lvalue form: long double uses an address value.
-: cc-change-check-default cc-last-expr-type @ cc-value-integer-use-fwd ;
-defer cc-change-check-fwd
-' cc-change-check-default is cc-change-check-fwd
+: cc-change-check cc-last-expr-type @ cc-value-integer-use ;
 
 \ Update RDI's value; the shared caller saves the address and old payload.
-: cc-change-value-default
+: cc-change-value
   cc-change-type @ ty-ptr if,
     cc-change-type @ cc-change-desc @ cc-expr-pointee-size
   else, [lit] 1 then,
@@ -634,12 +583,10 @@ defer cc-change-check-fwd
   \ The sum has the promoted type; converting it, not truncating it, lets a
   \ _Bool's b++ and b-- produce 1 and !b as C requires.
   cc-change-type @ dup cc-unary-type swap cc-emit-convert-value ;
-defer cc-change-value-fwd
-' cc-change-value-default is cc-change-value-fwd
 
 \ cc-native-inc-dec ( delta postfix? -- )  Mutate one typed lvalue.
 : cc-native-inc-dec
-  cc-check-static-init cc-change-check-fwd
+  cc-check-static-init cc-change-check
   cc-change-postfix ! cc-change-delta !
   cc-last-expr-qualified @ cc-change-qualified !
   cc-last-expr-type @ cc-change-type !
@@ -651,14 +598,14 @@ defer cc-change-value-fwd
     cc-deref-pending? 0= if, [lit] 113 cc-die then,
   then,
   cc-emit-push-rdi
-  cc-change-type @ cc-change-field @ cc-field-load-fwd
+  cc-change-type @ cc-change-field @ cc-field-load
   cc-change-postfix @ if, cc-emit-push-rdi then,
-  cc-change-value-fwd
+  cc-change-value
   cc-change-postfix @ if, cc-emit-pop-rdx then,
   cc-emit-pop-rcx
-  cc-change-type @ cc-change-field @ cc-field-store-fwd
+  cc-change-type @ cc-change-field @ cc-field-store
   cc-change-postfix @ if, cc-emit-mov-rdi-rdx then,  \ rdi := the old value
-  cc-change-type @ cc-change-field @ cc-field-value-type-fwd
+  cc-change-type @ cc-change-field @ cc-field-value-type
   cc-change-desc @ cc-mark-typed-value
   cc-change-qualified @ cc-last-expr-qualified ! ;
 
@@ -669,16 +616,7 @@ defer cc-change-value-fwd
   pt-plus-plus = if, [lit] 1 else, [lit] 0 [lit] 1 - then,
   true cc-native-inc-dec ;
 
-\ cc-parse-postfix-index ( -- )  Postfix '[' INDEX ']' applied to whatever
-\ value the primary has produced so far.  Push it, parse the index, scale
-\ it by the pointee's size, add, and mark the element a pending deref.
-: cc-postfix-base-default ;
-defer cc-index-base-fwd
-defer cc-member-base-fwd
-' cc-postfix-base-default is cc-index-base-fwd
-' cc-postfix-base-default is cc-member-base-fwd
 : cc-parse-postfix-index
-  cc-index-base-fwd
   cc-last-expr-qualified @ >r
   \ An inline matrix already denotes its storage. Subscript it without
   \ manufacturing a pointer-to-row, which would discard qualification.
@@ -687,7 +625,7 @@ defer cc-member-base-fwd
   cc-last-expr-array-inner @ >r
   cc-emit-push-rdi
   cc-parse-expr-fwd
-  cc-last-expr-type @ cc-value-integer-use-fwd
+  cc-last-expr-type @ cc-value-integer-use
   2dup cc-expr-pointee-size
   r@ if, r@ * then,
   cc-emit-scale-rdi
@@ -704,7 +642,6 @@ defer cc-member-base-fwd
 
 \ cc-parse-postfix-field ( op -- )  '.' or '->' followed by a field name.
 : cc-parse-postfix-field
-  cc-member-base-fwd
   dup [char] . = cc-last-lvalue-kind @ lv-temporary = and >r
   cc-last-struct-desc @ [lit] 0 = if,
     [lit] 100 cc-die
@@ -764,7 +701,7 @@ defer cc-member-base-fwd
         drop cc-parse-postfix-index
       else,
         dup lparen = if,
-          drop cc-native-indirect-fwd
+          drop cc-native-indirect
         else,
           cc-parse-postfix-field
         then,
@@ -801,15 +738,13 @@ defer cc-member-base-fwd
 \ Native sizeof parses its operand without retaining any emitted code or
 \ relocations. An array's length/row metadata prevents its normal decay.
 : cc-native-sizeof-expr-size                     ( -- bytes )
-  cc-last-field-rec @ cc-field-use-fwd
+  cc-last-field-rec @ cc-field-use
   cc-last-expr-type @ cc-last-struct-desc @
   cc-last-expr-array-len @ if,
     cc-expr-pointee-size cc-last-expr-array-len @ *
     cc-last-expr-array-inner @ if, cc-last-expr-array-inner @ * then,
   else, cc-expr-type-size then, ;
 
-defer cc-sizeof-type-size-fwd
-' cc-expr-type-size is cc-sizeof-type-size-fwd
 
 : cc-native-sizeof                              ( -- bytes )
   cc-out-pos @ >r cc-gfixup-count @ >r
@@ -818,7 +753,7 @@ defer cc-sizeof-type-size-fwd
   lparen cc-tok-punct? if,
     cc-next-token-keep
     cc-type-start? if,
-      cc-sizeof-type-fwd cc-sizeof-type-size-fwd
+      cc-sizeof-type-fwd cc-expr-type-size
       cc-next-token-keep
       begin, [char] [ cc-tok-punct? while,
         cc-parse-const-fwd *
@@ -854,10 +789,8 @@ defer cc-sizeof-type-size-fwd
   0= if, [lit] 0 [lit] 1 - else, [lit] 1 then,
   [lit] 0 cc-native-inc-dec ;
 
-: cc-array-address-default ( type descriptor count inner -- type descriptor )
+: cc-array-address ( type descriptor count inner -- type descriptor )
   2drop swap [lit] 1 + swap ;
-defer cc-array-address-fwd
-' cc-array-address-default is cc-array-address-fwd
 
 : cc-parse-unary
   cc-next-token-keep
@@ -869,7 +802,7 @@ defer cc-array-address-fwd
   [char] & cc-tok-punct? if,
     cc-parse-unary
     cc-last-lvalue-kind @ lv-temporary = if, [lit] 116 cc-die then,
-    cc-last-field-rec @ cc-field-use-fwd
+    cc-last-field-rec @ cc-field-use
     cc-last-lvalue-kind @ lv-local = if,
       cc-last-ident-slot @ cc-emit-lea-rdi-local
     else,
@@ -880,7 +813,7 @@ defer cc-array-address-fwd
     then,
     cc-last-expr-array-len @ if,
       cc-last-expr-type @ cc-last-struct-desc @
-      cc-last-expr-array-len @ cc-last-expr-array-inner @ cc-array-address-fwd
+      cc-last-expr-array-len @ cc-last-expr-array-inner @ cc-array-address
     else,
       cc-last-expr-type @
       dup ty-func [lit] 1 ty-make = cc-last-lvalue-kind @ lv-value = and
@@ -923,7 +856,6 @@ defer cc-array-address-fwd
   then,
   [char] + cc-tok-punct? if,
     cc-parse-unary cc-emit-materialize
-    cc-value-plus-fwd
     cc-last-expr-type @ cc-unary-type dup cc-emit-convert-rdi
     cc-last-struct-desc @ cc-mark-typed-value exit,
   then,
@@ -1096,7 +1028,7 @@ variable cc-expr-op-row
   ty-unsigned? swap ty-unsigned? or if, ty-ullong else, ty-llong then,
   [lit] 0 ty-make ;
 
-: cc-expr-common-type-default                            ( left right -- ty )
+: cc-expr-common-type                            ( left right -- ty )
   cc-expr-promote swap cc-expr-promote swap
   over ty-ptr if, drop exit, then,
   dup ty-ptr if, nip exit, then,
@@ -1107,8 +1039,6 @@ variable cc-expr-op-row
   then,
   dup ty-unsigned? if, nip else, drop then, ;
 
-defer cc-expr-common-type
-' cc-expr-common-type-default is cc-expr-common-type
 
 : cc-expr-save-types                             ( left-ty left-desc right-ty right-desc -- )
   cc-expr-right-desc ! cc-expr-right-type !
@@ -1161,19 +1091,10 @@ defer cc-expr-common-type
 defer cc-native-binop-emit
 ' cc-native-binop-emit-default is cc-native-binop-emit
 
-: cc-array-binop-default ;
-defer cc-array-binop-fwd
-' cc-array-binop-default is cc-array-binop-fwd
-: cc-array-compound-default ;
-defer cc-array-compound-fwd
-' cc-array-compound-default is cc-array-compound-fwd
-: cc-array-ternary-default ;
-defer cc-array-ternary-fwd
-' cc-array-ternary-default is cc-array-ternary-fwd
 : cc-native-binop-apply                          ( left-ty left-desc left-inner left-null row -- )
   cc-expr-op-row !
   cc-emit-materialize
-  cc-expr-save-native-types cc-array-binop-fwd
+  cc-expr-save-native-types
   cc-expr-op-row @ bo-level + @ level-shift = if,
     cc-expr-left-type @ cc-expr-promote cc-expr-common !
   then,
@@ -1494,18 +1415,18 @@ defer cc-array-ternary-fwd
     >r
     cc-parse-assign-fwd                         \ else-arm
     cc-emit-materialize
-    r> cc-aggregate-ternary-fwd 0= if,
+    r> cc-aggregate-ternary 0= if,
       \ The true arm jumps past the false arm and its conversion. Only
       \ after both types are known can either selected value be converted.
-      cc-value-ternary-split-fwd if,
-        >r cc-expr-save-native-types cc-array-ternary-fwd cc-value-ternary-fwd
+      cc-value-ternary-split if,
+        >r cc-expr-save-native-types
         cc-expr-right-type @ cc-expr-common @ cc-emit-convert-value
         cc-emit-jmp-rel32-placeholder r> cc-patch-rel32-to-here >r
         cc-expr-left-type @ cc-expr-common @ cc-emit-convert-value
         r> cc-patch-rel32-to-here
       else,
         cc-patch-rel32-to-here
-        cc-expr-save-native-types cc-array-ternary-fwd cc-value-ternary-fwd
+        cc-expr-save-native-types
         cc-expr-common @ cc-emit-convert-rdi
       then,
       cc-expr-common @ cc-expr-common-desc cc-mark-typed-value
@@ -1549,13 +1470,8 @@ variable cc-assign-desc
 variable cc-assign-op
 variable cc-assign-field
 
-: cc-aggregate-assignment-default ;
-defer cc-aggregate-assignment-fwd
-' cc-aggregate-assignment-default is cc-aggregate-assignment-fwd
 \ A target may give compound assignment to a record type its own diagnostic.
-: cc-aggregate-compound-default ( type descriptor -- ) 2drop ;
-defer cc-aggregate-compound-fwd
-' cc-aggregate-compound-default is cc-aggregate-compound-fwd
+: cc-aggregate-compound ( type descriptor -- ) 2drop ;
 
 \ One native store path handles locals, globals, fields and dereferences.
 \ Snapshots live on the return stack across the recursive RHS parse.
@@ -1575,7 +1491,7 @@ defer cc-aggregate-compound-fwd
   cc-last-expr-type @ >r cc-last-struct-desc @ >r tok-num @ >r
   cc-emit-push-rdi
   r@ [char] = <> if,
-    cc-last-expr-type @ cc-last-field-rec @ cc-field-load-fwd
+    cc-last-expr-type @ cc-last-field-rec @ cc-field-load
     cc-emit-push-rdi
   then,
   cc-parse-assign-fwd cc-emit-materialize
@@ -1583,15 +1499,14 @@ defer cc-aggregate-compound-fwd
   r> cc-assign-field ! r> cc-assign-qualified !
   cc-assign-op @ [char] = = if,
     cc-last-expr-type @ cc-last-struct-desc @
-    cc-assign-type @ cc-assign-desc @ cc-value-shape-fwd
+    cc-assign-type @ cc-assign-desc @ cc-value-shape
   then,
   cc-assign-type @ ty-base ty-struct = cc-assign-type @ ty-ptr 0= and
-  cc-assign-type @ cc-assign-desc @ cc-opaque-scalar-fwd 0= and if,
+  cc-assign-type @ cc-assign-desc @ cc-opaque-scalar 0= and if,
     cc-assign-op @ [char] = <> if,
-      cc-assign-type @ cc-assign-desc @ cc-aggregate-compound-fwd
+      cc-assign-type @ cc-assign-desc @ cc-aggregate-compound
       [lit] 120 cc-die
     then,
-    cc-aggregate-assignment-fwd
     cc-emit-mov-rsi-rdi
     cc-emit-pop-rdi cc-emit-push-rdi               \ rsi=source; rdi=destination
     cc-assign-type @ cc-assign-desc @ cc-expr-type-size cc-emit-rep-count-rcx
@@ -1601,10 +1516,9 @@ defer cc-aggregate-compound-fwd
     cc-assign-qualified @ cc-last-expr-qualified ! exit,
   then,
   cc-assign-op @ [char] = <> if,
-    cc-assign-type @ cc-assign-field @ cc-field-value-type-fwd cc-assign-desc @
+    cc-assign-type @ cc-assign-field @ cc-field-value-type cc-assign-desc @
     cc-last-expr-type @ cc-last-struct-desc @ cc-expr-save-types
     cc-assign-op @ bo-compound cc-binop-row cc-expr-op-row !
-    cc-array-compound-fwd cc-array-binop-fwd
     cc-expr-op-row @ bo-level + @ level-shift = if,
       cc-expr-left-type @ cc-expr-promote cc-expr-common !
     then,
@@ -1620,8 +1534,8 @@ defer cc-aggregate-compound-fwd
   then,
   cc-last-expr-type @ cc-assign-type @ cc-emit-convert-value
   cc-emit-pop-rcx
-  cc-assign-type @ cc-assign-field @ cc-field-store-fwd
-  cc-assign-type @ cc-assign-field @ cc-field-value-type-fwd
+  cc-assign-type @ cc-assign-field @ cc-field-store
+  cc-assign-type @ cc-assign-field @ cc-field-value-type
   cc-assign-desc @ cc-mark-typed-value
   cc-assign-qualified @ cc-last-expr-qualified ! ;
 
@@ -1715,18 +1629,6 @@ variable cc-cx-comparison
   then,
   cc-cx-comparison @ if, [lit] 0 cc-cx-unsigned ! then, ;
 
-\ The object target supplies symbolic leaves; other targets never enter
-\ them. The typed evaluator binds the parser after all compiler layers load.
-: cc-const-unsupported [lit] 240 cc-die ;
-defer cc-parse-static-const-fwd
-defer cc-const-ident-fwd
-defer cc-const-address-fwd
-defer cc-const-string-fwd
-' cc-const-unsupported is cc-parse-static-const-fwd
-' cc-const-unsupported is cc-const-ident-fwd
-' cc-const-unsupported is cc-const-address-fwd
-' cc-const-unsupported is cc-const-string-fwd
-
 \ cc-cx-operand ( -- v )  Under LP64 a number's suffix is checked by
 \ the same parser that types runtime literals (060), so #if 1LLL is 240.
 : cc-cx-operand
@@ -1816,20 +1718,20 @@ defer cc-const-string-fwd
   cc-putback-token ;
 
 \ cc-parse-const ( -- v )  cond ? a : b, or just cond.
-: cc-parse-const-default
+: cc-parse-const
   cc-cx-or
   cc-next-token-keep
   [char] ? cc-tok-punct? if,
     cc-cx-skip @ >r                                 ( c ; R: outer-skip )
     dup 0= if, true cc-cx-skip ! then,
-    cc-parse-const-default                                  ( c a ; R: outer-skip )
+    cc-parse-const                                  ( c a ; R: outer-skip )
     r@ cc-cx-skip !
     cc-cx-unsigned @ >r
     >r                                              ( c ; R: outer-skip a-u a )
     cc-next-token-keep
     [char] : cc-tok-punct? 0= if, [lit] 128 cc-die then,
     dup if, true cc-cx-skip ! then,
-    cc-parse-const-default                                  ( c b ; R: outer-skip a-u a )
+    cc-parse-const                                  ( c b ; R: outer-skip a-u a )
     swap if, drop r> else, r> drop then,
     r> cc-cx-unsigned @ or cc-cx-unsigned !
     r> cc-cx-skip !
@@ -1837,8 +1739,6 @@ defer cc-const-string-fwd
     cc-putback-token
   then, ;
 
-defer cc-parse-const
-' cc-parse-const-default is cc-parse-const
 
 ' cc-parse-const is cc-parse-const-fwd
 

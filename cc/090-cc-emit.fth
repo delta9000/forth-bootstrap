@@ -25,24 +25,18 @@
 \ Stack ops
 \ ===========================================================================
 
-\ Optional compile-time accounting; native defaults emit no extra bytes.
-: cc-emit-track-noop ;
-defer cc-emit-track-push-fwd
-defer cc-emit-track-pop-fwd
-' cc-emit-track-noop is cc-emit-track-push-fwd
-' cc-emit-track-noop is cc-emit-track-pop-fwd
 
 \ push rdi: 0x57
-: cc-emit-push-rdi  cc-emit-track-push-fwd x{ 57 } ;  \ push rdi
+: cc-emit-push-rdi x{ 57 } ; \ push rdi
 
 \ pop rdi:  0x5F
-: cc-emit-pop-rdi   cc-emit-track-pop-fwd x{ 5f } ;  \ pop rdi
+: cc-emit-pop-rdi x{ 5f } ; \ pop rdi
 
 \ pop rdx:  0x5A
-: cc-emit-pop-rdx   cc-emit-track-pop-fwd x{ 5a } ;  \ pop rdx
+: cc-emit-pop-rdx x{ 5a } ; \ pop rdx
 
 \ pop rcx:  0x59
-: cc-emit-pop-rcx   cc-emit-track-pop-fwd x{ 59 } ;  \ pop rcx
+: cc-emit-pop-rcx x{ 59 } ; \ pop rcx
 
 \ push rbx (0x53) / pop rbx (0x5B).  Used by switch to preserve the outer
 \ value of rbx across the switch (which uses rbx to hold the scrutinee).
@@ -235,12 +229,8 @@ defer cc-emit-track-pop-fwd
   x{ 48 89 e5 }                                   \ mov rbp, rsp
   x{ 48 81 ec } cc-emit-4le ;                     \ sub rsp, imm32
 
-: cc-emit-restore-noop ;
-defer cc-emit-restore-callee-fwd
-' cc-emit-restore-noop is cc-emit-restore-callee-fwd
 
 : cc-emit-epilogue
-  cc-emit-restore-callee-fwd
   x{ 48 89 ec }                                   \ mov rsp, rbp
   x{ 5d }                                         \ pop rbp
   x{ c3 } ;                                       \ ret
@@ -546,13 +536,8 @@ variable cc-bss-base-vaddr                       \ set by cc-finalize-globals
 \ A typed store writes only the destination width; use convert-rdi first
 \ when the assignment expression must retain a correctly converted result.
 
-\ cc-emit-load-typed-via-rdi ( ty -- )  rdi := *(T *)rdi.
-: cc-emit-type-check-noop ;
-defer cc-emit-type-check-fwd
-' cc-emit-type-check-noop is cc-emit-type-check-fwd
 
 : cc-emit-load-typed-via-rdi
-  cc-emit-type-check-fwd
   dup ty-size [lit] 1 = if,
     ty-unsigned? if, cc-emit-load-byte-via-rdi else,
       x{ 48 0f be 3f }                            \ movsx rdi, byte [rdi]
@@ -574,7 +559,6 @@ defer cc-emit-type-check-fwd
 
 \ cc-emit-store-typed-via-rcx ( ty -- )  *(T *)rcx := rdi.
 : cc-emit-store-typed-via-rcx
-  cc-emit-type-check-fwd
   ty-size
   dup [lit] 1 = if, drop cc-emit-store-byte-via-rcx exit, then,
   dup [lit] 2 = if,
@@ -586,7 +570,6 @@ defer cc-emit-type-check-fwd
 
 \ cc-emit-convert-rdi ( ty -- )  Truncate/sign-extend the integer in rdi.
 : cc-emit-convert-rdi
-  cc-emit-type-check-fwd
   dup ty-size [lit] 1 = if,
     ty-unsigned? if, cc-emit-zx-byte-rdi else,
       x{ 48 0f be ff }                            \ movsx rdi, dil
@@ -613,7 +596,6 @@ defer cc-emit-convert-value
 
 \ cc-emit-convert-rcx ( ty -- )  Same conversion for the right operand.
 : cc-emit-convert-rcx
-  cc-emit-type-check-fwd
   dup ty-size [lit] 1 = if,
     x{ 48 0f }
     ty-unsigned? if, $b6 else, $be then, cc-emit-byte

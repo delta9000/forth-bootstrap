@@ -1676,10 +1676,6 @@ create cc-prep-name-error    s, error
 \ then rewinds the reader (cc-src-pos 0, cc-src-line 1) for the lexer.  An
 \ #if still open at the end dies with 39.
 
-\ Optional target-owned predefined macros. The default preserves native output.
-: cc-prep-target-default ;
-defer cc-prep-target-fwd
-' cc-prep-target-default is cc-prep-target-fwd
 
 : cc-preprocess
   cc-src-init
@@ -1694,7 +1690,6 @@ defer cc-prep-target-fwd
   cc-src-buf cc-pp-out !  [lit] 0 cc-pp-out-pos !
   cc-src-cap cc-pp-out-cap !  [lit] 36 cc-pp-out-code !
   cc-pp-flags-init
-  cc-prep-target-fwd
   [lit] 0 cc-prep-inc-top !
   cc-prep-source-path cc-prep-source-len @ cc-prep-file-paths cc-prep-copy-path
   cc-prep-source-len @ cc-prep-file-lens !

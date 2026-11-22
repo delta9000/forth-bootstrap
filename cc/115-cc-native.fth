@@ -94,23 +94,15 @@ variable cc-ntag-u
   then, ;
 ' cc-native-type-start is cc-type-start?
 
-: cc-ntypedef-check-noop ;
-defer cc-ntypedef-check-fwd
-' cc-ntypedef-check-noop is cc-ntypedef-check-fwd
 
 \ A target may provide C90's omitted int base without changing native mode.
-: cc-native-implicit-base-noop [lit] 0 ;
-defer cc-native-implicit-base-fwd
-' cc-native-implicit-base-noop is cc-native-implicit-base-fwd
+: cc-native-implicit-base [lit] 0 ;
 
-defer cc-nbase-fwd
 
 defer cc-naggregate-fwd
 
 \ A target can retain enum provenance without changing its scalar encoding.
-: cc-nenum-desc-default [lit] 0 ;
-defer cc-nenum-desc-fwd
-' cc-nenum-desc-default is cc-nenum-desc-fwd
+: cc-nenum-desc [lit] 0 ;
 
 \ Read an enum type and optionally install its enumerators.
 : cc-nenum
@@ -135,13 +127,8 @@ defer cc-nenum-desc-fwd
     repeat,
     drop
   else, cc-putback-token then,
-  ty-int [lit] 0 ty-make cc-nenum-desc-fwd ;
+  ty-int [lit] 0 ty-make cc-nenum-desc ;
 
-\ A target may consume context-specific declaration specifiers around base
-\ keywords. Native mode keeps its existing token and qualifier handling.
-: cc-nbase-specifiers-default ;
-defer cc-nbase-specifiers-fwd
-' cc-nbase-specifiers-default is cc-nbase-specifiers-fwd
 
 \ C90 lets qualifiers and target specifiers appear between type keywords:
 \ `unsigned const char` and `long volatile int` name the same type as their
@@ -149,7 +136,6 @@ defer cc-nbase-specifiers-fwd
 \ Qualifiers keep their existing flag; they never change the base type.
 : cc-nbase-next-specifier
   begin,
-    cc-nbase-specifiers-fwd
     cc-qualifier? while, cc-qual-note cc-next-token-keep
   repeat, ;
 
@@ -173,9 +159,6 @@ create cc-nspec-counts cc-nspec-slots [lit] 8 * allot
   dup kw-double = if, drop cc-nspec-double then,
   dup kw-bool = if, drop cc-nspec-bool then,
   cc-nspec-counts cell[] dup @ 1+ swap ! ;
-: cc-nspec-check-default ;
-defer cc-nspec-check-fwd
-' cc-nspec-check-default is cc-nspec-check-fwd
 
 \ The base comes from the counted keywords. In native mode an invalid set
 \ still selects one base: the first of void, _Bool, float, double, char,
@@ -197,18 +180,13 @@ defer cc-nspec-check-fwd
   then,
   ty-int ;
 
-\ A target may give a keyword-spelled scalar its own representation; the
-\ SysV layer (121) makes long double an opaque sixteen-byte record.
-: cc-nbase-scalar-default ( type descriptor -- type descriptor ) ;
-defer cc-nbase-scalar-fwd
-' cc-nbase-scalar-default is cc-nbase-scalar-fwd
 
 \ The current token is a base type. Return encoded type and descriptor.
 : cc-nbase-raw
   cc-nctx @ 0= if, cc-ncontext then,
   [lit] 0 nc-base-array ! [lit] 0 nc-base-inner !
   cc-nbase-next-specifier
-  cc-native-implicit-base-fwd if, exit, then,
+  cc-native-implicit-base if, exit, then,
   kw-struct cc-tok-kw? kw-union cc-tok-kw? or if,
     cc-naggregate-fwd exit,
   then,
@@ -217,7 +195,6 @@ defer cc-nbase-scalar-fwd
     tok-str-addr @ tok-str-len @ cc-sym-find
     dup 0< if, [lit] 194 cc-die then,
     dup cc-sym-kind-of sk-typedef <> if, [lit] 195 cc-die then,
-    cc-ntypedef-check-fwd
     dup cc-sym-val-of swap cc-sym-struct-desc-of exit,
   then,
   \ Count every keyword first, so the spelling order cannot matter.
@@ -227,7 +204,7 @@ defer cc-nbase-scalar-fwd
     cc-next-token-keep cc-nbase-next-specifier
     cc-nspec-keyword?
   while, repeat,
-  cc-putback-token cc-nspec-check-fwd
+  cc-putback-token
   cc-nspec-base kw-unsigned cc-nspec-count
   if,
     dup ty-char = if, drop ty-uchar else,
@@ -236,38 +213,22 @@ defer cc-nbase-scalar-fwd
     dup ty-llong = if, drop ty-ullong else,
     drop ty-uint then, then, then, then,
   then,
-  [lit] 0 ty-make [lit] 0 cc-nbase-scalar-fwd ;
-\ A target may also read specifiers after a typedef name, tag or implicit
-\ int, as in `struct S static s;`; native mode leaves them to the declarator.
-: cc-nbase-trailing-default ;
-defer cc-nbase-trailing-fwd
-' cc-nbase-trailing-default is cc-nbase-trailing-fwd
+  [lit] 0 ty-make [lit] 0 ;
  : cc-nbase
   cc-nctx @ 0= if, cc-ncontext then,
   nc-prefix-qualified @ nc-qualified ! [lit] 0 nc-prefix-qualified !
-  cc-nbase-raw cc-nbase-trailing-fwd nc-qualified @ nc-base-qualified ! ;
-' cc-nbase is cc-nbase-fwd
+  cc-nbase-raw nc-qualified @ nc-base-qualified ! ;
 
 \ The optional ABI layer records function-pointer signatures at this seam.
-: cc-nfnptr-default ( extra-stars -- )
+: cc-nfnptr ( extra-stars -- )
   drop cc-skip-fnptr-params ty-func [lit] 1 ty-make nc-ty ! ;
-defer cc-nfnptr-fwd
-' cc-nfnptr-default is cc-nfnptr-fwd
-: cc-ndeclarator-check-noop ;
-defer cc-ndeclarator-check-fwd
-' cc-ndeclarator-check-noop is cc-ndeclarator-check-fwd
 
 \ A named declarator is the bootstrap default. Prototype parameters may
 \ opt into an abstract function-pointer declarator with no identifier.
-: cc-nfnptr-name-default
+: cc-nfnptr-name
   cc-expect-ident
   tok-str-addr @ nc-name ! tok-str-len @ nc-nlen ! ;
-defer cc-nfnptr-name-fwd
-' cc-nfnptr-name-default is cc-nfnptr-name-fwd
 
-: cc-narray-extra-default ;
-defer cc-narray-extra-fwd
-' cc-narray-extra-default is cc-narray-extra-fwd
 
 \ Parse array suffixes with the current '[' already read. The count and
 \ element type are independent, including arrays of function pointers.
@@ -284,7 +245,6 @@ defer cc-narray-extra-fwd
       cc-parse-const nc-inner ! [char] ] cc-expect-punct-c
       cc-next-token-keep
     then,
-    cc-narray-extra-fwd
   then, ;
 
 : cc-nfunction-suffix
@@ -299,16 +259,14 @@ defer cc-narray-extra-fwd
 \ from (*f)() and (*f[N])() (a pointer or array of pointers to functions).
 \ Stars inside the group belong to the object only when no outer function
 \ suffix follows. General pointers to arrays still lack a representation.
-: cc-npointer-array-default drop [lit] 238 cc-die ;
-defer cc-npointer-array-fwd
-' cc-npointer-array-default is cc-npointer-array-fwd
+: cc-npointer-array drop [lit] 238 cc-die ;
 \ Parentheses around a starless direct declarator only group: (*(s[2]))()
 \ declares what (*s[2])() does.  The name and its array suffixes are read
 \ here; the outer group sees the token after the inner ')' as if it had
 \ followed the name.  Pointer groups nested inside a group stay outside.
 : cc-ngroup-name
   cc-next-token-keep
-  lparen cc-tok-punct? 0= if, cc-putback-token cc-nfnptr-name-fwd exit, then,
+  lparen cc-tok-punct? 0= if, cc-putback-token cc-nfnptr-name exit, then,
   cc-next-token-keep
   [char] * cc-tok-punct? if, [lit] 238 cc-die then,
   tok-kind @ tk-ident <> if, [lit] 203 cc-die then,
@@ -349,13 +307,13 @@ defer cc-npointer-array-fwd
       nc-array @ if, [lit] 238 cc-die then,
       cc-nfunction-suffix
     else,
-      r> 1- cc-nfnptr-fwd
+      r> 1- cc-nfnptr
       cc-next-token-keep
       lparen cc-tok-punct? [char] [ cc-tok-punct? or if, [lit] 238 cc-die then,
     then,
   else,
     r@ [char] [ cc-tok-punct? and if,
-      r> cc-npointer-array-fwd exit,
+      r> cc-npointer-array exit,
     then,
     nc-array @ [char] [ cc-tok-punct? and if, [lit] 238 cc-die then,
     r> nc-ty +!
@@ -383,7 +341,7 @@ defer cc-npointer-array-fwd
   then,
   cc-narray-suffix
   lparen cc-tok-punct? if, cc-nfunction-suffix then,
-  cc-ndeclarator-check-fwd ;
+  ;
 
 \ Field qualification (070) is keyed by record address, and a growing
 \ field table (060) moves its records: re-key the entries that moved.
@@ -442,13 +400,11 @@ variable cc-nmove-bytes
 \ A target may add member syntax while retaining the shared declarator.
 \ A member with no name is an anonymous struct or union, whose fields are
 \ promoted; any other type with no name ("int ;") is error 152.
-: cc-nmember-default ( desc -- )
+: cc-nmember ( desc -- )
   nc-func @ if, [lit] 238 cc-die then,
   nc-nlen @ 0= nc-ty @ ty-struct [lit] 0 ty-make <> and if, [lit] 152 cc-die then,
   dup cc-nadd-field
   nc-nlen @ 0= if, nc-desc @ swap cc-npromote-fields else, drop then, ;
-defer cc-nmember-fwd
-' cc-nmember-default is cc-nmember-fwd
 
 : cc-naggregate
   kw-union cc-tok-kw? >r
@@ -468,10 +424,10 @@ defer cc-nmember-fwd
     begin,
       cc-next-token-keep
       [char] } cc-tok-punct? 0= while,
-      cc-nbase-fwd nc-sdesc ! nc-base !
+      cc-nbase nc-sdesc ! nc-base !
       begin,
         cc-ndeclarator
-        dup cc-nmember-fwd
+        dup cc-nmember
         [char] , cc-tok-punct?
       while, repeat,
       [char] ; cc-tok-punct? 0= if, [lit] 58 cc-die then,
@@ -483,15 +439,13 @@ defer cc-nmember-fwd
 ' cc-naggregate is cc-naggregate-fwd
 
 \ Type queries preserve the enclosing declaration's array base shape.
-: cc-native-type-shape-default + ;
-defer cc-native-type-shape-fwd
-' cc-native-type-shape-default is cc-native-type-shape-fwd
+: cc-native-type-shape + ;
 : cc-native-type-name
   cc-nctx @ 0= if, cc-ncontext then,
   nc-base-qualified @ >r nc-qualified @ >r
   nc-base-array @ >r nc-base-inner @ >r
   cc-nbase cc-cast-desc ! cc-skip-qualifiers cc-count-stars
-  cc-native-type-shape-fwd
+  cc-native-type-shape
   nc-qualified @ cc-type-name-qualified !
   r> nc-base-inner ! r> nc-base-array !
   r> nc-qualified ! r> nc-base-qualified ! ;
@@ -517,10 +471,8 @@ defer cc-native-init-fwd
 defer cc-native-init-entry-fwd
 defer cc-native-init-finish-fwd
 
-: cc-native-local-layout-default ( -- slots slot )
+: cc-native-local-layout ( -- slots slot )
   cc-nobject-size [lit] 7 + [lit] 8 / dup cc-fn-local-count @ + 1- ;
-defer cc-native-local-layout-fwd
-' cc-native-local-layout-default is cc-native-local-layout-fwd
 
 : cc-nobject
   [char] = cc-tok-punct? if, cc-native-init-prepare-fwd then,
@@ -561,18 +513,16 @@ defer cc-native-local-layout-fwd
       nc-inner @ nc-id @ cc-sym-set-array-inner
     then,
   else,
-    cc-native-local-layout-fwd dup nc-slot !
+    cc-native-local-layout dup nc-slot !
     sk-local swap cc-ninstall-symbol nc-id !
     cc-fn-add-slots
   then,
   [char] = cc-tok-punct? if, cc-native-init-fwd then, ;
 
-defer cc-nobject-fwd
-' cc-nobject is cc-nobject-fwd
 
 \ cc-nstorage-context is the declaration context whose own base may hold
 \ storage-class keywords among its type specifiers (C90 6.5 sets no order);
-\ a target reads them through cc-nbase-specifiers-fwd.  nc-storage starts
+\ a target reads them through cc-nbase-specifiers.  nc-storage starts
 \ with the count already read before the base, including a leading typedef.
 variable cc-nstorage-context
 : cc-native-declaration ( top? -- )
@@ -602,7 +552,7 @@ variable cc-nstorage-context
       nc-func @ if,
         cc-native-function-fwd
         [char] } cc-tok-punct? if, r> cc-nctx ! exit, then,
-      else, cc-nobject-fwd then,
+      else, cc-nobject then,
     then,
     [char] , cc-tok-punct?
   while, repeat,

@@ -624,13 +624,11 @@ variable cc-esc-n
 \ ===========================================================================
 
 \ cc-next-token ( -- )  Skip ws/comments, dispatch on the first byte.
-: cc-lex-extra-default [lit] 0 ;
-defer cc-lex-extra-fwd
-' cc-lex-extra-default is cc-lex-extra-fwd
+: cc-lex-extra [lit] 0 ;
 
 : cc-next-token
   cc-skip-ws-and-comments
-  cc-lex-extra-fwd if, exit, then,
+  cc-lex-extra if, exit, then,
   cc-eof? if,
     tk-eof tok-kind !
   else,

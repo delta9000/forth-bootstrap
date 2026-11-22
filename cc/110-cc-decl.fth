@@ -313,17 +313,11 @@ variable cc-cast-desc                              \ struct TAG's descriptor, or
 \ compile the whole cast — type, ')', then the operand, a unary
 \ expression — and answer true.  Otherwise answer false with the token
 \ after the '(' put back, for cc-parse-paren.
-: cc-cast-types-default ( source destination -- ) 2drop ;
-defer cc-cast-types-fwd
-' cc-cast-types-default is cc-cast-types-fwd
+: cc-cast-types ( source destination -- ) 2drop ;
 \ Runtime conversion stays separate from the pure cast-type policy.
-: cc-cast-value-default ( source destination -- ) cc-emit-convert-value ;
-defer cc-cast-value-fwd
-' cc-cast-value-default is cc-cast-value-fwd
+: cc-cast-value ( source destination -- ) cc-emit-convert-value ;
 \ Only target-approved integer constant zero casts retain null provenance.
-: cc-cast-null-default ( source destination null qualified -- null ) 2drop 2drop [lit] 0 ;
-defer cc-cast-null-fwd
-' cc-cast-null-default is cc-cast-null-fwd
+: cc-cast-null ( source destination null qualified -- null ) 2drop 2drop [lit] 0 ;
 
 : cc-try-cast
   cc-next-token-keep
@@ -338,9 +332,9 @@ defer cc-cast-null-fwd
   cc-emit-materialize
   r> r> r> swap >r                                 ( desc ty ; R: qualification )
   over cc-cast-desc !                              \ the operand may hold casts
-  cc-last-expr-type @ over cc-cast-types-fwd
-  cc-last-expr-type @ over cc-cast-value-fwd
-  cc-last-expr-type @ over cc-last-expr-null @ r@ cc-cast-null-fwd >r
+  cc-last-expr-type @ over cc-cast-types
+  cc-last-expr-type @ over cc-cast-value
+  cc-last-expr-type @ over cc-last-expr-null @ r@ cc-cast-null >r
   cc-mark-not-lvalue
   cc-last-expr-type !
   cc-last-struct-desc !
@@ -391,9 +385,7 @@ variable cc-loop-switch-depth
 defer cc-value-return-fwd
 ' cc-emit-mov-rax-rdi is cc-value-return-fwd
 \ A target may reject a result shape before any conversion is emitted.
-: cc-return-shape-default ( type descriptor type descriptor -- ) 2drop 2drop ;
-defer cc-return-shape-fwd
-' cc-return-shape-default is cc-return-shape-fwd
+: cc-return-shape ( type descriptor type descriptor -- ) 2drop 2drop ;
 
 : cc-parse-return
   cc-next-token-keep
@@ -405,7 +397,7 @@ defer cc-return-shape-fwd
     cc-putback-token
     cc-parse-expr
     cc-last-expr-type @ cc-last-struct-desc @
-    cc-native-return-type @ cc-native-return-desc @ cc-return-shape-fwd
+    cc-native-return-type @ cc-native-return-desc @ cc-return-shape
     cc-last-expr-type @ cc-native-return-type @ cc-emit-convert-value
     cc-value-return-fwd                           \ result -> rax (SYS-V)
     cc-switch-depth @ cc-emit-switch-unwind

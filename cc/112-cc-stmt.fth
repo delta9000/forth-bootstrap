@@ -514,7 +514,7 @@ variable cc-switch-type           \ LP64: promoted controlling type
   \ '(' expr ')'
   lparen cc-expect-punct-c
   cc-parse-expr                                   \ rdi = scrutinee
-  cc-last-expr-type @ cc-value-integer-use-fwd
+  cc-last-expr-type @ cc-value-integer-use
   cc-last-expr-type @ cc-unary-type cc-switch-type !
   [char] ) cc-expect-punct-c
 

@@ -25,7 +25,7 @@ variable cc-ni-entry-patch
 \ initializers treat it as one scalar leaf, never as a brace list.
 : cc-ni-aggregate?
   ni-type @ ty-base ty-struct = ni-type @ ty-ptr 0= and
-  ni-type @ ni-desc @ cc-opaque-scalar-fwd 0= and ;
+  ni-type @ ni-desc @ cc-opaque-scalar 0= and ;
 : cc-ni-address ( offset -- )
   cc-ni-static @ if,
     nc-slot @ cc-emit-global-ref
@@ -101,7 +101,7 @@ variable cc-ni-scan-brace
       else,
         cc-ni-scan-have @ 0= if,
           nc-ty @ ty-base dup ty-struct = swap ty-array = or
-          nc-ty @ ty-ptr 0= and nc-ty @ nc-desc @ cc-opaque-scalar-fwd 0= and if,
+          nc-ty @ ty-ptr 0= and nc-ty @ nc-desc @ cc-opaque-scalar 0= and if,
             [char] { cc-tok-punct? 0= if, [lit] 222 cc-die then,
           then,
           nc-inner @ if,
@@ -143,13 +143,11 @@ defer cc-ni-value-fwd
   swap cc-emit-movabs-rdi-imm64 cc-emit-mov-rsi-rdi
   ni-offset @ cc-ni-address cc-ni-copy-bytes ;
 
-: cc-value-static-init-default drop ;
-defer cc-value-static-init-fwd
-' cc-value-static-init-default is cc-value-static-init-fwd
+: cc-value-static-init drop ;
 
 : cc-ni-scalar
   cc-ni-aggregate? cc-ni-static @ and if, [lit] 219 cc-die then,
-  cc-ni-static @ if, ni-type @ cc-value-static-init-fwd then,
+  cc-ni-static @ if, ni-type @ cc-value-static-init then,
   ni-offset @ cc-ni-address cc-emit-push-rdi
   cc-putback-token cc-parse-assign
   cc-ni-aggregate? if,
@@ -161,24 +159,18 @@ defer cc-value-static-init-fwd
     ni-type @ ni-desc @ cc-nsize cc-ni-copy-bytes
   else,
     cc-emit-materialize
-    cc-last-expr-type @ cc-last-struct-desc @ ni-type @ ni-desc @ cc-value-shape-fwd
-    cc-last-expr-type @ ni-type @ cc-value-init-fwd
+    cc-last-expr-type @ cc-last-struct-desc @ ni-type @ ni-desc @ cc-value-shape
+    cc-last-expr-type @ ni-type @ cc-value-init
     cc-emit-pop-rcx ni-type @ cc-emit-store-typed-via-rcx
   then,
   cc-next-token-keep ;
 
-defer cc-ni-scalar-fwd
-defer cc-ni-string-fwd
-' cc-ni-scalar is cc-ni-scalar-fwd
-' cc-ni-string is cc-ni-string-fwd
 
 : cc-ni-child-count
   ni-array @ if, ni-array @ exit, then,
   ni-desc @ cc-sd-union? if, [lit] 1 else, ni-desc @ cc-sd-field-count then, ;
 
-: cc-ni-field-default ( rec -- handled? ) drop [lit] 0 ;
-defer cc-ni-field-fwd
-' cc-ni-field-default is cc-ni-field-fwd
+: cc-ni-field ( rec -- handled? ) drop [lit] 0 ;
 
 : cc-ni-child
   ni-array @ if,
@@ -188,7 +180,7 @@ defer cc-ni-field-fwd
     ni-index @ * ni-offset @ + true cc-ni-value-fwd
   else,
     ni-desc @ ni-index @ cc-sd-field-rec
-    dup cc-ni-field-fwd if, drop exit, then,
+    dup cc-ni-field if, drop exit, then,
     dup cc-sf-type over cc-sf-desc
     [lit] 2 cc-npick cc-sf-array-len
     [lit] 3 cc-npick cc-sf-array-inner
@@ -222,12 +214,12 @@ defer cc-ni-field-fwd
 
 \ Character-array strings may optionally have a single pair of braces.
 : cc-ni-char-array
-  tok-kind @ tk-str = if, cc-ni-string-fwd exit, then,
+  tok-kind @ tk-str = if, cc-ni-string exit, then,
   [char] { cc-tok-punct? if,
     cc-lex-state-size cc-alloc dup >r cc-lex-mark
     cc-next-token-keep
     tok-kind @ tk-str = if,
-      r> drop cc-ni-string-fwd
+      r> drop cc-ni-string
       [char] , cc-tok-punct? if, cc-next-token-keep then,
       [char] } cc-tok-punct? 0= if, [lit] 223 cc-die then,
       cc-next-token-keep exit,
@@ -260,7 +252,7 @@ defer cc-ni-field-fwd
     cc-ni-aggregate? if,
       [char] { cc-tok-punct? ni-nested @ or if,
         cc-ni-list
-      else, cc-ni-scalar-fwd then,
+      else, cc-ni-scalar then,
     else,
       [char] { cc-tok-punct? if,
         cc-next-token-keep
@@ -268,7 +260,7 @@ defer cc-ni-field-fwd
         [char] , cc-tok-punct? if, cc-next-token-keep then,
         [char] } cc-tok-punct? 0= if, [lit] 227 cc-die then,
         cc-next-token-keep
-      else, cc-ni-scalar-fwd then,
+      else, cc-ni-scalar then,
     then,
   then,
   r> cc-ni-frame ! ;

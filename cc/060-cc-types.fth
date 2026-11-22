@@ -228,10 +228,8 @@ variable cc-literal-long
 [lit] 56 constant cc-sd-header-bytes
 [lit] 8 constant cc-sd-initial-fields
 
-: cc-sd-record-bytes-default
+: cc-sd-record-bytes
   [lit] 48 ;
-defer cc-sd-record-bytes
-' cc-sd-record-bytes-default is cc-sd-record-bytes
 
 \ cc-zalloc ( bytes -- addr )  Arena storage cleared to zero, so cells a
 \ target adds read as 0 even where the arena reuses mapped memory.
@@ -309,10 +307,6 @@ variable cc-sd-grow-desc
 : cc-sf-set-array-len   [lit] 40 + ! ;                 \ ( n rec -- )
 
 \ Targets may extend field shape without changing legacy/native records.
-: cc-sf-array-inner-default ( rec -- n ) drop [lit] 0 ;
-: cc-sf-set-array-inner-default ( n rec -- )
+: cc-sf-array-inner ( rec -- n ) drop [lit] 0 ;
+: cc-sf-set-array-inner ( n rec -- )
   drop if, [lit] 213 cc-die then, ;
-defer cc-sf-array-inner
-defer cc-sf-set-array-inner
-' cc-sf-array-inner-default is cc-sf-array-inner
-' cc-sf-set-array-inner-default is cc-sf-set-array-inner
