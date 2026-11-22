@@ -177,13 +177,6 @@
   256 / dup c,           \ byte 2
   256 / c, ;             \ byte 3
 
-\ ,8 ( v -- )  emit all 8 bytes of v at HERE in LE order.
-\ Used for movabs imm64 in defining words and for 8-byte branch target slots.
-: ,8
-  dup ,4                                                 \ low 4 bytes
-  256 / 256 / 256 / 256 /        \ shift right 32
-  ,4 ;                                                   \ high 4 bytes
-
 \ ===== immediate flag toggle =====
 \ immediate ( -- )  Set the IMMEDIATE bit in the flags byte of the most-recent
 \ dict entry.  An immediate word executes at compile time even when STATE=1
@@ -593,13 +586,6 @@ immediate
 \ allot ( n -- )  Bump HERE by n bytes (no initialization).
 \ Used after `create` to grow an array, or stand-alone for scratch buffers.
 : allot  here-addr @ + here-addr ! ;
-
-\ skip-vm-pages ( -- )  Nothing to do.  On the x86-64 seed the dictionary
-\ starts below the data stack and the sysvar page, and this word jumps HERE
-\ over them before 030-cc-io.fth creates its megabyte buffers.  The i386
-\ seed starts HERE at STATE + 4096, above both, so nothing lies ahead of
-\ the dictionary; moving HERE there now would put it back on this library.
-: skip-vm-pages ;
 
 \ bytes, ( a u -- )  copy u bytes from a to HERE, advancing HERE.
 : bytes,

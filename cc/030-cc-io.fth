@@ -19,12 +19,6 @@
 \ A. Input buffer, source buffer + reader
 \ ===========================================================================
 
-\ Skip past the VM's fixed pages (data stack 0x410000..0x411000, sysvars and
-\ token buffer 0x413000..0x414000) so the
-\ megabyte buffers do not overlap runtime VM state.  At 030-cc-io.fth load
-\ time HERE is well below 0x410000, so this is a forward bump to 0x414000.
-skip-vm-pages                                     \ HERE = 0x414000
-
 \ cc-in-buf holds stdin exactly as read; nothing but the preprocessor reads it.
 1048576 constant cc-in-default-cap
 create cc-in-default-buf cc-in-default-cap allot
