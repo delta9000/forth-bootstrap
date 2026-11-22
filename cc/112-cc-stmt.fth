@@ -832,21 +832,8 @@ variable cc-label-count
   [char] ; cc-expect-punct-c ;
 
 \ cc-parse-ident-stmt ( -- )  A statement that starts with an identifier:
-\ a declaration if the name is a typedef, a label definition if a ':'
-\ follows, an expression statement otherwise.
+\ a label definition if a ':' follows, an expression statement otherwise.
 : cc-parse-ident-stmt
-  tok-str-addr @ tok-str-len @ cc-sym-find        ( id | -1 )
-  dup 0< 0= if,
-    dup cc-sym-kind-of sk-typedef = if,
-      \ Resolved typedef: the IDENT is consumed (tok-* still holds it);
-      \ parse the declaration with the typedef's encoded base+ptr-depth.
-      cc-sym-val-of                               ( ty )
-      dup ty-base swap ty-ptr                     ( base ptr-depth )
-      cc-parse-decl-with-base exit,
-    then,
-  then,
-  drop
-  \ Not a typedef (or not found yet — it may be a forward label).
   tok-str-addr @ tok-str-len @                    ( a u )
   cc-peek-after-is-colon? if,
     cc-define-label
@@ -859,8 +846,9 @@ variable cc-label-count
 \ cc-parse-stmt ( -- )  Dispatch on the leading token: one line per kind of
 \ statement, each returning with exit, once its parser has run.  Silently
 \ skip any leading storage-class / type-qualifier keywords (static,
-\ extern, const, volatile, ...).  A lone ';' is the empty statement, and
-\ `enum TAG x;` declares an int.
+\ extern, const, volatile, ...).  A lone ';' is the empty statement.  A
+\ declaration is native mode's here (cc-native-decl-fwd); the M2-Planet
+\ subset's are taken first by cc-parse-decl-or-stmt (114-cc-func.fth).
 : cc-parse-stmt
   cc-skip-storage-quals
   cc-next-token-keep
@@ -878,15 +866,6 @@ variable cc-label-count
     then,
   then,
   [char] ;    cc-tok-punct? if, exit, then,           \ the empty statement
-  cc-tok-is-basic-type-kw? if, cc-parse-decl exit, then,
-  kw-enum     cc-tok-kw? if,
-    cc-skip-enum-tag  ty-int [lit] 0 cc-parse-decl-with-base exit,
-  then,
-  \ `struct TAG ... ;` at stmt scope is always a local declaration (a struct
-  \ *definition* — `struct TAG { ... };` — is only allowed at top level).
-  \ The 'struct' keyword is the current token and is already consumed;
-  \ cc-parse-struct-local-decl reads from here.
-  kw-struct   cc-tok-kw? if, cc-parse-struct-local-decl exit, then,
   kw-return   cc-tok-kw? if, cc-parse-return            exit, then,
   kw-if       cc-tok-kw? if, cc-parse-if                exit, then,
   kw-while    cc-tok-kw? if, cc-parse-while             exit, then,
